@@ -1,4 +1,4 @@
-![Hermes](https://github.com/dbracewell/com.gengoai.hermes/blob/gh-pages/images/com.gengoai.hermes.png)
+![Hermes](https://github.com/dbracewell/hermes/blob/gh-pages/images/hermes.png)
 
 A Natural Language Processing framework for Java based on the [Tipster Architecture](http://cs.nyu.edu/cs/faculty/grishman/tipster.html).
 
@@ -22,8 +22,8 @@ If you use maven, you can get the latest release using the following dependency:
 The core sub-module contains the basic api.
 ```
  <dependency>
-     <groupId>com.davidbracewell</groupId>
-     <artifactId>com.gengoai.hermes-core</artifactId>
-     <version>0.0.3-SNAPSHOT</version>
+     <groupId>com.gengoai</groupId>
+     <artifactId>hermes</artifactId>
+     <version>1.0-SNAPSHOT</version>
  </dependency>
 ```
