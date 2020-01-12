@@ -1,0 +1,21 @@
+[person]
+trigger: ('alice'|'rabbit'|('white' 'rabbit'))
+annotation: capture=*
+             type=ENTITY
+             $ENTITY_TYPE=PERSON
+             $CONFIDENCE=1.0
+
+[body_parts]
+trigger: ( <eyes> | <ears> )
+annotation: capture=*
+             type=ENTITY
+             $ENTITY_TYPE=BODY_PART
+             $CONFIDENCE=1.0
+
+[body_part_attributes]
+trigger: (?<PERSON> @ENTITY(#PERSON)) "with" .{1,3} (?<BODY_PART> @ENTITY( #BODY_PART ))
+relation: has_a
+           type=ATTRIBUTE
+           value= HAS_A
+           @>{PERSON}=@ENTITY
+           @<{BODY_PART}=@ENTITY
