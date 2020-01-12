@@ -19,16 +19,16 @@
  * under the License.
  */
 
-package com.gengoai.com.gengoai.hermes.morphology;
+package com.gengoai.hermes.morphology;
 
-import com.gengoai.com.gengoai.hermes.morphology.TokenType;
+import com.gengoai.hermes.morphology.TokenType;
 
 %%
 
 %class StandardTokenizer
 %public
 %unicode
-%type com.gengoai.com.gengoai.hermes.morphology.Tokenizer.Token
+%type com.gengoai.hermes.morphology.Tokenizer.Token
 %function next
 %pack
 %caseless

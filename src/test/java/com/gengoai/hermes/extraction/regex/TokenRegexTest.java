@@ -65,6 +65,11 @@ public class TokenRegexTest {
 
       //Create some more entities
       document.annotationBuilder(Types.ENTITY)
+              .bounds(document.tokenAt(0))
+              .attribute(Types.ENTITY_TYPE, Entities.PERSON)
+              .createAttached();
+
+      document.annotationBuilder(Types.ENTITY)
               .bounds(document.tokenAt(2))
               .attribute(Types.ENTITY_TYPE, Entities.PERSON)
               .createAttached();
@@ -108,7 +113,7 @@ public class TokenRegexTest {
       assertEquals("seashore", matcher.group().toString());
       assertTrue(matcher.find());
       assertEquals("12:30pm", matcher.group().toString());
-      assertTrue(matcher.find());
+      assertFalse(matcher.find());
 
       matcher = TokenRegex.compile("@ENTITY( #PERSON )").matcher(document);
       assertTrue(matcher.find());
@@ -125,7 +130,7 @@ public class TokenRegexTest {
       assertTrue(matcher.find());
       assertEquals("seashore", matcher.group().toString());
       assertTrue(matcher.find());
-      assertEquals("12:30pm yesterday", matcher.group().toString());
+      assertEquals("12:30pm", matcher.group().toString());
       assertFalse(matcher.find());
 
       matcher = TokenRegex.compile("^@ENTITY").matcher(document);

@@ -68,11 +68,7 @@ final class AnnotationTransition implements TransitionFunction, Serializable {
 
    @Override
    public int nonMatches(HString input) {
-      int min = input.tokenLength();
-      for (Annotation a : input.startingHere(type)) {
-         min = Math.min(child.nonMatches(a), min);
-      }
-      return min;
+      return matches(input) > 0 ? 0 : input.tokenLength();
    }
 
    @Override
