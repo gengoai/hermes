@@ -1,0 +1,20 @@
+#!/bin/bash
+
+LANG=en
+HERMES_RESOURCE_DIR=/data/com.gengoai.hermes/
+MODEL_FILE=$HERMES_RESOURCE_DIR/$LANG/models/phrase_chunk.model.bin
+CORPUS_DIR=/data/corpora/
+
+
+td=$(pwd)
+if [[ $td == *'scripts' ]]; then
+    cd ../com.gengoai.hermes-core/
+else
+    cd com.gengoai.hermes-core/
+fi
+
+
+mode=`echo ${1:-"TRAIN"} | tr a-z A-Z`
+jexec PhraseChunkTrainer --corpus "$CORPUS_DIR/$LANG/phrase_chunk/train.txt" --format CONLL \
+                     --model "$MODEL_FILE" --mode $mode --ndarray.factory SPARSE_FLOAT \
+                     --com.gengoai.hermes.resources.dir "$HERMES_RESOURCE_DIR"

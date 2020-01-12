@@ -1,0 +1,17 @@
+#!/bin/bash
+
+MODEL_DIR=/data/models/
+CORPUS_DIR=/data/corpora/
+LANG=en
+
+td=$(pwd)
+if [[ $td == *'scripts' ]]; then
+    cd ../com.gengoai.hermes-core/
+else
+    cd com.gengoai.hermes-core/
+fi
+jexec POSTrainer --corpus "$CORPUS_DIR/$LANG/part_of_speech/combined.txt" --format POS \
+                 --model "$MODEL_DIR/$LANG/pos.model.gz" --mode TRAIN --ndarray.factory SPARSE_FLOAT \
+                 --models.dir "$MODEL_DIR"
+
+
