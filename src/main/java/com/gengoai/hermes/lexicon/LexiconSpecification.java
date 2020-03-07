@@ -50,14 +50,12 @@ import static com.gengoai.string.Re.*;
 @Data
 public class LexiconSpecification implements Specifiable, Serializable {
    private static final Pattern HERMES_RESOURCE_SUB =
-      Pattern.compile(re("<", q(Hermes.HERMES_RESOURCES_CONFIG), zeroOrOne(":", group("[A-Z_]+")), ">"));
+         Pattern.compile(re("<", q(Hermes.HERMES_RESOURCES_CONFIG), zeroOrOne(":", group("[A-Z_]+")), ">"));
    private static final long serialVersionUID = 1L;
    @QueryParameter
-   private AttributeType<?> attributeType = Types.TAG;
+   private AttributeType<?> tagAttribute = Types.TAG;
    @QueryParameter
-   private boolean caseSensitive = true;
-   @QueryParameter
-   private boolean constrained = false;
+   private boolean caseSensitive = false;
    @QueryParameter
    private int constraint = 3;
    @QueryParameter
@@ -68,8 +66,6 @@ public class LexiconSpecification implements Specifiable, Serializable {
    private int lemma = 0;
    @SubProtocol(0)
    private String name;
-   @QueryParameter
-   private boolean probabilistic = false;
    @QueryParameter
    private int probability = 2;
    @Protocol
@@ -92,11 +88,11 @@ public class LexiconSpecification implements Specifiable, Serializable {
       Validation.notNull(lex.resource, "Invalid lexicon specification no resource given: " + specification);
       String path = lex.getResource().path();
       Matcher m = HERMES_RESOURCE_SUB.matcher(path);
-      if (m.find()) {
+      if(m.find()) {
          String language = m.group(1);
          path = path.substring(m.end());
          Language lng = Language.UNKNOWN;
-         if (Strings.isNotNullOrBlank(language)) {
+         if(Strings.isNotNullOrBlank(language)) {
             lng = Language.fromString(language);
          }
          lex.setResource(Hermes.findResource(path, Hermes.LEXICON, lng)
@@ -112,24 +108,24 @@ public class LexiconSpecification implements Specifiable, Serializable {
     * @throws IOException the io exception
     */
    public Lexicon create() throws IOException {
-      if (protocol.equals("mem")) {
-         if (format == null || format.equals("json")) {
+      if(protocol.equals("mem")) {
+         if(format == null || format.equals("json")) {
             return LexiconIO.read(resource);
-         } else if (format.equals("csv")) {
+         } else if(format.equals("csv")) {
             return LexiconIO.importCSV(resource, c -> {
-               c.tagAttribute = Cast.as(attributeType);
+               c.tagAttribute = Cast.as(tagAttribute);
                c.defaultTag = defaultTag == null
                               ? null
-                              : Cast.as(attributeType.decode(defaultTag));
+                              : Cast.as(tagAttribute.decode(defaultTag));
                c.lemma = lemma;
                c.tag = tag;
                c.isCaseSensitive = caseSensitive;
-               c.probability = (probabilistic ? probability : -1);
-               c.constraint = (constrained ? constraint : -1);
+               c.probability = probability;
+               c.constraint = constraint;
             });
          }
          throw new IllegalStateException("Invalid lexicon format: " + format);
-      } else if (protocol.equals("disk")) {
+      } else if(protocol.equals("disk")) {
          KeyValueStoreConnection connection = new KeyValueStoreConnection();
          connection.setPath(getResource().path());
          connection.setCompressed(true);

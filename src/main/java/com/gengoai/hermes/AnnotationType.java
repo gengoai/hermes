@@ -27,6 +27,7 @@ import com.gengoai.HierarchicalRegistry;
 import com.gengoai.Tag;
 import com.gengoai.annotation.JsonHandler;
 import com.gengoai.config.Config;
+import com.gengoai.conversion.Cast;
 
 import java.util.Collection;
 
@@ -59,20 +60,20 @@ import java.util.Collection;
  */
 @JsonHandler(value = AnnotatableType.Marshaller.class, isHierarchical = false)
 public final class AnnotationType extends HierarchicalEnumValue<AnnotationType> implements AnnotatableType {
+   private static final HierarchicalRegistry<AnnotationType> registry = new HierarchicalRegistry<>(
+         AnnotationType::new,
+         AnnotationType.class,
+         "ROOT");
+   private static final long serialVersionUID = 1L;
    /**
     * The constant TYPE.
     */
    public static final String TYPE = "Annotation";
-   private static final HierarchicalRegistry<AnnotationType> registry = new HierarchicalRegistry<>(
-      AnnotationType::new,
-      AnnotationType.class,
-      "ROOT");
    /**
     * The constant ROOT representing the base annotation type.
     */
    public static final AnnotationType ROOT = registry.ROOT;
-   private static final long serialVersionUID = 1L;
-   private volatile AttributeType tagAttributeType = null;
+   private volatile AttributeType<? extends Tag> tagAttributeType = null;
 
    private AnnotationType(String name) {
       super(name);
@@ -96,16 +97,19 @@ public final class AnnotationType extends HierarchicalEnumValue<AnnotationType> 
     * @param tagAttributeType the tag attribute type
     * @return the AnnotationType
     */
-   public static AnnotationType make(AnnotationType parent, String name, AttributeType tagAttributeType) {
+   @SuppressWarnings("unchecked")
+   public static AnnotationType make(AnnotationType parent,
+                                     String name,
+                                     AttributeType<? extends Tag> tagAttributeType) {
       AnnotationType annotationType = registry.make(parent, name);
-      if (tagAttributeType == null && annotationType.tagAttributeType == null) {
+      if(tagAttributeType == null && annotationType.tagAttributeType == null) {
          annotationType.tagAttributeType = Config.get(TYPE, annotationType.name(), "tag").as(AttributeType.class);
-      } else if (tagAttributeType != null && annotationType.tagAttributeType == null) {
+      } else if(tagAttributeType != null && annotationType.tagAttributeType == null) {
          annotationType.tagAttributeType = tagAttributeType;
          Config.setProperty(TYPE + "." + annotationType.name() + ".tag", tagAttributeType.name());
-      } else if (tagAttributeType != null && !annotationType.tagAttributeType.equals(tagAttributeType)) {
+      } else if(tagAttributeType != null && !annotationType.tagAttributeType.equals(tagAttributeType)) {
          throw new IllegalArgumentException(
-            "Attempting to change tag of " + name + " from " + annotationType.tagAttributeType + " to " + tagAttributeType);
+               "Attempting to change tag of " + name + " from " + annotationType.tagAttributeType + " to " + tagAttributeType);
       }
       return annotationType;
    }
@@ -117,7 +121,7 @@ public final class AnnotationType extends HierarchicalEnumValue<AnnotationType> 
     * @param tagAttributeType the tag attribute type
     * @return the AnnotationType
     */
-   public static AnnotationType make(String name, AttributeType tagAttributeType) {
+   public static AnnotationType make(String name, AttributeType<? extends Tag> tagAttributeType) {
       return make(ROOT, name, tagAttributeType);
    }
 
@@ -156,23 +160,22 @@ public final class AnnotationType extends HierarchicalEnumValue<AnnotationType> 
     *
     * @return the tag attribute
     */
-   @SuppressWarnings("unchecked")
    public AttributeType<Tag> getTagAttribute() {
-      if (tagAttributeType == null) {
-         synchronized (this) {
-            if (tagAttributeType == null) {
+      if(tagAttributeType == null) {
+         synchronized(this) {
+            if(tagAttributeType == null) {
                AnnotationType t = parent();
-               while (tagAttributeType == null && t != null) {
+               while(tagAttributeType == null && t != null) {
                   tagAttributeType = t.tagAttributeType;
                   t = t.parent();
                }
-               if (tagAttributeType == null) {
+               if(tagAttributeType == null) {
                   tagAttributeType = Types.TAG;
                }
             }
          }
       }
-      return tagAttributeType;
+      return Cast.as(tagAttributeType);
    }
 
    @Override

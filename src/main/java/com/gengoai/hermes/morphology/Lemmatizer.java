@@ -22,6 +22,7 @@
 package com.gengoai.hermes.morphology;
 
 
+import cc.mallet.util.Strings;
 import com.gengoai.collection.tree.Trie;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.POS;
@@ -45,8 +46,8 @@ public interface Lemmatizer {
     * @return the lemmatized version of the string
     */
    default String lemmatize(@NonNull String string) {
-    return allPossibleLemmas(string, POS.ANY).stream().findFirst().orElse(string.toLowerCase());
-  }
+      return allPossibleLemmas(string, POS.ANY).stream().findFirst().orElse(string.toLowerCase());
+   }
 
    /**
     * Determines the best lemma for a string given a part of speech
@@ -56,8 +57,19 @@ public interface Lemmatizer {
     * @return the lemmatized version of the string
     */
    default String lemmatize(@NonNull String string, @NonNull POS partOfSpeech) {
-    return allPossibleLemmas(string, partOfSpeech).stream().findFirst().orElse(string.toLowerCase());
-  }
+      String minStr = null;
+      double minD = Double.MAX_VALUE;
+      for(String lemma : allPossibleLemmas(string, partOfSpeech)) {
+         double dist = Strings.levenshteinDistance(string, lemma);
+         if(dist <= minD) {
+            minD = dist;
+            minStr = lemma;
+         }
+      }
+      return minStr == null
+             ? string.toLowerCase()
+             : minStr;
+   }
 
    /**
     * Gets all lemmas.
@@ -93,17 +105,19 @@ public interface Lemmatizer {
     * @return the lemmatized version of the token
     */
    default String lemmatize(@NonNull HString fragment) {
-    if (fragment.isInstance(Types.TOKEN)) {
-      POS pos = fragment.pos();
-      if (pos == null) {
-        pos = POS.ANY;
+      if(fragment.isInstance(Types.TOKEN)) {
+         POS pos = fragment.pos();
+         if(pos == null) {
+            pos = POS.ANY;
+         }
+         return lemmatize(fragment.toString(), pos);
       }
-      return lemmatize(fragment.toString(), pos);
-    }
-    return fragment.tokens().stream()
-                   .map(this::lemmatize)
-                   .collect(Collectors.joining(fragment.getLanguage().usesWhitespace() ? " " : ""));
-  }
+      return fragment.tokens().stream()
+                     .map(this::lemmatize)
+                     .collect(Collectors.joining(fragment.getLanguage().usesWhitespace()
+                                                 ? " "
+                                                 : ""));
+   }
 
 
 }//END OF Lemmatizer

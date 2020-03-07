@@ -19,7 +19,11 @@
 
 package com.gengoai.hermes.extraction.caduceus;
 
+import com.gengoai.Validation;
 import com.gengoai.hermes.Document;
+import com.gengoai.hermes.HString;
+import com.gengoai.hermes.extraction.Extraction;
+import com.gengoai.hermes.extraction.Extractor;
 import com.gengoai.io.resource.Resource;
 import com.gengoai.parsing.ParseException;
 import lombok.EqualsAndHashCode;
@@ -30,10 +34,11 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @ToString
 @EqualsAndHashCode
-public final class CaduceusProgram implements Serializable {
+public final class CaduceusProgram implements Serializable, Extractor {
    final List<Rule> rules = new ArrayList<>();
 
    public static CaduceusProgram read(@NonNull Resource resource) throws IOException, ParseException {
@@ -41,9 +46,16 @@ public final class CaduceusProgram implements Serializable {
    }
 
    public void execute(@NonNull Document document) {
-      for (Rule rule : rules) {
+      for(Rule rule : rules) {
          rule.execute(document);
       }
    }
 
+   @Override
+   public Extraction extract(@NonNull HString hString) {
+      Validation.checkArgument(hString instanceof Document, "Caduceus only accepts Document input");
+      return Extraction.fromHStringList(rules.stream()
+                                             .flatMap(r -> r.execute(hString.document()).stream())
+                                             .collect(Collectors.toList()));
+   }
 }//END OF CaduceusProgram

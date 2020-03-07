@@ -117,11 +117,11 @@ public class QueryParser {
       /**
        * And types.
        */
-      AND("[aA][nN][Dd]"),
+      AND("\b[aA][nN][Dd]\b"),
       /**
        * Or types.
        */
-      OR("[oO][Rr]"),
+      OR("\b[oO][Rr]\b"),
       /**
        * Term types.
        */

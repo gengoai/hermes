@@ -48,13 +48,13 @@ public class DefaultEntityAnnotatorTest {
       List<Annotation> entities = document.annotations(Types.ENTITY);
 
       assertEquals(";-)", entities.get(0).toString());
-      assertEquals(Entities.EMOTICON, entities.get(0).getTag().get());
+      assertEquals(Entities.EMOTICON, entities.get(0).getTag());
 
       assertEquals("http://www.somevideo.com/video.html", entities.get(1).toString());
-      assertEquals(Entities.URL, entities.get(1).getTag().get());
+      assertEquals(Entities.URL, entities.get(1).getTag());
 
       assertEquals("$100", entities.get(2).toString());
-      assertEquals(Entities.MONEY, entities.get(2).getTag().get());
+      assertEquals(Entities.MONEY, entities.get(2).getTag());
 
    }
 }

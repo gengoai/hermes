@@ -755,6 +755,8 @@ public enum POS implements Tag {
       throw new IllegalArgumentException(tag + " is not a known PartOfSpeech");
    }
 
+
+
    /**
     * Determines the best fundamental POS (NOUN, VERB, ADJECTIVE, or ADVERB) for a text.
     *
@@ -974,6 +976,11 @@ public enum POS implements Tag {
          return false;
       }
       return false;
+   }
+
+   @Override
+   public Tag parent() {
+      return parentType;
    }
 
 }// END OF PartOfSpeech

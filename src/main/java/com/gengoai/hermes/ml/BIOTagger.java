@@ -28,6 +28,8 @@ import com.gengoai.apollo.ml.sequence.SequenceLabeler;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.AnnotationType;
 import com.gengoai.hermes.HString;
+import com.gengoai.hermes.Types;
+import lombok.NonNull;
 
 /**
  * The type Bio tagger.
@@ -56,7 +58,9 @@ public class BIOTagger extends AnnotationTagger {
     * @param annotationType the annotation type
     * @param labeler        the labeler
     */
-   public BIOTagger(FeatureExtractor<HString> featurizer, AnnotationType annotationType, SequenceLabeler labeler) {
+   public BIOTagger(@NonNull FeatureExtractor<HString> featurizer,
+                    AnnotationType annotationType,
+                    @NonNull SequenceLabeler labeler) {
       this.featurizer = featurizer;
       this.annotationType = annotationType;
       this.labeler = labeler;
@@ -72,24 +76,29 @@ public class BIOTagger extends AnnotationTagger {
    public void tag(Annotation sentence) {
       LabeledSequence<Annotation> sequenceInput = new LabeledSequence<>(sentence.tokens());
       Labeling result = labeler.label(featurizer.extractExample(sequenceInput));
-      for (int i = 0; i < sentence.tokenLength(); ) {
-         if (result.getLabel(i).equals("O")) {
+      for(int i = 0; i < sentence.tokenLength(); ) {
+         if(result.getLabel(i).equals("O")) {
             i++;
-         } else {
+         }
+         else {
             Annotation start = sentence.tokenAt(i);
             String type = result.getLabel(i).substring(2);
+            double p = result.getScore(i);
             i++;
-            while (i < sentence.tokenLength() && result.getLabel(i).startsWith("I-")) {
+            final String insideType = "I-" + type;
+            while(i < sentence.tokenLength() && result.getLabel(i).equals(insideType)) {
+               p *= result.getScore(i);
                i++;
             }
             Annotation end = sentence.tokenAt(i - 1);
             HString span = start.union(end);
             Annotation entity = sentence.document()
-                                        .annotationBuilder(annotationType)
-                                        .bounds(span)
-                                        .createAttached();
+                  .annotationBuilder(annotationType)
+                  .bounds(span)
+                  .createAttached();
             entity.put(annotationType.getTagAttribute(),
                        annotationType.getTagAttribute().decode(type));
+            entity.put(Types.CONFIDENCE, p);
          }
       }
    }

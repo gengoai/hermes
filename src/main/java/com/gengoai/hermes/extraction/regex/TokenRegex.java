@@ -22,9 +22,14 @@
 package com.gengoai.hermes.extraction.regex;
 
 import com.gengoai.hermes.HString;
+import com.gengoai.hermes.extraction.Extraction;
+import com.gengoai.hermes.extraction.Extractor;
 import com.gengoai.parsing.*;
+import lombok.NonNull;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import static com.gengoai.parsing.ParserGenerator.parserGenerator;
@@ -35,7 +40,7 @@ import static com.gengoai.parsing.ParserGenerator.parserGenerator;
  *
  * @author David B. Bracewell
  */
-public final class TokenRegex implements Serializable {
+public final class TokenRegex implements Serializable, Extractor {
    private static final ParserGenerator GENERATOR = parserGenerator(new Grammar(RegexTypes.values()),
                                                                     Lexer.create(RegexTypes.values()));
    private static final long serialVersionUID = 1L;
@@ -58,16 +63,26 @@ public final class TokenRegex implements Serializable {
    public static TokenRegex compile(String pattern) throws ParseException {
       Parser parser = GENERATOR.create(pattern);
       TransitionFunction top = null;
-      while (parser.hasNext()) {
+      while(parser.hasNext()) {
          TransitionFunction temp = parser.parseExpression().as(TransitionFunction.class);
          top = (top == null)
                ? temp
                : new SequenceTransition(top, temp);
       }
-      if (top == null) {
-         throw new IllegalStateException();
+      if(top == null) {
+         throw new ParseException();
       }
       return new TokenRegex(top);
+   }
+
+   @Override
+   public Extraction extract(@NonNull HString hString) {
+      TokenMatcher matcher = matcher(hString);
+      final List<HString> hits = new ArrayList<>();
+      while(matcher.find()) {
+         hits.add(matcher.group());
+      }
+      return Extraction.fromHStringList(hits);
    }
 
    /**
@@ -78,7 +93,7 @@ public final class TokenRegex implements Serializable {
     */
    public Optional<HString> matchFirst(HString text) {
       TokenMatcher matcher = new TokenMatcher(nfa, text);
-      if (matcher.find()) {
+      if(matcher.find()) {
          return Optional.of(matcher.group());
       }
       return Optional.empty();

@@ -79,19 +79,22 @@ public final class LexiconIO {
                                "A non-negative index for the lemma position in the csv file must be defined.");
       LexiconBuilder builder = TrieLexicon.builder(parameters.tagAttribute, parameters.isCaseSensitive);
       builder.setProbabilistic(parameters.probability > 0);
-      try (CSVReader reader = parameters.csvFormat.reader(csvFile)) {
+      try(CSVReader reader = parameters.csvFormat.reader(csvFile)) {
          List<String> row;
-         while ((row = reader.nextRow()) != null) {
+         while((row = reader.nextRow()) != null) {
             String lemma = row.get(parameters.lemma);
-            if (Strings.isNullOrBlank(lemma)) {
+            if(Strings.isNullOrBlank(lemma)) {
                continue;
             }
-            double prob = parameters.probability >= 0 ? Double.parseDouble(row.get(parameters.probability)) : 1.0;
-            Tag tag = parameters.tag >= 0
+            double prob = parameters.probability >= 0 && row.size() >= parameters.probability
+                          ? Double.parseDouble(row.get(parameters.probability))
+                          : 1.0;
+            Tag tag = parameters.tag >= 0 && row.size() >= parameters.tag
                       ? parameters.tagAttribute.decode(row.get(parameters.tag))
                       : parameters.defaultTag;
-            if (parameters.constraint >= 0) {
-               builder.add(new LexiconEntry(lemma, prob, tag, Lyre.parse(row.get(parameters.constraint))));
+
+            if(parameters.constraint >= 0 && row.size() > parameters.constraint) {
+               builder.add(new LexiconEntry<>(lemma, prob, tag, Lyre.parse(row.get(parameters.constraint))));
             } else {
                builder.add(lemma, prob, tag);
             }
@@ -120,16 +123,17 @@ public final class LexiconIO {
       lexicon.get(ENTRIES_SECTION)
              .elementIterator()
              .forEachRemaining(e -> {
-                if (!e.hasProperty(TAG) && defaultTag != null) {
+                if(!e.hasProperty(TAG) && defaultTag != null) {
                    e.addProperty(TAG, defaultTag.name());
                 }
 
-                if (!e.hasProperty(PROBABILITY)) {
+                if(!e.hasProperty(PROBABILITY)) {
                    e.addProperty(PROBABILITY, 1.0);
                 } else {
                    builder.setProbabilistic(true);
                 }
-                builder.add(e.<LexiconEntry<?>>getAs(parameterizedType(LexiconEntry.class, tagAttribute.getValueType())));
+                builder.add(e.<LexiconEntry<?>>getAs(parameterizedType(LexiconEntry.class,
+                                                                       tagAttribute.getValueType())));
              });
 
       return builder.build();
@@ -144,7 +148,7 @@ public final class LexiconIO {
     * @throws IOException Something went wrong writing the lexicon
     */
    public static void write(Lexicon lexicon, Resource lexiconResource, Tag defaultTag) throws IOException {
-      try (JsonWriter writer = Json.createWriter(lexiconResource)) {
+      try(JsonWriter writer = Json.createWriter(lexiconResource)) {
          writer.spaceIndent(2);
          writer.beginDocument();
          {
@@ -155,7 +159,7 @@ public final class LexiconIO {
                writer.value(lexicon.isCaseSensitive());
                writer.name(TAG_ATTRIBUTE);
                writer.value(lexicon.getTagAttributeType());
-               if (defaultTag != null) {
+               if(defaultTag != null) {
                   writer.name(TAG);
                   writer.value(defaultTag.name());
                }
@@ -165,20 +169,20 @@ public final class LexiconIO {
             //Write Entries
             writer.beginArray(ENTRIES_SECTION);
             {
-               for (LexiconEntry entry : lexicon.entries()) {
+               for(LexiconEntry<?> entry : lexicon.entries()) {
                   writer.beginObject();
                   {
                      writer.name(LEMMA);
                      writer.value(entry.getLemma());
-                     if (entry.getProbability() != 1.0) {
+                     if(entry.getProbability() != 1.0) {
                         writer.name(PROBABILITY);
                         writer.value(entry.getProbability());
                      }
-                     if (entry.getTag() != null && entry.getTag() != defaultTag) {
+                     if(entry.getTag() != null && entry.getTag() != defaultTag) {
                         writer.name(TAG);
                         writer.value(entry.getTag().name());
                      }
-                     if (entry.getConstraint() != null) {
+                     if(entry.getConstraint() != null) {
                         writer.name(CONSTRAINT);
                         writer.value(entry.getConstraint().getPattern());
                      }

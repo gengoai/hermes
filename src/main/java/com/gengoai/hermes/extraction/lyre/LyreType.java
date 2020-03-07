@@ -41,7 +41,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.tag(token.getVariable(0));
                case 1:
@@ -55,16 +55,18 @@ enum LyreType implements TokenDef {
    PIPE(re(q("&>"))) {
       @Override
       public void register(Grammar grammar) {
-         grammar.postfix(this, (parser, token, left) -> LyreDSL.pipe(left.as(LyreExpression.class),
-                                                                     parser.parseExpression(LyreExpression.class)), 1);
+         grammar.postfix(this,
+                         (parser, token, left) -> LyreDSL.andPipe(left.as(LyreExpression.class),
+                                                                  parser.parseExpression(LyreExpression.class)),
+                         1);
       }
    },
    ORE(q("|>")) {
       @Override
       public void register(Grammar grammar) {
-         grammar.postfix(this, (parser, token, left) -> LyreDSL.ore(left.as(LyreExpression.class),
-                                                                    parser.parseExpression(token)
-                                                                          .as(LyreExpression.class)), 1);
+         grammar.postfix(this, (parser, token, left) -> LyreDSL.orPipe(left.as(LyreExpression.class),
+                                                                       parser.parseExpression(token)
+                                                                             .as(LyreExpression.class)), 1);
       }
    },
    THIS(re(e('$'), "_")) {
@@ -88,31 +90,31 @@ enum LyreType implements TokenDef {
    LOOKAHEAD(re(e('('), e('?'), e('>'))) {
       @Override
       public void register(Grammar grammar) {
-         grammar.prefix(this, (parser, token) -> {
-            LyreExpression exp = parser.parseExpression(LyreExpression.class);
+         grammar.postfix(this, (parser, token, left) -> {
+            LyreExpression condition = parser.parseExpression(LyreExpression.class);
             parser.consume(CLOSE_PARENS);
-            return LyreDSL.lookAhead(exp);
-         });
+            return LyreDSL.lookAhead(condition, left.as(LyreExpression.class));
+         }, 100);
       }
    },
    LOOKBEHIND(re(e('('), e('?'), e('<'))) {
       @Override
       public void register(Grammar grammar) {
          grammar.prefix(this, (parser, token) -> {
-            LyreExpression exp = parser.parseExpression(LyreExpression.class);
+            LyreExpression condition = parser.parseExpression(LyreExpression.class);
             parser.consume(CLOSE_PARENS);
-            return LyreDSL.lookBehind(exp);
+            return LyreDSL.lookBehind(condition, parser.parseExpression(LyreExpression.class));
          });
       }
    },
    NEGLOOKAHEAD(re(e('('), e('?'), e('!'), e('>'))) {
       @Override
       public void register(Grammar grammar) {
-         grammar.prefix(this, (parser, token) -> {
-            LyreExpression exp = parser.parseExpression(LyreExpression.class);
+         grammar.postfix(this, (parser, token, left) -> {
+            LyreExpression condition = parser.parseExpression(LyreExpression.class);
             parser.consume(CLOSE_PARENS);
-            return LyreDSL.negLookAhead(exp);
-         });
+            return LyreDSL.negLookAhead(condition, left.as(LyreExpression.class));
+         }, 100);
       }
    },
    NEGLOOKBEHIND(re(e('('), e('?'), e('!'), e('<'))) {
@@ -121,7 +123,7 @@ enum LyreType implements TokenDef {
          grammar.prefix(this, (parser, token) -> {
             LyreExpression exp = parser.parseExpression(LyreExpression.class);
             parser.consume(CLOSE_PARENS);
-            return LyreDSL.negLookBehind(exp);
+            return LyreDSL.negLookBehind(exp, parser.parseExpression(LyreExpression.class));
          });
       }
    },
@@ -129,7 +131,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.tlen;
                case 1:
@@ -182,7 +184,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.string;
                case 1:
@@ -197,7 +199,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.lemma;
                case 1:
@@ -212,7 +214,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.stem;
                case 1:
@@ -227,7 +229,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.pos;
                case 1:
@@ -242,7 +244,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.upos;
                case 1:
@@ -257,7 +259,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.lower;
                case 1:
@@ -272,7 +274,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.upper;
                case 1:
@@ -287,7 +289,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.len;
                case 1:
@@ -302,7 +304,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.llen;
                case 1:
@@ -346,7 +348,7 @@ enum LyreType implements TokenDef {
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
             AttributeType<?> attributeType = Types.attribute(token.getVariable(0));
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.attribute(attributeType);
                case 1:
@@ -368,14 +370,14 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
-                  if (token.getVariableCount() > 0) {
+                  if(token.getVariableCount() > 0) {
                      return LyreDSL.dep(RelationDirection.OUTGOING, token.getVariable(0));
                   }
                   return LyreDSL.dep(RelationDirection.OUTGOING);
                case 1:
-                  if (token.getVariableCount() > 0) {
+                  if(token.getVariableCount() > 0) {
                      return LyreDSL.dep(RelationDirection.OUTGOING, token.getVariable(0), arguments.get(0));
                   }
                   return LyreDSL.dep(RelationDirection.OUTGOING, arguments.get(0));
@@ -390,14 +392,14 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
-                  if (token.getVariableCount() > 0) {
+                  if(token.getVariableCount() > 0) {
                      return LyreDSL.dep(RelationDirection.INCOMING, token.getVariable(0));
                   }
                   return LyreDSL.dep(RelationDirection.INCOMING);
                case 1:
-                  if (token.getVariableCount() > 0) {
+                  if(token.getVariableCount() > 0) {
                      return LyreDSL.dep(RelationDirection.INCOMING, token.getVariable(0), arguments.get(0));
                   }
                   return LyreDSL.dep(RelationDirection.INCOMING, arguments.get(0));
@@ -413,14 +415,14 @@ enum LyreType implements TokenDef {
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
             final RelationType type = Types.relation(token.getVariable(0));
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
-                  if (token.getVariableCount() > 1) {
+                  if(token.getVariableCount() > 1) {
                      return LyreDSL.rel(RelationDirection.OUTGOING, type, token.getVariable(1));
                   }
                   return LyreDSL.rel(RelationDirection.OUTGOING, type);
                case 1:
-                  if (token.getVariableCount() > 1) {
+                  if(token.getVariableCount() > 1) {
                      return LyreDSL.rel(RelationDirection.OUTGOING, type, token.getVariable(1), arguments.get(0));
                   }
                   return LyreDSL.rel(RelationDirection.OUTGOING, type, arguments.get(1));
@@ -436,14 +438,14 @@ enum LyreType implements TokenDef {
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
             final RelationType type = Types.relation(token.getVariable(0));
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
-                  if (token.getVariableCount() > 1) {
+                  if(token.getVariableCount() > 1) {
                      return LyreDSL.rel(RelationDirection.INCOMING, type, token.getVariable(1));
                   }
                   return LyreDSL.rel(RelationDirection.INCOMING, type);
                case 1:
-                  if (token.getVariableCount() > 1) {
+                  if(token.getVariableCount() > 1) {
                      return LyreDSL.rel(RelationDirection.INCOMING, type, token.getVariable(1), arguments.get(0));
                   }
                   return LyreDSL.rel(RelationDirection.INCOMING, type, arguments.get(1));
@@ -461,8 +463,12 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          grammar.postfix(this, (parser, token, left) -> {
-            int start = Strings.isNullOrBlank(token.getVariable(0)) ? 0 : Integer.parseInt(token.getVariable(0));
-            int end = Strings.isNullOrBlank(token.getVariable(1)) ? -0 : Integer.parseInt(token.getVariable(1));
+            int start = Strings.isNullOrBlank(token.getVariable(0))
+                        ? 0
+                        : Integer.parseInt(token.getVariable(0));
+            int end = Strings.isNullOrBlank(token.getVariable(1))
+                      ? -0
+                      : Integer.parseInt(token.getVariable(1));
             return LyreDSL.slice(left.as(LyreExpression.class), start, end);
          }, 10);
       }
@@ -479,7 +485,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 1:
                   return LyreDSL.count(arguments.get(0));
                case 2:
@@ -494,7 +500,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.hasStopWord;
                case 1:
@@ -509,7 +515,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.isStopWord;
                case 1:
@@ -524,7 +530,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.isContentWord;
                case 1:
@@ -539,7 +545,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.isUpper;
                case 1:
@@ -554,7 +560,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.isLower;
                case 1:
@@ -569,7 +575,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.isLetter;
                case 1:
@@ -584,7 +590,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.isDigit;
                case 1:
@@ -599,7 +605,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.isAlphaNumeric;
                case 1:
@@ -614,7 +620,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.isWhitespace;
                case 1:
@@ -629,7 +635,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.isPunctuation;
                case 1:
@@ -644,7 +650,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.exists;
                case 1:
@@ -667,7 +673,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            if (arguments.size() == 3) {
+            if(arguments.size() == 3) {
                return LyreDSL.ifThen(arguments.get(0), arguments.get(1), arguments.get(2));
             }
             throw new ParseException("Illegal number of arguments for " + token.getText());
@@ -783,9 +789,9 @@ enum LyreType implements TokenDef {
    CONCATENATION(e('+')) {
       @Override
       public void register(Grammar grammar) {
-         grammar.postfix(this, (parser, token, left) -> LyreDSL.concat(left.as(LyreExpression.class),
-                                                                       parser.parseExpression(token)
-                                                                             .as(LyreExpression.class)));
+         grammar.postfix(this, (parser, token, left) -> LyreDSL.plus(left.as(LyreExpression.class),
+                                                                     parser.parseExpression(token)
+                                                                           .as(LyreExpression.class)));
       }
    },
    OPEN_PARENS(e('(')) {
@@ -808,7 +814,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            if (arguments.size() == 2) {
+            if(arguments.size() == 2) {
                return LyreDSL.get(arguments.get(0), arguments.get(1));
             }
             throw new ParseException("Illegal number of arguments for " + token.getText());
@@ -819,7 +825,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            if (arguments.size() == 1) {
+            if(arguments.size() == 1) {
                return LyreDSL.first(arguments.get(0));
             }
             throw new ParseException("Illegal number of arguments for " + token.getText());
@@ -830,7 +836,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            if (arguments.size() == 1) {
+            if(arguments.size() == 1) {
                return LyreDSL.last(arguments.get(0));
             }
             throw new ParseException("Illegal number of arguments for " + token.getText());
@@ -841,7 +847,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            if (arguments.size() == 1) {
+            if(arguments.size() == 1) {
                return LyreDSL.longest(arguments.get(0));
             }
             throw new ParseException("Illegal number of arguments for " + token.getText());
@@ -852,7 +858,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            if (arguments.size() == 1) {
+            if(arguments.size() == 1) {
                return LyreDSL.wordList(arguments.get(0));
             }
             throw new ParseException("Illegal number of arguments for " + token.getText());
@@ -863,7 +869,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            if (arguments.size() == 1) {
+            if(arguments.size() == 1) {
                return LyreDSL.max(arguments.get(0));
             }
             throw new ParseException("Illegal number of arguments for " + token.getText());
@@ -880,8 +886,19 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            if (arguments.size() == 2) {
+            if(arguments.size() == 2) {
                return LyreDSL.all(arguments.get(0), arguments.get(1));
+            }
+            throw new ParseException("Illegal number of arguments for " + token.getText());
+         });
+      }
+   },
+   NONE("none") {
+      @Override
+      public void register(Grammar grammar) {
+         method(grammar, (parser, token, arguments) -> {
+            if(arguments.size() == 2) {
+               return LyreDSL.none(arguments.get(0), arguments.get(1));
             }
             throw new ParseException("Illegal number of arguments for " + token.getText());
          });
@@ -891,7 +908,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            if (arguments.size() == 2) {
+            if(arguments.size() == 2) {
                return LyreDSL.any(arguments.get(0), arguments.get(1));
             }
             throw new ParseException("Illegal number of arguments for " + token.getText());
@@ -902,7 +919,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            if (arguments.size() == 2) {
+            if(arguments.size() == 2) {
                return LyreDSL.map(arguments.get(0), arguments.get(1));
             }
             throw new ParseException("Illegal number of arguments for " + token.getText());
@@ -913,7 +930,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            if (arguments.size() == 2) {
+            if(arguments.size() == 2) {
                return LyreDSL.filter(arguments.get(0), arguments.get(1));
             }
             throw new ParseException("Illegal number of arguments for " + token.getText());
@@ -924,7 +941,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.trim;
                case 2:
@@ -939,25 +956,25 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            if (arguments.size() == 1) {
+            if(arguments.size() == 1) {
                return LyreDSL.flatten(arguments.get(0));
             }
             throw new ParseException("Illegal number of arguments for " + token.getText());
          });
       }
    },
-   BINARY_FEATURIZE(re("binary", zeroOrOne(e('{'), LITERAL.pattern, e('}')))) {
+   BINARY_FEATURIZER(re("binary", zeroOrOne(e('{'), LITERAL.pattern, e('}')))) {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
-                  if (token.getVariableCount() > 0) {
+                  if(token.getVariableCount() > 0) {
                      return LyreDSL.binary(token.getVariable(0));
                   }
                   return LyreDSL.binary;
                case 1:
-                  if (token.getVariableCount() > 0) {
+                  if(token.getVariableCount() > 0) {
                      return LyreDSL.binary(token.getVariable(0), arguments.get(0));
                   }
                   return LyreDSL.binary(arguments.get(0));
@@ -971,14 +988,14 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
-                  if (token.getVariableCount() > 0) {
+                  if(token.getVariableCount() > 0) {
                      return LyreDSL.frequency(token.getVariable(0));
                   }
                   return LyreDSL.frequency;
                case 1:
-                  if (token.getVariableCount() > 0) {
+                  if(token.getVariableCount() > 0) {
                      return LyreDSL.frequency(token.getVariable(0), arguments.get(0));
                   }
                   return LyreDSL.frequency(arguments.get(0));
@@ -992,14 +1009,14 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
-                  if (token.getVariableCount() > 0) {
+                  if(token.getVariableCount() > 0) {
                      return LyreDSL.l1(token.getVariable(0));
                   }
                   return LyreDSL.l1;
                case 1:
-                  if (token.getVariableCount() > 0) {
+                  if(token.getVariableCount() > 0) {
                      return LyreDSL.l1(token.getVariable(0), arguments.get(0));
                   }
                   return LyreDSL.l1(arguments.get(0));
@@ -1014,7 +1031,7 @@ enum LyreType implements TokenDef {
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
             AnnotationType annotationType = Types.annotation(token.getVariable(0));
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 0:
                   return LyreDSL.annotation(annotationType);
                case 1:
@@ -1029,7 +1046,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            if (arguments.size() == 2) {
+            if(arguments.size() == 2) {
                return LyreDSL.context(arguments.get(0), arguments.get(1));
             }
             throw new ParseException("Illegal number of arguments for " + token.getText());
@@ -1040,7 +1057,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            switch (arguments.size()) {
+            switch(arguments.size()) {
                case 1:
                   return LyreDSL.iob(arguments.get(0));
                case 2:
@@ -1055,7 +1072,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            if (arguments.size() == 2) {
+            if(arguments.size() == 2) {
                return LyreDSL.notNull(arguments.get(0), arguments.get(1));
             }
             throw new ParseException("Illegal number of arguments for " + token.getText());
@@ -1077,7 +1094,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            if (arguments.size() == 2) {
+            if(arguments.size() == 2) {
                return LyreDSL.when(arguments.get(0), arguments.get(1));
             }
             throw new ParseException("Illegal number of arguments for " + token.getText());
@@ -1088,7 +1105,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            if (arguments.size() == 3) {
+            if(arguments.size() == 3) {
                return LyreDSL.lpad(arguments.get(0), arguments.get(1), arguments.get(2));
             }
             throw new ParseException("Illegal number of arguments for " + token.getText());
@@ -1099,7 +1116,7 @@ enum LyreType implements TokenDef {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
-            if (arguments.size() == 3) {
+            if(arguments.size() == 3) {
                return LyreDSL.rpad(arguments.get(0), arguments.get(1), arguments.get(2));
             }
             throw new ParseException("Illegal number of arguments for " + token.getText());
@@ -1135,7 +1152,7 @@ enum LyreType implements TokenDef {
    void method(Grammar grammar, MethodRegisterer registerer) {
       grammar.prefix(this, (parser, token) -> {
          final List<LyreExpression> arguments = new ArrayList<>();
-         if (parser.peek().isInstance(LyreType.OPEN_PARENS)) {
+         if(parser.peek().isInstance(LyreType.OPEN_PARENS)) {
             parser.consume(LyreType.OPEN_PARENS);
             parser.parseExpressionList(LyreType.CLOSE_PARENS, LyreType.COMMA)
                   .stream()

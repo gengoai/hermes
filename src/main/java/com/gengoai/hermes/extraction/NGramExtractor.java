@@ -24,7 +24,7 @@ package com.gengoai.hermes.extraction;
 
 import com.gengoai.Validation;
 import com.gengoai.annotation.JsonHandler;
-import com.gengoai.collection.Streams;
+import com.gengoai.stream.Streams;
 import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.AnnotationType;

@@ -1,12 +1,12 @@
 #!/bin/bash
 
 LANG=en
-HERMES_RESOURCE_DIR=/data/hermeshermes/
+HERMES_RESOURCE_DIR=/data/hermes/
 MODEL_FILE=$HERMES_RESOURCE_DIR/$LANG/models/ner.model.bin
 CORPUS_DIR=/data/corpora/
 
 
 mode=$(echo "${1:-TRAIN}" | tr "[:lower:]" "[:upper:]")
-jexec EntityTrainer --corpus "$CORPUS_DIR/$LANG/named_entity/ontonotes_all_entities.json_opl" \
+jexec EntityTrainer --corpus "json_opl::$CORPUS_DIR/$LANG/named_entity/ontonotes_all_entities.json_opl;inMemory=true" \
   --model "$MODEL_FILE" --mode "$mode" --ndarray.factory SPARSE_FLOAT \
   --format JSON_OPL --annotation ENTITY --hermes.resources.dir "$HERMES_RESOURCE_DIR"

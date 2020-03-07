@@ -21,7 +21,6 @@ package com.gengoai.hermes.extraction.regex;
 
 import com.gengoai.Tag;
 import com.gengoai.Validation;
-import com.gengoai.config.Config;
 import com.gengoai.conversion.Cast;
 import com.gengoai.conversion.Converter;
 import com.gengoai.conversion.TypeConversionException;
@@ -37,9 +36,7 @@ import com.gengoai.string.StringMatcher;
 import com.gengoai.string.Strings;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 import static com.gengoai.hermes.Hermes.IDENTIFIER;
@@ -75,6 +72,20 @@ public enum RegexTypes implements TokenDef, GrammarRegistrable {
          });
       }
    },
+   CATEGORY(re(e('$'),
+               "CAT(EGORY)?",
+               "\\s*",
+               "~",
+               "\\s*",
+               CASE_INSENSITIVE_PHRASE.pattern)) {
+      @Override
+      public void register(Grammar grammar) {
+         grammar.prefix(this, (parser, token) -> {
+            BasicCategories bc = BasicCategories.valueOf(token.getVariable(0));
+            return new PredicateTransition(token.getText(), h -> h.isA(bc), this);
+         });
+      }
+   },
    LEMMA_PHRASE(re("<",
                    namedGroup("", oneOrMore(or(ESC_BACKSLASH + ".", notChars(">")))),
                    ">")) {
@@ -101,7 +112,7 @@ public enum RegexTypes implements TokenDef, GrammarRegistrable {
             final Pattern pattern = (Strings.isNullOrBlank(token.getVariable(1)))
                                     ? Pattern.compile(patternText)
                                     : Pattern.compile(patternText, Pattern.CASE_INSENSITIVE);
-            if (Strings.isNullOrBlank(token.getVariable(2))) {
+            if(Strings.isNullOrBlank(token.getVariable(2))) {
                return new PredicateTransition(token.getText(), regex(pattern), this);
             }
             return new PredicateTransition(token.getText(), h -> pattern.matcher(h).matches(), this);
@@ -144,17 +155,17 @@ public enum RegexTypes implements TokenDef, GrammarRegistrable {
          grammar.prefix(this, (parser, token) -> {
             final AttributeType<?> type = Types.attribute(token.getVariable(0));
             Validation.checkArgument(TypeUtils.isPrimitive(type.getValueType())
-                                        || TypeUtils.isAssignable(Number.class, type.getValueType()),
+                                           || TypeUtils.isAssignable(Number.class, type.getValueType()),
                                      () -> "Cannot do numeric comparison with attribute of type: " + type.getValueType());
             final double value = Double.parseDouble(token.getVariable(2));
             final NumericComparison nc = NumericComparison.fromString(token.getVariable(1));
             return new PredicateTransition(token.getText(), h -> {
-               if (!h.hasAttribute(type)) {
+               if(!h.hasAttribute(type)) {
                   return false;
                }
                try {
                   return nc.compare(Converter.convert(h.attribute(type), double.class), value);
-               } catch (TypeConversionException e) {
+               } catch(TypeConversionException e) {
                   throw new RuntimeException(e);
                }
             }, this);
@@ -176,25 +187,27 @@ public enum RegexTypes implements TokenDef, GrammarRegistrable {
             final AttributeType<?> type = Types.attribute(token.getVariable(0));
             final String value = Strings.unescape(token.getVariable(2), '\\');
             final String operator = token.getVariable(1);
-            switch (operator) {
+            switch(operator) {
                case "=":
-                  if (TypeUtils.isAssignable(Tag.class, type.getValueType())) {
+                  if(TypeUtils.isAssignable(Tag.class, type.getValueType())) {
                      return new PredicateTransition(token.getText(), h -> h.attributeIsA(type, value), this);
                   }
                   return new PredicateTransition(token.getText(), h -> h.attributeEquals(type, value), this);
                case "!=":
-                  if (TypeUtils.isAssignable(Tag.class, type.getValueType())) {
+                  if(TypeUtils.isAssignable(Tag.class, type.getValueType())) {
                      return new PredicateTransition(token.getText(), h -> !h.attributeIsA(type, value), this);
                   }
                   return new PredicateTransition(token.getText(), h -> !h.attributeEquals(type, value), this);
                case "~":
                   return new PredicateTransition(token.getText(), h -> {
-                     if (TypeUtils.isCollection(type.getValueType())) {
+                     System.out.println(type.getValueType());
+                     if(TypeUtils.isCollection(type.getValueType())) {
                         Collection<?> c = Cast.as(h.attribute(type));
-                        if (c == null) {
+                        if(c == null) {
                            return false;
                         }
                         Object t = Converter.convertSilently(value, TypeUtils.getOrObject(1, type.getValueType()));
+                        System.out.println(t);
                         return c.contains(t);
                      }
                      return h.attributeEquals(type, value);
@@ -212,7 +225,7 @@ public enum RegexTypes implements TokenDef, GrammarRegistrable {
       public void register(Grammar grammar) {
          grammar.prefix(this, (parser, token) -> new PredicateTransition(token.getText(),
                                                                          h -> LexiconManager.getLexicon(
-                                                                            token.getVariable(0)).test(h), this));
+                                                                               token.getVariable(0)).test(h), this));
       }
    },
    /**
@@ -271,7 +284,7 @@ public enum RegexTypes implements TokenDef, GrammarRegistrable {
       public void register(Grammar grammar) {
          grammar.prefix(this, (parser, token) -> new PredicateTransition(token.getText(),
                                                                          h -> !h.isEmpty() && Character.isUpperCase(
-                                                                            h.charAt(0)),
+                                                                               h.charAt(0)),
                                                                          this));
       }
    },
@@ -288,7 +301,7 @@ public enum RegexTypes implements TokenDef, GrammarRegistrable {
       public void register(Grammar grammar) {
          grammar.prefix(this, (parser, token) -> new PredicateTransition(token.getText(),
                                                                          h -> !h.isEmpty() && Character.isLowerCase(
-                                                                            h.charAt(0)),
+                                                                               h.charAt(0)),
                                                                          this));
       }
    },
@@ -321,9 +334,9 @@ public enum RegexTypes implements TokenDef, GrammarRegistrable {
       public void register(Grammar grammar) {
          grammar.prefix(this, (parser, token) -> new PredicateTransition(token.getText(),
                                                                          a -> Strings.isDigit(a) ||
-                                                                            a.pos().isInstance(POS.NUMBER) ||
-                                                                            TokenType.NUMBER
-                                                                               .equals(a.attribute(Types.TOKEN_TYPE)),
+                                                                               a.pos().isInstance(POS.NUMBER) ||
+                                                                               TokenType.NUMBER
+                                                                                     .equals(a.attribute(Types.TOKEN_TYPE)),
                                                                          this));
       }
    },
@@ -390,7 +403,7 @@ public enum RegexTypes implements TokenDef, GrammarRegistrable {
       public void register(Grammar grammar) {
          grammar.postfix(this, (parser, token, left) -> new LookAheadTransition(left.as(TransitionFunction.class),
                                                                                 asSequence(parser.parseExpressionList(
-                                                                                   CLOSE_PARENS, null)),
+                                                                                      CLOSE_PARENS, null)),
                                                                                 false), 0);
       }
    },
@@ -399,7 +412,7 @@ public enum RegexTypes implements TokenDef, GrammarRegistrable {
       public void register(Grammar grammar) {
          grammar.postfix(this, (parser, token, left) -> new LookAheadTransition(left.as(TransitionFunction.class),
                                                                                 asSequence(parser.parseExpressionList(
-                                                                                   CLOSE_PARENS, null)),
+                                                                                      CLOSE_PARENS, null)),
                                                                                 true), 0);
       }
    },
@@ -407,21 +420,21 @@ public enum RegexTypes implements TokenDef, GrammarRegistrable {
       @Override
       public void register(Grammar grammar) {
          grammar.prefix(this, (parser, token) -> new GroupTransition(
-            asSequence(Cast.cast(parser.parseExpressionList(CLOSE_PARENS, null))), token.getVariable(0)));
+               asSequence(Cast.cast(parser.parseExpressionList(CLOSE_PARENS, null))), token.getVariable(0)));
       }
    },
    NEGATION(e('^')) {
       @Override
       public void register(Grammar grammar) {
          grammar.prefix(this, (parser, token) -> new NegationTransition(
-            parser.parseExpression().as(TransitionFunction.class)));
+               parser.parseExpression().as(TransitionFunction.class)));
       }
    },
    OPEN_PARENS(e('(')) {
       @Override
       public void register(Grammar grammar) {
          grammar.prefix(this, (parser, token) -> new GroupTransition(
-            asSequence(Cast.cast(parser.parseExpressionList(CLOSE_PARENS, null)))));
+               asSequence(Cast.cast(parser.parseExpressionList(CLOSE_PARENS, null)))));
       }
    },
    CLOSE_PARENS(e(')')),
@@ -458,9 +471,9 @@ public enum RegexTypes implements TokenDef, GrammarRegistrable {
          grammar.postfix(this, (parser, token, left) -> {
             int low = Integer.parseInt(token.getVariable(0));
             int high;
-            if (token.getVariable(1) == null) {
+            if(token.getVariable(1) == null) {
                high = -1;
-            } else if (token.getVariable(1).equals("*")) {
+            } else if(token.getVariable(1).equals("*")) {
                high = Integer.MAX_VALUE;
             } else {
                high = Integer.parseInt(token.getVariable(1));
@@ -473,8 +486,8 @@ public enum RegexTypes implements TokenDef, GrammarRegistrable {
       @Override
       public void register(Grammar grammar) {
          grammar.postfix(this, (parser, token, left) ->
-            new AlternationTransition(left.as(TransitionFunction.class),
-                                      parser.parseExpression(token).as(TransitionFunction.class)), 10);
+               new AlternationTransition(left.as(TransitionFunction.class),
+                                         parser.parseExpression(token).as(TransitionFunction.class)), 10);
       }
    },
    AND(e('&')) {
@@ -498,7 +511,7 @@ public enum RegexTypes implements TokenDef, GrammarRegistrable {
     */
    static TransitionFunction asSequence(List<TransitionFunction> transitionFunctions) {
       TransitionFunction tf = null;
-      for (TransitionFunction transitionFunction : transitionFunctions) {
+      for(TransitionFunction transitionFunction : transitionFunctions) {
          tf = (tf == null)
               ? transitionFunction
               : new SequenceTransition(tf, transitionFunction);
@@ -509,7 +522,7 @@ public enum RegexTypes implements TokenDef, GrammarRegistrable {
    private static TransitionFunction getChildTransition(Parser parser,
                                                         ParserToken token) throws ParseException {
       ParserToken next = parser.peek();
-      if (next.isInstance(OPEN_PARENS) && next.getStartOffset() == token.getEndOffset()) {
+      if(next.isInstance(OPEN_PARENS) && next.getStartOffset() == token.getEndOffset()) {
          return asSequence(parser.parseExpressionList(OPEN_PARENS, CLOSE_PARENS, null));
       }
       return new PredicateTransition(".", h -> true, ANY);
@@ -519,55 +532,12 @@ public enum RegexTypes implements TokenDef, GrammarRegistrable {
                                                                             ParserToken token) throws ParseException {
       ParserToken next = parser.peek();
       SerializableFunction<HString, Integer> matcher;
-      if (next.isInstance(OPEN_PARENS) && next.getStartOffset() == token.getEndOffset()) {
+      if(next.isInstance(OPEN_PARENS) && next.getStartOffset() == token.getEndOffset()) {
          matcher = asSequence(parser.parseExpressionList(OPEN_PARENS, CLOSE_PARENS, null))::matches;
       } else {
          matcher = h -> 1;
       }
       return matcher;
-   }
-
-   /**
-    * The entry point of application.
-    *
-    * @param args the input arguments
-    * @throws Exception the exception
-    */
-   public static void main(String[] args) throws Exception {
-      Config.initializeTest();
-
-
-      Document doc = Document.create("this is a test at 12:30pm yesterday.");
-      doc.annotate(Types.TOKEN, Types.SENTENCE);
-      System.out.println(doc.tokens());
-      doc.tokenAt(0).put(Types.PART_OF_SPEECH, POS.NN);
-      doc.tokenAt(0).put(Types.CONFIDENCE, 0.34);
-      doc.tokenAt(1).put(Types.CATEGORY, Collections.singleton("VERBAL"));
-      doc.tokenAt(1).put(Types.CONFIDENCE, 0.44);
-      Set<String> cats = doc.tokenAt(1).attribute(Types.CATEGORY);
-      doc.createAnnotation(Types.ENTITY,
-                           0, 4,
-                           Collections.emptyMap());
-      doc.tokenAt(0).add(new Relation(Types.DEPENDENCY, "nsubj", doc.tokenAt(1).getId()));
-
-      String r = "'12:30pm' (?> 'yesterday')";
-      Lexer lexer = Lexer.create(RegexTypes.values());
-      Grammar g = new Grammar(RegexTypes.values());
-      Parser parser = new Parser(g, lexer.lex(r));
-      TransitionFunction tf = null;
-      while (parser.hasNext()) {
-         TransitionFunction temp = parser.parseExpression().as(TransitionFunction.class);
-         tf = (tf == null)
-              ? temp
-              : new SequenceTransition(tf, temp);
-      }
-      NFA nfa = tf.construct();
-
-      TokenMatcher matcher = new TokenMatcher(nfa, doc);
-      while (matcher.find()) {
-         System.out.println(matcher.group());
-      }
-
    }
 
    @Override

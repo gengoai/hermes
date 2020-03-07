@@ -58,10 +58,12 @@ public class LyreExpressionTest {
 
 
    private static Object processList(List<?> list) {
-      if (list.isEmpty()) {
+      if(list.isEmpty()) {
          return null;
       }
-      return list.size() == 1 ? list.get(0) : list;
+      return list.size() == 1
+             ? list.get(0)
+             : list;
    }
 
 
@@ -84,8 +86,12 @@ public class LyreExpressionTest {
       testLambda(Lyre.parse("@PHRASE_CHUNK($_)"),
                  pos,
                  h -> !h.contentEqualsIgnoreCase("."),
-                 h -> h.contentEqualsIgnoreCase(".") ? null : h.annotations(Types.PHRASE_CHUNK).get(0).toString(),
-                 h -> h.contentEqualsIgnoreCase(".") ? null : h.annotations(Types.PHRASE_CHUNK).get(0),
+                 h -> h.contentEqualsIgnoreCase(".")
+                      ? null
+                      : h.annotations(Types.PHRASE_CHUNK).get(0).toString(),
+                 h -> h.contentEqualsIgnoreCase(".")
+                      ? null
+                      : h.annotations(Types.PHRASE_CHUNK).get(0),
                  h -> Double.NaN);
 
    }
@@ -113,7 +119,7 @@ public class LyreExpressionTest {
       pos.tokenAt(0).put(Types.PART_OF_SPEECH, POS.PRP);
       pos.tokenAt(0).put(Types.CONFIDENCE, 0.8);
       pos.tokenAt(1).put(Types.PART_OF_SPEECH, POS.VERB);
-      pos.tokenAt(1).put(Types.CATEGORY, Collections.singleton("A"));
+      pos.tokenAt(1).put(Types.CATEGORY, Collections.singleton(BasicCategories.HUMAN));
       pos.tokenAt(2).put(Types.PART_OF_SPEECH, POS.DT);
       pos.tokenAt(3).put(Types.PART_OF_SPEECH, POS.NN);
       pos.tokenAt(4).put(Types.PART_OF_SPEECH, POS.PERIOD);
@@ -128,13 +134,17 @@ public class LyreExpressionTest {
                  h -> h.pos().isNoun(),
                  h -> Boolean.toString(h.pos().isNoun()),
                  h -> h.pos().isNoun(),
-                 h -> h.pos().isNoun() ? 1.0 : 0.0);
+                 h -> h.pos().isNoun()
+                      ? 1.0
+                      : 0.0);
       testLambda(Lyre.parse("#NOUN"),
                  pos,
                  h -> h.pos().isNoun(),
                  h -> Boolean.toString(h.pos().isNoun()),
                  h -> h.pos().isNoun(),
-                 h -> h.pos().isNoun() ? 1.0 : 0.0);
+                 h -> h.pos().isNoun()
+                      ? 1.0
+                      : 0.0);
    }
 
    @Test
@@ -169,7 +179,9 @@ public class LyreExpressionTest {
                  StopWords.isStopWord().negate(),
                  h -> Boolean.toString(!StopWords.isStopWord().test(h)),
                  h -> !StopWords.isStopWord().test(h),
-                 h -> !StopWords.isStopWord().test(h) ? 1 : 0);
+                 h -> !StopWords.isStopWord().test(h)
+                      ? 1
+                      : 0);
    }
 
 
@@ -178,20 +190,22 @@ public class LyreExpressionTest {
       Document document = Document.create("Token1 Token2 Token3");
       document.annotate(Types.TOKEN);
       LyreExpression lambda = Lyre.parse("cxt($_, -1)");
-      for (int i = 0; i < document.tokenLength(); i++) {
+      for(int i = 0; i < document.tokenLength(); i++) {
          HString p = lambda.applyAsHString(document.tokenAt(i));
-         if (i == 0) {
+         if(i == 0) {
             assertTrue(p.isEmpty());
-         } else {
+         }
+         else {
             assertEquals("Token" + i, p.toString());
          }
       }
       lambda = Lyre.parse("cxt($_, 1)");
-      for (int i = 0; i < document.tokenLength(); i++) {
+      for(int i = 0; i < document.tokenLength(); i++) {
          HString p = lambda.applyAsHString(document.tokenAt(i));
-         if (i == document.tokenLength() - 1) {
+         if(i == document.tokenLength() - 1) {
             assertTrue(p.isEmpty());
-         } else {
+         }
+         else {
             assertEquals("Token" + (i + 2), p.toString());
          }
       }
@@ -214,7 +228,9 @@ public class LyreExpressionTest {
       testLambda(Lyre.parse("@<dep"),
                  pos,
                  h -> h.children().size() > 0,
-                 h -> h.children().isEmpty() ? null : processList(h.children()).toString(),
+                 h -> h.children().isEmpty()
+                      ? null
+                      : processList(h.children()).toString(),
                  h -> processList(h.children()),
                  h -> Double.NaN);
       testLambda(Lyre.parse("@>dep"),
@@ -226,38 +242,56 @@ public class LyreExpressionTest {
       testLambda(Lyre.parse("@<dep{'nsubj'}"),
                  pos,
                  h -> h.children("nsubj").size() > 0,
-                 h -> h.children("nsubj").isEmpty() ? null : processList(h.children("nsubj")).toString(),
+                 h -> h.children("nsubj").isEmpty()
+                      ? null
+                      : processList(h.children("nsubj")).toString(),
                  h -> processList(h.children("nsubj")),
                  h -> Double.NaN);
       testLambda(Lyre.parse("@>dep{'nsubj'}"),
                  pos,
                  h -> h.dependencyIsA("nsubj"),
-                 h -> h.dependencyIsA("nsubj") ? h.dependency().v2.toString() : null,
-                 h -> h.dependencyIsA("nsubj") ? h.dependency().v2 : null,
+                 h -> h.dependencyIsA("nsubj")
+                      ? h.dependency().v2.toString()
+                      : null,
+                 h -> h.dependencyIsA("nsubj")
+                      ? h.dependency().v2
+                      : null,
                  h -> Double.NaN);
       testLambda(Lyre.parse("@<DEPENDENCY"),
                  pos,
                  h -> h.children().size() > 0,
-                 h -> h.children().isEmpty() ? null : processList(h.children()).toString(),
+                 h -> h.children().isEmpty()
+                      ? null
+                      : processList(h.children()).toString(),
                  h -> processList(h.children()),
                  h -> Double.NaN);
       testLambda(Lyre.parse("@>DEPENDENCY"),
                  pos,
                  h -> !h.dependency().v2.isEmpty(),
-                 h -> h.dependency().v2.isEmpty() ? null : h.dependency().v2.toString(),
-                 h -> h.dependency().v2.isEmpty() ? null : h.dependency().v2,
+                 h -> h.dependency().v2.isEmpty()
+                      ? null
+                      : h.dependency().v2.toString(),
+                 h -> h.dependency().v2.isEmpty()
+                      ? null
+                      : h.dependency().v2,
                  h -> Double.NaN);
       testLambda(Lyre.parse("@<DEPENDENCY{'nsubj'}"),
                  pos,
                  h -> h.children("nsubj").size() > 0,
-                 h -> h.children("nsubj").isEmpty() ? null : processList(h.children("nsubj")).toString(),
+                 h -> h.children("nsubj").isEmpty()
+                      ? null
+                      : processList(h.children("nsubj")).toString(),
                  h -> processList(h.children("nsubj")),
                  h -> Double.NaN);
       testLambda(Lyre.parse("@>DEPENDENCY{'nsubj'}"),
                  pos,
                  h -> h.dependencyIsA("nsubj"),
-                 h -> h.dependencyIsA("nsubj") ? h.dependency().v2.toString() : null,
-                 h -> h.dependencyIsA("nsubj") ? h.dependency().v2 : null,
+                 h -> h.dependencyIsA("nsubj")
+                      ? h.dependency().v2.toString()
+                      : null,
+                 h -> h.dependencyIsA("nsubj")
+                      ? h.dependency().v2
+                      : null,
                  h -> Double.NaN);
    }
 
@@ -268,7 +302,9 @@ public class LyreExpressionTest {
                  Strings::isNotNullOrBlank,
                  h -> Boolean.toString(Strings.isNotNullOrBlank(h)),
                  Strings::isNotNullOrBlank,
-                 h -> Strings.isNotNullOrBlank(h) ? 1 : 0);
+                 h -> Strings.isNotNullOrBlank(h)
+                      ? 1
+                      : 0);
    }
 
    @Test
@@ -288,20 +324,30 @@ public class LyreExpressionTest {
                  StopWords.isStopWord(),
                  h -> Boolean.toString(StopWords.isStopWord().test(h)),
                  h -> StopWords.isStopWord().test(h),
-                 h -> StopWords.isStopWord().test(h) ? 1 : 0);
+                 h -> StopWords.isStopWord().test(h)
+                      ? 1
+                      : 0);
 
       testLambda(Lyre.parse("if( isStopWord, '', $_ )"),
                  document,
                  h -> !StopWords.isStopWord().test(h),
-                 h -> StopWords.isStopWord().test(h) ? "" : h.toString(),
-                 h -> StopWords.isStopWord().test(h) ? "" : h,
+                 h -> StopWords.isStopWord().test(h)
+                      ? ""
+                      : h.toString(),
+                 h -> StopWords.isStopWord().test(h)
+                      ? ""
+                      : h,
                  h -> Double.NaN);
 
       testLambda(Lyre.parse("if( isStopWord, null, $_ )"),
                  document,
                  h -> !StopWords.isStopWord().test(h),
-                 h -> StopWords.isStopWord().test(h) ? null : h.toString(),
-                 h -> StopWords.isStopWord().test(h) ? null : h,
+                 h -> StopWords.isStopWord().test(h)
+                      ? null
+                      : h.toString(),
+                 h -> StopWords.isStopWord().test(h)
+                      ? null
+                      : h,
                  h -> Double.NaN);
    }
 
@@ -322,7 +368,9 @@ public class LyreExpressionTest {
                  Strings::isAlphaNumeric,
                  h -> Boolean.toString(Strings.isAlphaNumeric(h)),
                  Strings::isAlphaNumeric,
-                 h -> Strings.isAlphaNumeric(h) ? 1 : 0);
+                 h -> Strings.isAlphaNumeric(h)
+                      ? 1
+                      : 0);
    }
 
    @Test
@@ -332,7 +380,9 @@ public class LyreExpressionTest {
                  Strings::isDigit,
                  h -> Boolean.toString(Strings.isDigit(h)),
                  Strings::isDigit,
-                 h -> Strings.isDigit(h) ? 1 : 0);
+                 h -> Strings.isDigit(h)
+                      ? 1
+                      : 0);
    }
 
    @Test
@@ -342,7 +392,9 @@ public class LyreExpressionTest {
                  Strings::isLetter,
                  h -> Boolean.toString(Strings.isLetter(h)),
                  Strings::isLetter,
-                 h -> Strings.isLetter(h) ? 1 : 0);
+                 h -> Strings.isLetter(h)
+                      ? 1
+                      : 0);
    }
 
    @Test
@@ -352,7 +404,9 @@ public class LyreExpressionTest {
                  Strings::isLowerCase,
                  h -> Boolean.toString(Strings.isLowerCase(h)),
                  Strings::isLowerCase,
-                 h -> Strings.isLowerCase(h) ? 1 : 0);
+                 h -> Strings.isLowerCase(h)
+                      ? 1
+                      : 0);
    }
 
    @Test
@@ -362,7 +416,9 @@ public class LyreExpressionTest {
                  Strings::isPunctuation,
                  h -> Boolean.toString(Strings.isPunctuation(h)),
                  Strings::isPunctuation,
-                 h -> Strings.isPunctuation(h) ? 1 : 0);
+                 h -> Strings.isPunctuation(h)
+                      ? 1
+                      : 0);
    }
 
    @Test
@@ -376,7 +432,7 @@ public class LyreExpressionTest {
 
 
       List<Object> list = Lyre.parse("isUpper(['A','b',['C','d','E']])").applyAsList(
-         Fragments.detachedEmptyAnnotation());
+            Fragments.detachedEmptyAnnotation());
       List<Object> expected = Arrays.asList("A", Arrays.asList("C", "E"));
       assertEquals(expected, list);
    }
@@ -453,7 +509,9 @@ public class LyreExpressionTest {
                  h -> !h.next(Types.TOKEN).contentEquals("."),
                  h -> Boolean.toString(!h.next(Types.TOKEN).contentEquals(".")),
                  h -> !h.next(Types.TOKEN).contentEquals("."),
-                 h -> !h.next(Types.TOKEN).contentEquals(".") ? 1 : 0
+                 h -> !h.next(Types.TOKEN).contentEquals(".")
+                      ? 1
+                      : 0
                 );
 
       testLambda(Lyre.parse("(?!> ~)"),
@@ -472,7 +530,9 @@ public class LyreExpressionTest {
                  h -> !h.previous(Types.TOKEN).contentEquals("."),
                  h -> Boolean.toString(!h.previous(Types.TOKEN).contentEquals(".")),
                  h -> !h.previous(Types.TOKEN).contentEquals("."),
-                 h -> !h.previous(Types.TOKEN).contentEquals(".") ? 1 : 0
+                 h -> !h.previous(Types.TOKEN).contentEquals(".")
+                      ? 1
+                      : 0
                 );
 
       testLambda(Lyre.parse("(?!< ~)"),
@@ -554,7 +614,9 @@ public class LyreExpressionTest {
                  h -> h.next(Types.TOKEN).contentEquals("."),
                  h -> Boolean.toString(h.next(Types.TOKEN).contentEquals(".")),
                  h -> h.next(Types.TOKEN).contentEquals("."),
-                 h -> h.next(Types.TOKEN).contentEquals(".") ? 1 : 0
+                 h -> h.next(Types.TOKEN).contentEquals(".")
+                      ? 1
+                      : 0
                 );
 
       testLambda(Lyre.parse("(?> ~)"),
@@ -573,7 +635,9 @@ public class LyreExpressionTest {
                  h -> h.previous(Types.TOKEN).contentEquals("."),
                  h -> Boolean.toString(h.previous(Types.TOKEN).contentEquals(".")),
                  h -> h.previous(Types.TOKEN).contentEquals("."),
-                 h -> h.previous(Types.TOKEN).contentEquals(".") ? 1 : 0
+                 h -> h.previous(Types.TOKEN).contentEquals(".")
+                      ? 1
+                      : 0
                 );
 
       testLambda(Lyre.parse("(?< ~)"),
@@ -650,7 +714,9 @@ public class LyreExpressionTest {
                  StopWords.isStopWord(),
                  h -> Boolean.toString(StopWords.isStopWord().test(h)),
                  h -> StopWords.isStopWord().test(h),
-                 h -> StopWords.isStopWord().test(h) ? 1 : 0);
+                 h -> StopWords.isStopWord().test(h)
+                      ? 1
+                      : 0);
    }
 
    @Test
@@ -772,14 +838,18 @@ public class LyreExpressionTest {
                  h -> h.contentEquals("a"),
                  h -> Boolean.toString(h.contentEquals("a")),
                  h -> h.contentEquals("a"),
-                 h -> h.contentEquals("a") ? 1.0 : 0.0
+                 h -> h.contentEquals("a")
+                      ? 1.0
+                      : 0.0
                 );
       testLambda(Lyre.parse("$_ != 'a'"),
                  document,
                  h -> !h.contentEquals("a"),
                  h -> Boolean.toString(!h.contentEquals("a")),
                  h -> !h.contentEquals("a"),
-                 h -> !h.contentEquals("a") ? 1.0 : 0.0
+                 h -> !h.contentEquals("a")
+                      ? 1.0
+                      : 0.0
                 );
       testLambda(Lyre.parse("$_ = $_"),
                  document,
@@ -850,7 +920,9 @@ public class LyreExpressionTest {
                  h -> h.contentEquals("Alice") || h.contentEquals("rabbit"),
                  h -> Boolean.toString(h.contentEquals("Alice") || h.contentEquals("rabbit")),
                  h -> h.contentEquals("Alice") || h.contentEquals("rabbit"),
-                 h -> (h.contentEquals("Alice") || h.contentEquals("rabbit")) ? 1 : 0
+                 h -> (h.contentEquals("Alice") || h.contentEquals("rabbit"))
+                      ? 1
+                      : 0
                 );
 
       testLambda(Lyre.parse("192  in [102, 45, 192]"),
@@ -866,7 +938,9 @@ public class LyreExpressionTest {
                  h -> h.contains("lice"),
                  h -> Boolean.toString(h.contains("lice")),
                  h -> h.contains("lice"),
-                 h -> (h.contains("lice")) ? 1 : 0
+                 h -> (h.contains("lice"))
+                      ? 1
+                      : 0
                 );
 
    }
@@ -878,19 +952,21 @@ public class LyreExpressionTest {
                            Function<HString, Object> toObject,
                            ToDoubleFunction<HString> toDouble
                           ) {
-      for (int i = 0; i < document.tokenLength(); i++) {
+      for(int i = 0; i < document.tokenLength(); i++) {
          HString t = document.tokenAt(i);
          assertEquals(predicate.test(t), it.test(t));
          assertEquals(toString.apply(t), it.apply(t));
          Object l = toObject.apply(t);
          Object r = it.applyAsObject(t);
-         if (l instanceof HString && r instanceof HString) {
+         if(l instanceof HString && r instanceof HString) {
             assertEquals(l.toString(), r.toString());
-         } else if (l != null && l.getClass().isArray()) {
+         }
+         else if(l != null && l.getClass().isArray()) {
             List<Object> ll = Converter.convertSilently(l, parameterizedType(List.class, Object.class));
             List<Object> rr = Converter.convertSilently(r, parameterizedType(List.class, Object.class));
             assertEquals(ll, rr);
-         } else {
+         }
+         else {
             assertEquals(l, r);
          }
          assertEquals(toDouble.applyAsDouble(t), it.applyAsDouble(t), 0d);
@@ -956,16 +1032,24 @@ public class LyreExpressionTest {
       testLambda(Lyre.parse("trim"),
                  document,
                  StopWords.isNotStopWord(),
-                 h -> StopWords.isStopWord().test(h) ? "" : h.toString(),
-                 h -> StopWords.isStopWord().test(h) ? Fragments.detachedEmptyAnnotation() : h,
+                 h -> StopWords.isStopWord().test(h)
+                      ? ""
+                      : h.toString(),
+                 h -> StopWords.isStopWord().test(h)
+                      ? Fragments.detachedEmptyAnnotation()
+                      : h,
                  h -> Double.NaN
                 );
 
       testLambda(Lyre.parse("trim($_, /[aieou]/)"),
                  document,
                  h -> !h.matcher("[aieou]").find(),
-                 h -> h.matcher("[aieou]").find() ? "" : h.toString(),
-                 h -> h.matcher("[aieou]").find() ? Fragments.detachedEmptyAnnotation() : h,
+                 h -> h.matcher("[aieou]").find()
+                      ? ""
+                      : h.toString(),
+                 h -> h.matcher("[aieou]").find()
+                      ? Fragments.detachedEmptyAnnotation()
+                      : h,
                  h -> Double.NaN
                 );
 

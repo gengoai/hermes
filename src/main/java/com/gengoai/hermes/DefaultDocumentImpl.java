@@ -23,7 +23,7 @@ package com.gengoai.hermes;
 
 import com.gengoai.Language;
 import com.gengoai.Validation;
-import com.gengoai.collection.Streams;
+import com.gengoai.stream.Streams;
 import com.gengoai.collection.tree.Span;
 import com.gengoai.string.Strings;
 import lombok.NonNull;

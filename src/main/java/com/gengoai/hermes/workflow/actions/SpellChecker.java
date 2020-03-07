@@ -62,8 +62,8 @@ public class SpellChecker implements Action, Serializable {
    public SpellChecker(@NonNull Embedding spellingEmbedding) {
       this(spellingEmbedding,
            Config
-              .get("SpellcheckerModule.dictionary")
-              .asResource(Resources.fromString()),
+                 .get("SpellcheckerModule.dictionary")
+                 .asResource(Resources.fromString()),
            2
           );
    }
@@ -79,7 +79,7 @@ public class SpellChecker implements Action, Serializable {
       this.spellingEmbedding = spellingEmbedding;
       try {
          this.dictionary = TrieWordList.read(dictionary, true);
-      } catch (IOException e) {
+      } catch(IOException e) {
          throw new RuntimeException(e);
       }
       this.maxCost = maxCost;
@@ -89,54 +89,53 @@ public class SpellChecker implements Action, Serializable {
    public Corpus process(@NonNull Corpus corpus, @NonNull Context context) throws Exception {
       final WordList wordList = new SimpleWordList(spellingEmbedding.getAlphabet());
       final Counter<String> unigrams = corpus.documentCount(TermExtractor
-                                                               .builder()
-                                                               .annotations(Types.TOKEN)
-                                                               .filter(and(and(gte(len($_), 3),
-                                                                               in($_, wordList(wordList))),
-                                                                           or(isLetter, isWhitespace)))
-                                                               .toLemma().build()
+                                                                  .builder()
+                                                                  .annotations(Types.TOKEN)
+                                                                  .filter(and(and(gte(len($_), 3),
+                                                                                  in($_, wordList(wordList))),
+                                                                              or(isLetter, isWhitespace)))
+                                                                  .toLemma().build()
                                                            );
 
       final Map<String, String> spelling = corpus
-         .getStreamingContext()
-         .stream(unigrams.items())
-         .filter(w -> !dictionary.contains(w))
-         .mapToPair(oov -> {
-            Map<String, Integer> suggestions = dictionary.suggest(oov,
-                                                                  maxCost);
-            final Counter<String> adjusted = Counters.newCounter();
-            int min = suggestions
-               .values()
-               .stream()
-               .mapToInt(i -> i)
-               .min()
-               .orElse(2);
-            suggestions
-               .entrySet()
-               .stream()
-               .filter(e -> e.getValue() <= min)
-               .filter(e -> spellingEmbedding.contains(e.getKey()))
-               .filter(e -> unigrams.get(e.getKey()) >= 10)
-               .forEach(e -> {
-                  double sim = Similarity.Cosine.calculate(
-                     spellingEmbedding.lookup(e.getKey()),
-                     spellingEmbedding.lookup(oov));
-                  if (sim > 0) {
-                     adjusted.increment(e.getKey(), sim);
-                  }
-               });
-            return $(oov, adjusted.max());
-         })
-         .collectAsMap();
+            .getStreamingContext()
+            .stream(unigrams.items())
+            .filter(w -> !dictionary.contains(w))
+            .mapToPair(oov -> {
+               Map<String, Integer> suggestions = dictionary.suggest(oov,
+                                                                     maxCost);
+               final Counter<String> adjusted = Counters.newCounter();
+               int min = suggestions.values()
+                                    .stream()
+                                    .mapToInt(i -> i)
+                                    .min()
+                                    .orElse(2);
+               suggestions
+                     .entrySet()
+                     .stream()
+                     .filter(e -> e.getValue() <= min)
+                     .filter(e -> spellingEmbedding.contains(e.getKey()))
+                     .filter(e -> unigrams.get(e.getKey()) >= 10)
+                     .forEach(e -> {
+                        double sim = Similarity.Cosine.calculate(
+                              spellingEmbedding.lookup(e.getKey()),
+                              spellingEmbedding.lookup(oov));
+                        if(sim > 0) {
+                           adjusted.increment(e.getKey(), sim);
+                        }
+                     });
+               return $(oov, adjusted.max());
+            })
+            .collectAsMap();
 
 
       return corpus.update(document -> document
-         .tokenStream()
-         .forEach(token -> {
-            if (spelling.containsKey(token.getLemma())) {
-               token.put(Types.SPELLING_CORRECTION, spelling.get(token.getLemma()));
-            }
-         }));
+            .tokenStream()
+            .forEach(token -> {
+               if(spelling.containsKey(token.getLemma())) {
+                  token.put(Types.SPELLING_CORRECTION, spelling.get(token.getLemma()));
+               }
+            }));
    }
 
 }// END OF SpellcheckerModule

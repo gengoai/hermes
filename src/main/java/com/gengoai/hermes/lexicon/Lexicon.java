@@ -76,6 +76,16 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
     */
    public abstract List<LexiconEntry<?>> getEntries(HString hString);
 
+
+   /**
+    * Gets the matched entries for a given {@link HString}
+    *
+    * @param hString the {@link HString} to match against
+    * @return the entries matching the {@link HString}
+    */
+   public abstract List<LexiconEntry<?>> getEntries(String hString);
+
+
    /**
     * Gets the first matched lemma, if one, for the given {@link HString}
     *

@@ -22,7 +22,8 @@ package com.gengoai.hermes.driver.train;
 import com.gengoai.Language;
 import com.gengoai.Lazy;
 import com.gengoai.apollo.ml.*;
-import com.gengoai.apollo.ml.data.Dataset;
+import com.gengoai.apollo.ml.data.DatasetType;
+import com.gengoai.apollo.ml.data.ExampleDataset;
 import com.gengoai.apollo.ml.preprocess.MinCountTransform;
 import com.gengoai.apollo.ml.preprocess.PreprocessorList;
 import com.gengoai.apollo.ml.sequence.GreedyAvgPerceptron;
@@ -86,37 +87,37 @@ public class POSTrainer extends CommandLineApplication {
    Language language;
 
    private volatile Lazy<FeatureExtractor<HString>> featurizer
-      = new Lazy<>(() ->
-                      Featurizer.chain(new AffixFeaturizer(3, 3),
-                                       Features.LowerCaseWord,
-                                       predicateFeaturizer("ALL_UPPERCASE", Strings::isUpperCase),
-                                       predicateFeaturizer("START_UPPERCASE",
-                                                           (HString s) -> Character.isUpperCase(s.charAt(0))),
-                                       predicateFeaturizer("IS_DIGIT", Features::isDigit),
-                                       predicateFeaturizer("IS_PUNCTUATION", Strings::isPunctuation),
-                                       booleanFeaturizer((HString a) -> {
-                                          String norm = a.toLowerCase();
-                                          if (norm.endsWith("es")) {
-                                             return Collections.singleton("ENDING_ES");
-                                          } else if (norm.endsWith("s")) {
-                                             return Collections.singleton("ENDING_S");
-                                          } else if (norm.endsWith("ed")) {
-                                             return Collections.singleton("ENDING_ED");
-                                          } else if (norm.endsWith("ing")) {
-                                             return Collections.singleton("ENDING_ING");
-                                          } else if (norm.endsWith("ly")) {
-                                             return Collections.singleton("ENDING_LY");
-                                          }
-                                          return Collections.emptyList();
-                                       })).withContext("WORD[-1]",
-                                                       "WORD[-1]|WORD[0]",
-                                                       "~WORD[-2]",
-                                                       "~WORD[-2]|WORD[-1]",
-                                                       "WORD[+1]",
-                                                       "WORD[0]|WORD[+1]",
-                                                       "~WORD[+2]",
-                                                       "~WORD[+1]|WORD[+2]"
-                                                      )
+         = new Lazy<>(() ->
+                            Featurizer.chain(new AffixFeaturizer(3, 3),
+                                             Features.LowerCaseWord,
+                                             predicateFeaturizer("ALL_UPPERCASE", Strings::isUpperCase),
+                                             predicateFeaturizer("START_UPPERCASE",
+                                                                 (HString s) -> Character.isUpperCase(s.charAt(0))),
+                                             predicateFeaturizer("IS_DIGIT", Features::isDigit),
+                                             predicateFeaturizer("IS_PUNCTUATION", Strings::isPunctuation),
+                                             booleanFeaturizer((HString a) -> {
+                                                String norm = a.toLowerCase();
+                                                if(norm.endsWith("es")) {
+                                                   return Collections.singleton("ENDING_ES");
+                                                } else if(norm.endsWith("s")) {
+                                                   return Collections.singleton("ENDING_S");
+                                                } else if(norm.endsWith("ed")) {
+                                                   return Collections.singleton("ENDING_ED");
+                                                } else if(norm.endsWith("ing")) {
+                                                   return Collections.singleton("ENDING_ING");
+                                                } else if(norm.endsWith("ly")) {
+                                                   return Collections.singleton("ENDING_LY");
+                                                }
+                                                return Collections.emptyList();
+                                             })).withContext("WORD[-1]",
+                                                             "WORD[-1]|WORD[0]",
+                                                             "~WORD[-2]",
+                                                             "~WORD[-2]|WORD[-1]",
+                                                             "WORD[+1]",
+                                                             "WORD[0]|WORD[+1]",
+                                                             "~WORD[+2]",
+                                                             "~WORD[+1]|WORD[+2]"
+                                                            )
    );
 
 
@@ -136,11 +137,36 @@ public class POSTrainer extends CommandLineApplication {
       new POSTrainer().run(args);
    }
 
+   private SequenceLabeler getLearner() {
+      PreprocessorList preprocessors = new PreprocessorList();
+      if(minFeatureCount > 1) {
+         preprocessors.add(new MinCountTransform(minFeatureCount));
+      }
+      return new GreedyAvgPerceptron(new ENPOSValidator(), preprocessors);
+   }
+
+   /**
+    * Load dataset dataset.
+    *
+    * @return the dataset
+    * @throws Exception the exception
+    */
+   protected ExampleDataset loadDataset() throws Exception {
+      return Corpus.reader(corpusFormat)
+                   .read(corpus)
+                   .asSequenceDataset(dd -> {
+                      dd.labelAttribute(Types.PART_OF_SPEECH);
+                      dd.sequenceType(Types.SENTENCE);
+                      dd.tokenType(Types.TOKEN);
+                      dd.featureExtractor(featurizer.get());
+                   }, DatasetType.InMemory);
+   }
+
    @Override
    protected void programLogic() throws Exception {
-      if (mode == Mode.TRAIN) {
+      if(mode == Mode.TRAIN) {
          train();
-      } else if (mode == Mode.TEST) {
+      } else if(mode == Mode.TEST) {
          test();
       } else {
          Split trainTestSplits = loadDataset().shuffle().split(0.8);
@@ -157,28 +183,16 @@ public class POSTrainer extends CommandLineApplication {
    }
 
    /**
-    * Load dataset dataset.
+    * Test.
     *
-    * @return the dataset
     * @throws Exception the exception
     */
-   protected Dataset loadDataset() throws Exception {
-      return Corpus.reader(corpusFormat)
-                   .read(corpus)
-                   .asSequenceDataset(dd -> {
-                      dd.labelAttribute(Types.PART_OF_SPEECH);
-                      dd.sequenceType(Types.SENTENCE);
-                      dd.tokenType(Types.TOKEN);
-                      dd.featureExtractor(featurizer.get());
-                   });
-   }
-
-   private SequenceLabeler getLearner() {
-      PreprocessorList preprocessors = new PreprocessorList();
-      if (minFeatureCount > 1) {
-         preprocessors.add(new MinCountTransform(minFeatureCount));
-      }
-      return new GreedyAvgPerceptron(new ENPOSValidator(), preprocessors);
+   protected void test() throws Exception {
+      POSTagger tagger = POSTagger.read(model);
+      ExampleDataset test = loadDataset();
+      PerInstanceEvaluation evaluation = new PerInstanceEvaluation();
+      evaluation.evaluate(tagger.getSequenceLabeler(), test);
+      evaluation.output(true);
    }
 
    /**
@@ -187,29 +201,16 @@ public class POSTrainer extends CommandLineApplication {
     * @throws Exception the exception
     */
    protected void train() throws Exception {
-      Dataset train = loadDataset();
+      ExampleDataset train = loadDataset();
       SequenceLabeler labeler = getLearner();
       FitParameters<?> parameters = labeler.getFitParameters();
       parameters.set(Params.Optimizable.maxIterations, 200);
       parameters.set(Params.verbose, true);
+      parameters.set(Params.Optimizable.historySize, 3);
+      parameters.set(Params.Optimizable.tolerance, 1e-4);
       labeler.fit(train, parameters);
       POSTagger tagger = new POSTagger(featurizer.get(), labeler);
       tagger.write(model);
-   }
-
-
-   /**
-    * Test.
-    *
-    * @throws Exception the exception
-    */
-   protected void test() throws Exception {
-      POSTagger tagger = POSTagger.read(model);
-      Dataset test = loadDataset();
-      System.out.println("Read: " + test.size());
-      PerInstanceEvaluation evaluation = new PerInstanceEvaluation();
-      evaluation.evaluate(tagger.getSequenceLabeler(), test);
-      evaluation.output(true);
    }
 
 }// END OF POSTrainer

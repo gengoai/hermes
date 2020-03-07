@@ -22,30 +22,29 @@
 
 package com.gengoai.hermes.corpus.io;
 
-import com.gengoai.hermes.Document;
 import com.gengoai.hermes.corpus.Corpus;
-import com.gengoai.hermes.corpus.LuceneCorpus;
-import com.gengoai.io.resource.Resource;
-
-import java.io.IOException;
-import java.util.stream.Stream;
+import org.kohsuke.MetaInfServices;
 
 /**
- * Reader to create Corpora from Lucene Indexes
+ * Format for Corpora stored as Lucene Indexes
  *
  * @author David B. Bracewell
  */
-public class LuceneReader extends CorpusReader {
-
+@MetaInfServices
+public class HermesCorpusFormat implements CorpusFormat {
    @Override
-   public Corpus read(Resource resource) throws IOException {
-      return new LuceneCorpus(resource.asFile().orElseThrow(IllegalArgumentException::new));
+   public String getName() {
+      return "hcf";
    }
 
    @Override
-   public Stream<Document> parse(String content) {
-      throw new UnsupportedOperationException();
+   public CorpusReader getCorpusReader() {
+      return new HCFReader();
    }
 
+   @Override
+   public CorpusWriter getCorpusWriter(Corpus corpus) {
+      return new HCFWriter(corpus);
+   }
 
-}//END OF LuceneReader
+}//END OF HermesCorpusFormat

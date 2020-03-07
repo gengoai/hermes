@@ -23,9 +23,10 @@
 package com.gengoai.hermes.application;
 
 import com.gengoai.application.CommandLineApplication;
-import lombok.NonNull;
+import com.gengoai.hermes.Hermes;
 
-import static com.gengoai.hermes.Hermes.HERMES_PACKAGE;
+import java.util.Collections;
+import java.util.Set;
 
 /**
  * The type Hermes cli.
@@ -38,7 +39,7 @@ public abstract class HermesCLI extends CommandLineApplication {
     * Instantiates a new Hermes cli.
     */
    public HermesCLI() {
-      addDependency(HERMES_PACKAGE);
+      super();
    }
 
    /**
@@ -48,18 +49,11 @@ public abstract class HermesCLI extends CommandLineApplication {
     */
    public HermesCLI(String applicationName) {
       super(applicationName);
-      addDependency(HERMES_PACKAGE);
    }
 
-   /**
-    * Instantiates a new Hermes cli.
-    *
-    * @param applicationName  the application name
-    * @param requiredPackages the required packages
-    */
-   public HermesCLI(String applicationName, @NonNull String[] requiredPackages) {
-      super(applicationName, requiredPackages);
-      addDependency(HERMES_PACKAGE);
+   @Override
+   public Set<String> getDependentPackages() {
+      return Collections.singleton(Hermes.HERMES_PACKAGE);
    }
 
 

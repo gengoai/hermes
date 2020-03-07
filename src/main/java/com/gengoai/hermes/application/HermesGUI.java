@@ -23,7 +23,9 @@
 package com.gengoai.hermes.application;
 
 import com.gengoai.application.SwingApplication;
-import lombok.NonNull;
+
+import java.util.Collections;
+import java.util.Set;
 
 import static com.gengoai.hermes.Hermes.HERMES_PACKAGE;
 
@@ -34,33 +36,9 @@ import static com.gengoai.hermes.Hermes.HERMES_PACKAGE;
  */
 public abstract class HermesGUI extends SwingApplication {
 
-   /**
-    * Instantiates a new Hermes cli.
-    */
-   public HermesGUI() {
-      addDependency(HERMES_PACKAGE);
+
+   @Override
+   public Set<String> getDependentPackages() {
+      return Collections.singleton(HERMES_PACKAGE);
    }
-
-   /**
-    * Instantiates a new Hermes cli.
-    *
-    * @param applicationName the application name
-    */
-   public HermesGUI(String applicationName) {
-      super(applicationName);
-      addDependency(HERMES_PACKAGE);
-   }
-
-   /**
-    * Instantiates a new Hermes cli.
-    *
-    * @param applicationName  the application name
-    * @param requiredPackages the required packages
-    */
-   public HermesGUI(String applicationName, @NonNull String[] requiredPackages) {
-      super(applicationName, requiredPackages);
-      addDependency(HERMES_PACKAGE);
-   }
-
-
 }//END OF HermesApplication

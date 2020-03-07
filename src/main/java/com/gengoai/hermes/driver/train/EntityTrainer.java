@@ -22,8 +22,9 @@ package com.gengoai.hermes.driver.train;
 import com.gengoai.Stopwatch;
 import com.gengoai.apollo.ml.FeatureExtractor;
 import com.gengoai.apollo.ml.Featurizer;
-import com.gengoai.apollo.ml.data.Dataset;
-import com.gengoai.apollo.ml.sequence.MalletCRF;
+import com.gengoai.apollo.ml.FitParameters;
+import com.gengoai.apollo.ml.data.ExampleDataset;
+import com.gengoai.apollo.ml.sequence.Crf;
 import com.gengoai.apollo.ml.sequence.SequenceLabeler;
 import com.gengoai.hermes.AnnotatableType;
 import com.gengoai.hermes.HString;
@@ -32,12 +33,12 @@ import com.gengoai.hermes.annotator.BaseWordCategorization;
 import com.gengoai.hermes.corpus.Corpus;
 import com.gengoai.hermes.ml.BIOLabelMaker;
 import com.gengoai.hermes.ml.BIOTrainer;
-import com.gengoai.hermes.ml.feature.AffixFeaturizer;
-import com.gengoai.hermes.ml.feature.Features;
 
 import java.io.IOException;
 
-import static com.gengoai.hermes.corpus.io.CorpusParameters.IN_MEMORY;
+import static com.gengoai.hermes.ml.feature.Features.*;
+import static com.gengoai.hermes.ml.feature.PredefinedFeatures.lenientContext;
+import static com.gengoai.hermes.ml.feature.PredefinedFeatures.strictContext;
 
 /**
  * The type Entity trainer.
@@ -57,15 +58,13 @@ public class EntityTrainer extends BIOTrainer {
    }
 
    @Override
-   protected Dataset getDataset(FeatureExtractor<HString> featurizer) throws IOException {
+   protected ExampleDataset getDataset(FeatureExtractor<HString> featurizer) throws IOException {
       Stopwatch read = Stopwatch.createStarted();
-      Corpus c = Corpus.reader(corpusFormat)
-                       .option(IN_MEMORY, true)
-                       .read(corpus)
+      Corpus c = Corpus.read(corpusSpecification)
                        .update(BaseWordCategorization.INSTANCE::categorize);
       read.stop();
       logInfo("Completed reading corpus in: {0}", read);
-      if (required().length > 0) {
+      if(required().length > 0) {
          c.annotate(required());
       }
       return c.asSequenceDataset(s -> {
@@ -75,36 +74,58 @@ public class EntityTrainer extends BIOTrainer {
    }
 
    @Override
+   protected FitParameters<?> getFitParameters() {
+      return new Crf.Parameters()
+            .verbose.set(true)
+            .maxIterations.set(500)
+            .minFeatureFreq.set(5);
+   }
+
+   @Override
    protected FeatureExtractor<HString> getFeaturizer() {
-      return Featurizer.chain(Features.Word,
-                              Features.IsLanguageName,
-                              Features.WordAndClass,
-                              Features.PartOfSpeech,
-                              Features.Categories,
-                              new AffixFeaturizer(3, 3))
-                       .withContext("WORD[-1]",
-                                    "POS[-1]",
-                                    "~WORD[-1]|WORD[0]",
-                                    "~WORD[-2]",
-                                    "~POS[-1]",
-                                    "~WORD[-2]|WORD[-1]",
-                                    "~POS[-2]|POS[-1]",
-                                    "~WORD[-2]|WORD[-1]|WORD[0]",
-                                    "WORD[+1]",
-                                    "POS[+1]",
-                                    "~WORD[0]|WORD[+1]",
-                                    "~WORD[+2]",
-                                    "~POS[+2]",
-                                    "~WORD[+1]|WORD[+2]",
-                                    "~POS[+1]|POS[+2]",
-                                    "~WORD[0]|WORD[+1]|WORD[+2]"
-                                   );
+      return Featurizer.chain(LowerCaseWord,
+                              IsInitialCapital,
+                              IsAllCaps,
+                              hasCapital,
+                              IsDigit,
+                              IsAlphaNumeric,
+                              IsPunctuation,
+                              PartOfSpeech,
+                              IsLanguageName,
+                              IsPlace,
+                              IsStateOrPrefecture,
+                              IsMonth,
+                              IsOrganization,
+                              IsHuman,
+                              WordAndClass)
+                       .withContext(lenientContext(LowerCaseWord, -1),
+                                    strictContext(LowerCaseWord, -2),
+                                    strictContext(PartOfSpeech, -1),
+                                    strictContext(LowerCaseWord, -1, LowerCaseWord, 0),
+                                    strictContext(PartOfSpeech, -1, LowerCaseWord, 0),
+                                    strictContext(LowerCaseWord, -2, LowerCaseWord, -1),
+                                    strictContext(LowerCaseWord, -2,
+                                                  LowerCaseWord, -1,
+                                                  LowerCaseWord, 0),
+                                    strictContext(LowerCaseWord, -3,
+                                                  LowerCaseWord, -2,
+                                                  LowerCaseWord, -1,
+                                                  LowerCaseWord, 0),
+                                    lenientContext(LowerCaseWord, +1),
+                                    strictContext(PartOfSpeech, +1),
+                                    strictContext(LowerCaseWord, 0, LowerCaseWord, +1),
+                                    strictContext(LowerCaseWord, +2),
+                                    strictContext(LowerCaseWord, +1, LowerCaseWord, +2),
+                                    strictContext(LowerCaseWord, 0, LowerCaseWord, +1, LowerCaseWord, +2),
+                                    strictContext(LowerCaseWord, 0, PartOfSpeech, +1),
+                                    strictContext(IsPlace, -1, IsPunctuation, 0, IsPlace, +1),
+                                    strictContext(IsTime, -1, IsPunctuation, 0, IsTime, +1));
    }
 
 
    @Override
    protected SequenceLabeler getLearner() {
-      return new MalletCRF(getPreprocessors());
+      return new Crf(getPreprocessors());
    }
 
 

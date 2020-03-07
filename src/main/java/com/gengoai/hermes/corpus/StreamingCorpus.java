@@ -116,6 +116,11 @@ public class StreamingCorpus implements Corpus, Serializable {
    }
 
    @Override
+   public MStream<Document> parallelStream() {
+      return stream.parallel();
+   }
+
+   @Override
    public MStream<Document> stream() {
       return stream;
    }

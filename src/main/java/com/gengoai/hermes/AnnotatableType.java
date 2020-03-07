@@ -64,10 +64,10 @@ public interface AnnotatableType {
     */
    static AnnotatableType valueOf(String name) {
       int index = name.lastIndexOf('.');
-      if (index > 0) {
+      if(index > 0) {
          String typeName = name.substring(0, index);
          name = name.substring(index + 1);
-         switch (typeName) {
+         switch(typeName) {
             case "AnnotationType":
             case "Annotation":
                return AnnotationType.make(name);
@@ -80,23 +80,23 @@ public interface AnnotatableType {
          }
          //Backward support for fully qualified names
          Class<?> c = Reflect.getClassForNameQuietly(typeName);
-         if (AnnotationType.class == c) {
+         if(AnnotationType.class == c) {
             return AnnotationType.make(name);
          }
-         if (RelationType.class == c) {
+         if(RelationType.class == c) {
             return RelationType.make(name);
          }
-         if (AttributeType.class == c) {
+         if(AttributeType.class == c) {
             return AttributeType.make(name);
          }
       }
-      if (AnnotationType.isDefined(name)) {
+      if(AnnotationType.isDefined(name)) {
          return AnnotationType.make(name);
       }
-      if (AttributeType.isDefined(name)) {
+      if(AttributeType.isDefined(name)) {
          return AttributeType.make(name);
       }
-      if (RelationType.isDefined(name)) {
+      if(RelationType.isDefined(name)) {
          return RelationType.make(name);
       }
       throw new IllegalStateException("Unable to determine type of " + name);
@@ -130,7 +130,7 @@ public interface AnnotatableType {
       Annotator annotator = null;
 
 
-      if (Strings.isNotNullOrBlank(key)) {
+      if(Strings.isNotNullOrBlank(key)) {
          //Annotator is defined via configuration (this will override defaults)
          annotator = Config.get(key).as(Annotator.class);
       } else {
@@ -142,28 +142,27 @@ public interface AnnotatableType {
          String languageName = Strings.toTitleCase(language.name().toLowerCase());
 
          Class<?> annotatorClass = null;
-         for (String candidate : arrayOf(
-            HERMES_PACKAGE + "." + language.getCode().toLowerCase() + "." +
-               language.getCode().toUpperCase() + typeName + "Annotator",
-            ANNOTATOR_PACKAGE + ".Default" + languageName + typeName + "Annotator",
-            ANNOTATOR_PACKAGE + ".Default" + typeName + "Annotator"
-                                        )) {
+         for(String candidate : arrayOf(
+               HERMES_PACKAGE + "." + language.getCode().toLowerCase() + "." + language.getCode()
+                                                                                       .toUpperCase() + typeName + "Annotator",
+               ANNOTATOR_PACKAGE + ".Default" + languageName + typeName + "Annotator",
+               ANNOTATOR_PACKAGE + ".Default" + typeName + "Annotator")) {
             annotatorClass = Reflect.getClassForNameQuietly(candidate);
-            if (annotatorClass != null) {
+            if(annotatorClass != null) {
                break;
             }
          }
 
-         if (annotatorClass != null) {
+         if(annotatorClass != null) {
             try {
                annotator = Cast.as(BeanUtils.getBean(annotatorClass));
-            } catch (ReflectionException e) {
+            } catch(ReflectionException e) {
                Logger.getGlobalLogger().fine(e);
             }
          }
       }
 
-      if (annotator == null) {
+      if(annotator == null) {
          throw new IllegalStateException("No annotator is defined for " + leaf + " and " + language);
       }
 

@@ -27,12 +27,20 @@ import com.gengoai.hermes.HString;
 import lombok.NonNull;
 
 /**
+ * The interface Extractor.
+ *
  * @author David B. Bracewell
  */
 @JsonHandler(value = ExtractorMarshaller.class, isHierarchical = false)
 public interface Extractor {
 
 
+   /**
+    * Extract extraction.
+    *
+    * @param hString the h string
+    * @return the extraction
+    */
    Extraction extract(@NonNull HString hString);
 
 

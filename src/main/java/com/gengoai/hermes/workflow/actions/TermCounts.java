@@ -20,8 +20,10 @@
 package com.gengoai.hermes.workflow.actions;
 
 import com.gengoai.collection.counter.Counter;
+import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.corpus.Corpus;
 import com.gengoai.hermes.extraction.FeaturizingExtractor;
+import com.gengoai.hermes.extraction.TermExtractor;
 import com.gengoai.hermes.extraction.lyre.Lyre;
 import com.gengoai.hermes.workflow.Action;
 import com.gengoai.hermes.workflow.Context;
@@ -42,7 +44,7 @@ public class TermCounts implements Action {
    private static final long serialVersionUID = 1L;
    @Getter
    @Setter
-   private boolean documentFrequencies = false;
+   private boolean documentFrequencies;
    @Getter
    private FeaturizingExtractor extractor;
 
@@ -50,7 +52,7 @@ public class TermCounts implements Action {
     * Instantiates a new Term extraction processor.
     */
    public TermCounts() {
-
+      this(TermExtractor.builder().build(), false);
    }
 
    /**
@@ -62,6 +64,10 @@ public class TermCounts implements Action {
    public TermCounts(FeaturizingExtractor extractor, boolean documentFrequencies) {
       this.extractor = extractor;
       this.documentFrequencies = documentFrequencies;
+   }
+
+   public static Counter<String> getTermCounts(@NonNull Context context) {
+      return Cast.as(context.get(EXTRACTED_TERMS));
    }
 
    /**

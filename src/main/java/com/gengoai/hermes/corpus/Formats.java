@@ -45,9 +45,9 @@ public enum Formats implements CharSequence {
     */
    JSON_OPL,
    /**
-    * Lucene formats.
+    * HCF formats.
     */
-   LUCENE,
+   HCF,
    /**
     * Pos opl formats.
     */

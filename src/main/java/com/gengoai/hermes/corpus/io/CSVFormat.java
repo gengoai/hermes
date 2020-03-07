@@ -26,7 +26,7 @@ import com.gengoai.hermes.corpus.Corpus;
 import org.kohsuke.MetaInfServices;
 
 /**
- * Format to read and write delimited separated files (e.g. CSV and TSV)
+ * Format for delimited separated files (e.g. CSV and TSV)
  *
  * @author David B. Bracewell
  */

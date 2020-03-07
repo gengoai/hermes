@@ -1,6 +1,6 @@
 package com.gengoai.hermes;
 
-import com.gengoai.collection.Streams;
+import com.gengoai.stream.Streams;
 import com.gengoai.collection.tree.Span;
 
 import java.io.Serializable;

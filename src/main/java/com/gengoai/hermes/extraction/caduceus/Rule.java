@@ -60,31 +60,31 @@ final class Rule implements Serializable {
    private Annotation createOrGet(Document document, AnnotationType type, HString span, AttributeMap attributeValMap) {
       return document.substring(span.start(), span.end()).annotations(type).stream()
                      .filter(a -> a.getType().equals(type)
-                        && a.attributeMap().entrySet().equals(attributeValMap.entrySet()))
+                           && a.attributeMap().entrySet().equals(attributeValMap.entrySet()))
                      .findFirst()
                      .orElseGet(() -> document
-                        .annotationBuilder(type)
-                        .bounds(span)
-                        .attributes(attributeValMap)
-                        .attribute(Types.CADUCEUS_RULE, programFile + "::" + name)
-                        .createAttached());
+                           .annotationBuilder(type)
+                           .bounds(span)
+                           .attributes(attributeValMap)
+                           .attribute(Types.CADUCEUS_RULE, programFile + "::" + name)
+                           .createAttached());
    }
 
-   public void execute(Document document) {
+   public List<HString> execute(Document document) {
+      List<HString> hits = new ArrayList<>();
       TokenMatcher matcher = trigger.matcher(document);
-      while (matcher.find()) {
+      while(matcher.find()) {
          ListMultimap<String, Annotation> groups = new ArrayListMultimap<>();
          ListMultimap<AnnotationProvider, Annotation> providers = new ArrayListMultimap<>();
 
          //Process all the annotation providers
          annotationProviders.forEach(ap -> {
-            if (ap.getCapture().equals("*")) {
+            if(ap.getCapture().equals("*")) {
                Annotation annotation = createOrGet(document, ap.getType(), matcher.group(),
                                                    ap.getAttributeMap());
                groups.put("*", annotation);
                providers.put(ap, annotation);
             } else {
-               System.out.println(ap.getCapture());
                matcher.group(ap.getCapture()).forEach(g -> {
                   Annotation annotation = createOrGet(document, ap.getType(), g, ap.getAttributeMap());
                   groups.put(ap.getCapture(), annotation);
@@ -93,20 +93,20 @@ final class Rule implements Serializable {
             }
          });
 
-         if (!groups.containsKey("*")) {
+         if(!groups.containsKey("*")) {
             groups.putAll("*", matcher.group().tokens());
          }
 
 
          SetMultimap<String, Tuple2<Annotation, Relation>> relations = new HashSetMultimap<>();
-         for (RelationProvider rp : relationProviders) {
+         for(RelationProvider rp : relationProviders) {
             List<Annotation> sourceAnnotations = getAnnotation(rp.getSource(), groups, matcher);
             List<Annotation> targetAnnotations = getAnnotation(rp.getTarget(), groups, matcher);
-            for (Annotation source : sourceAnnotations) {
-               for (Annotation target : targetAnnotations) {
+            for(Annotation source : sourceAnnotations) {
+               for(Annotation target : targetAnnotations) {
                   relations.put(rp.getName(), Tuple2.of(source,
                                                         new Relation(rp.getType(), rp.getValue(), target.getId())));
-                  if (rp.isBidirectional()) {
+                  if(rp.isBidirectional()) {
                      relations.put(rp.getName(), Tuple2.of(target,
                                                            new Relation(rp.getType(), rp.getValue(), source.getId())));
                   }
@@ -115,8 +115,8 @@ final class Rule implements Serializable {
          }
 
          Set<String> finalRelations = new HashSet<>();
-         for (RelationProvider rp : relationProviders) {
-            if (relations.keySet().containsAll(rp.getRequired())) {
+         for(RelationProvider rp : relationProviders) {
+            if(relations.keySet().containsAll(rp.getRequired())) {
                relations.get(rp.getName()).forEach(t -> {
                   t.getV1().add(t.getV2());
                   finalRelations.add(rp.getName());
@@ -124,27 +124,34 @@ final class Rule implements Serializable {
             }
          }
 
-         providers.entries().stream()
+         providers.entries()
+                  .stream()
                   .filter(entry -> !finalRelations.containsAll(entry.getKey().getRequired()))
                   .forEach(entry -> document.remove(entry.getValue()));
+
+         providers.entries()
+                  .stream()
+                  .filter(entry -> finalRelations.containsAll(entry.getKey().getRequired()))
+                  .forEach(entry -> hits.add(entry.getValue()));
       }
+      return hits;
    }
 
    private List<Annotation> getAnnotation(Tuple2<String, LyreExpression> point,
                                           ListMultimap<String, Annotation> groups,
                                           TokenMatcher matcher) {
       List<Annotation> annotations;
-      if (groups.containsKey(point.v1)) {
+      if(groups.containsKey(point.v1)) {
          annotations = groups.get(point.v1);
       } else {
          annotations = matcher.group(point.v1).stream().map(HString::asAnnotation).collect(Collectors.toList());
       }
-      if (point.v2.getPattern().equals("$_")) {
+      if(point.v2.getPattern().equals("$_")) {
          return annotations;
       }
       List<Annotation> toReturn = new ArrayList<>();
-      for (Annotation annotation : annotations) {
-         for (HString hString : point.v2.applyAsList(annotation, HString.class)) {
+      for(Annotation annotation : annotations) {
+         for(HString hString : point.v2.applyAsList(annotation, HString.class)) {
             toReturn.add(hString.asAnnotation());
          }
       }

@@ -22,7 +22,7 @@
 package com.gengoai.hermes.corpus;
 
 import com.gengoai.collection.Iterators;
-import com.gengoai.collection.Streams;
+import com.gengoai.stream.Streams;
 import com.gengoai.conversion.Cast;
 import com.gengoai.function.*;
 import com.gengoai.hermes.AnnotatableType;
@@ -30,6 +30,8 @@ import com.gengoai.hermes.AnnotationPipeline;
 import com.gengoai.hermes.Document;
 import com.gengoai.io.resource.Resource;
 import com.gengoai.stream.*;
+import com.gengoai.stream.spark.SparkStream;
+import com.gengoai.stream.spark.SparkStreamingContext;
 import lombok.NonNull;
 
 import java.io.IOException;

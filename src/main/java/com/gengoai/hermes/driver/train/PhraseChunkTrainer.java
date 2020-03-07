@@ -21,9 +21,8 @@ package com.gengoai.hermes.driver.train;
 
 import com.gengoai.apollo.ml.FeatureExtractor;
 import com.gengoai.apollo.ml.Featurizer;
-import com.gengoai.apollo.ml.data.Dataset;
-import com.gengoai.apollo.ml.sequence.CrfSuiteLoader;
-import com.gengoai.apollo.ml.sequence.MalletCRF;
+import com.gengoai.apollo.ml.data.ExampleDataset;
+import com.gengoai.apollo.ml.sequence.Crf;
 import com.gengoai.apollo.ml.sequence.SequenceLabeler;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.POS;
@@ -31,9 +30,13 @@ import com.gengoai.hermes.Types;
 import com.gengoai.hermes.corpus.Corpus;
 import com.gengoai.hermes.ml.BIOLabelMaker;
 import com.gengoai.hermes.ml.BIOTrainer;
-import com.gengoai.hermes.ml.feature.Features;
 
 import java.io.IOException;
+
+import static com.gengoai.hermes.ml.feature.Features.LowerCaseWord;
+import static com.gengoai.hermes.ml.feature.Features.PartOfSpeech;
+import static com.gengoai.hermes.ml.feature.PredefinedFeatures.lenientContext;
+import static com.gengoai.hermes.ml.feature.PredefinedFeatures.strictContext;
 
 /**
  * The type Phrase chunk trainer.
@@ -60,49 +63,37 @@ public class PhraseChunkTrainer extends BIOTrainer {
    }
 
    @Override
-   protected Dataset getDataset(FeatureExtractor<HString> featurizer) throws IOException {
-      return Corpus.reader(corpusFormat)
-                   .read(corpus)
-                   .update(d -> d.setUncompleted(Types.PART_OF_SPEECH))
-                   .annotate(Types.PART_OF_SPEECH)
-                   .update(d -> d.annotations(Types.PHRASE_CHUNK).forEach(annotation -> {
-                      if (annotation.attribute(Types.PART_OF_SPEECH).isInstance(POS.INTJ,
-                                                                                POS.LST,
-                                                                                POS.UCP)) {
-                         d.remove(annotation);
-                      }
-                   }))
-                   .asSequenceDataset(def -> {
-                      def.labelGenerator(new BIOLabelMaker(annotationType));
-                      def.featureExtractor(featurizer);
-                   });
+   protected ExampleDataset getDataset(FeatureExtractor<HString> featurizer) throws IOException {
+      return Corpus.read(corpusSpecification)
+            .update(d -> d.setUncompleted(Types.PART_OF_SPEECH))
+            .annotate(Types.PART_OF_SPEECH)
+            .update(d -> d.annotations(Types.PHRASE_CHUNK).forEach(annotation -> {
+               if(annotation.attribute(Types.PART_OF_SPEECH).isInstance(POS.INTJ,
+                                                                        POS.LST,
+                                                                        POS.UCP)) {
+                  d.remove(annotation);
+               }
+            }))
+            .asSequenceDataset(def -> {
+               def.labelGenerator(new BIOLabelMaker(annotationType));
+               def.featureExtractor(featurizer);
+            });
    }
 
    @Override
    protected FeatureExtractor<HString> getFeaturizer() {
-      return Featurizer.chain(Features.LowerCaseWord,
-                              Features.PartOfSpeech)
-                       .withContext("WORD[-1]",
-                                    "~WORD[-1]|WORD[0]",
-                                    "POS[-1]",
-                                    "~POS[-1]|POS[0]",
-                                    "~WORD[-2]",
-                                    "~WORD[-2]|WORD[-1]",
-                                    "~WORD[-2]|WORD[-1]|WORD[0]",
-                                    "~POS[-2]",
-                                    "~POS[-2]|POS[-1]",
-                                    "~POS[-2]|POS[-1]|POS[0]"
-                                   );
+      return Featurizer.chain(LowerCaseWord, PartOfSpeech)
+            .withContext(lenientContext(LowerCaseWord, -1),
+                         strictContext(LowerCaseWord, -1, LowerCaseWord, 0),
+                         strictContext(PartOfSpeech, -1),
+                         strictContext(PartOfSpeech, -1, PartOfSpeech, 0),
+                         strictContext(PartOfSpeech, -1, LowerCaseWord, 0));
    }
 
    @Override
    protected SequenceLabeler getLearner() {
-      return new MalletCRF(getPreprocessors());
+      return new Crf(getPreprocessors());
    }
 
-   @Override
-   public void setup() throws Exception {
-      CrfSuiteLoader.INSTANCE.load();
-   }
 
 }// END OF PhraseChunkTrainer

@@ -29,7 +29,7 @@ import com.gengoai.string.Strings;
 import com.gengoai.tuple.Tuple2;
 import lombok.NonNull;
 
-import java.util.Optional;
+import java.util.Objects;
 
 import static com.gengoai.tuple.Tuples.$;
 
@@ -61,7 +61,7 @@ public interface Annotation extends HString {
    long DETACHED_ID = Long.MIN_VALUE;
 
    default void attach() {
-      if (isDetached()) {
+      if(isDetached()) {
          document().attach(this);
       }
    }
@@ -69,12 +69,20 @@ public interface Annotation extends HString {
    @Override
    default Tuple2<String, Annotation> dependency() {
       return outgoingRelationStream(true)
-         .filter(r -> r.getType() == Types.DEPENDENCY)
-         .filter(r -> r.getTarget(this).isPresent())
-         .filter(r -> !this.overlaps(r.getTarget(this).orElse(null)))
-         .map(r -> Tuple2.of(r.getValue(), r.getTarget(this).orElse(null)))
-         .findFirst()
-         .orElse($(Strings.EMPTY, Fragments.emptyAnnotation(document())));
+            .filter(r -> r.getType() == Types.DEPENDENCY)
+            .filter(r -> r.getTarget(this).isPresent())
+            .filter(r -> !this.overlaps(r.getTarget(this).orElse(null)))
+            .map(r -> Tuple2.of(r.getValue(), r.getTarget(this).orElse(null)))
+            .findFirst()
+            .orElse($(Strings.EMPTY, Fragments.emptyAnnotation(document())));
+   }
+
+   @Override
+   default <T> T attribute(@NonNull AttributeType<T> attributeType) {
+      if( attributeType == Types.TAG ){
+         return Cast.as(attributeMap().get(getType().getTagAttribute()));
+      }
+      return attributeMap().get(attributeType);
    }
 
 
@@ -101,12 +109,30 @@ public interface Annotation extends HString {
     *
     * @return An optional containing the tag if present
     */
-   default Optional<Tag> getTag() {
+   default Tag getTag() {
       AttributeType<? extends Tag> tagAttributeType = getType().getTagAttribute();
-      if (tagAttributeType == null) {
-         return Optional.ofNullable(attribute(Types.TAG));
-      }
-      return Optional.ofNullable(attribute(tagAttributeType));
+      return Validation.notNull(attribute(tagAttributeType), "Tag is undefined for " + this);
+   }
+
+   /**
+    * <p> Gets the tag, if one, associated with the annotation. The tag attribute is defined for an annotation type
+    * using the <code>tag</code> configuration property, e.g. <code>Annotation.TYPE.tag=fully.qualified.tag.implementation</code>.
+    * Tags must implement the <code>Tag</code> interface. If no tag type is defined, the <code>Attrs.TAG</code>
+    * attribute will be retrieved. </p>
+    *
+    * @param defaultTag The default tag if one is not on the annotation
+    * @return An optional containing the tag if present
+    */
+   default Tag getTag(@NonNull Tag defaultTag) {
+      AttributeType<? extends Tag> tagAttributeType = Cast.as(getType().getTagAttribute());
+      Tag out = attribute(tagAttributeType);
+      return out == null
+             ? defaultTag
+             : out;
+   }
+
+   default boolean hasTag(){
+      return attribute(getType().getTagAttribute()) != null;
    }
 
    /**
@@ -153,7 +179,7 @@ public interface Annotation extends HString {
    default Annotation next(int n) {
       Validation.checkArgument(n > 0);
       Annotation next = next(getType());
-      while (n > 1) {
+      while(n > 1) {
          next = next.next(getType());
          n--;
       }
@@ -178,7 +204,7 @@ public interface Annotation extends HString {
     */
    default boolean tagEquals(Object tag) {
       Tag target = getType().getTagAttribute().decode(tag);
-      return target != null && getTag().map(t -> t.equals(target)).orElse(false);
+      return target != null && Objects.equals(getTag(), target);
    }
 
    /**
@@ -191,7 +217,7 @@ public interface Annotation extends HString {
       Tag target = (tag instanceof Val)
                    ? Cast.<Val>as(tag).as(getType().getTagAttribute().getValueType())
                    : getType().getTagAttribute().decode(tag);
-      return target != null && getTag().map(t -> t.isInstance(target)).orElse(false);
+      return target != null && getTag() != null && getTag().isInstance(target);
    }
 
 

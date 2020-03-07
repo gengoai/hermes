@@ -23,6 +23,7 @@ package com.gengoai.hermes;
 
 import com.gengoai.Language;
 import com.gengoai.StringTag;
+import com.gengoai.Tag;
 import com.gengoai.annotation.Preload;
 import com.gengoai.hermes.morphology.TokenType;
 import com.gengoai.hermes.ner.EntityType;
@@ -32,6 +33,7 @@ import lombok.NonNull;
 import java.lang.reflect.Type;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static com.gengoai.reflection.TypeUtils.parameterizedType;
@@ -54,7 +56,10 @@ public interface Types {
    /**
     * Document CATEGORY
     */
-   AttributeType<Set<String>> CATEGORY = AttributeType.make("CATEGORY", parameterizedType(Set.class, String.class));
+   AttributeType<Set<BasicCategories>> CATEGORY = AttributeType.make("CATEGORY",
+                                                                     parameterizedType(Set.class,
+                                                                                       BasicCategories.class));
+   AttributeType<BasicCategories> CATEGORY_TAG = AttributeType.make("CATEGORY_TAG", BasicCategories.class);
    /**
     * Confidence value associated with an annotation
     */
@@ -138,7 +143,7 @@ public interface Types {
    /**
     * The tag associated with a span
     */
-   AttributeType<StringTag> TAG = AttributeType.make("TAG", StringTag.class);
+   AttributeType<Tag> TAG = AttributeType.make("TAG", StringTag.class);
    /**
     * The constant MWE.
     */
@@ -167,6 +172,12 @@ public interface Types {
     * The constant WORD_SENSE.
     */
    AnnotationType WORD_SENSE = AnnotationType.make("WORD_SENSE", PART_OF_SPEECH);
+
+   AttributeType<Boolean> IS_NEGATED = AttributeType.make("NEGATION", Boolean.class);
+
+
+   AttributeType<Map<String,String>> WIKI_LINKS = AttributeType.make("WIKI_LINKS", parameterizedType(Map.class, String.class, String.class));
+   AttributeType<Set<String>> WIKI_CATEGORIES = AttributeType.make("WIKI_CATEGORIES", parameterizedType(Set.class, String.class));
 
    /**
     * Annotation annotation type.
@@ -232,10 +243,12 @@ public interface Types {
     */
    static String toName(@NonNull String type, @NonNull String name) {
       type = type.toLowerCase();
-      if (!type.endsWith(".")) {
+      if(!type.endsWith(".")) {
          type = type + ".";
       }
-      return name.toLowerCase().startsWith(type) ? name.substring(type.length()) : name;
+      return name.toLowerCase().startsWith(type)
+             ? name.substring(type.length())
+             : name;
    }
 
    /**
@@ -247,12 +260,12 @@ public interface Types {
     */
    static String toTypeName(@NonNull String type, @NonNull String name) {
       int dot = name.indexOf('.');
-      if (dot < 0) {
+      if(dot < 0) {
          return Strings.toTitleCase(type) + "." + name;
       }
 
       String sub = name.substring(0, dot);
-      if (sub.equalsIgnoreCase(type)) {
+      if(sub.equalsIgnoreCase(type)) {
          return Strings.toTitleCase(type) + name.substring(dot);
       }
 

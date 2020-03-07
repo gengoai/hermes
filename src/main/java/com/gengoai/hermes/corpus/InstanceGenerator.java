@@ -26,6 +26,7 @@ import com.gengoai.Validation;
 import com.gengoai.apollo.ml.Example;
 import com.gengoai.apollo.ml.FeatureExtractor;
 import com.gengoai.apollo.ml.LabeledDatum;
+import com.gengoai.apollo.ml.data.DatasetType;
 import com.gengoai.hermes.AttributeType;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.extraction.TermExtractor;
@@ -53,12 +54,14 @@ public class InstanceGenerator implements ExampleGenerator {
    private LyreExpression exampleExtractor = LyreDSL.$_;
    @NonNull
    private FeatureExtractor<HString> featureExtractor = TermExtractor.builder().build();
+   private DatasetType datasetType;
+
 
    public InstanceGenerator exampleExtractor(@NonNull LyreExpression exampleExtractor) {
       this.exampleExtractor = Validation.validate(exampleExtractor.isInstance(LyreExpressionType.HSTRING),
                                                   () -> new IllegalArgumentException(
-                                                     "exampleExtractor expected HSTRING expression, but found "
-                                                        + exampleExtractor.getType()),
+                                                        "exampleExtractor expected HSTRING expression, but found "
+                                                              + exampleExtractor.getType()),
                                                   exampleExtractor);
       return this;
    }
@@ -71,7 +74,7 @@ public class InstanceGenerator implements ExampleGenerator {
    @Override
    public Stream<Example> apply(HString hString) {
       List<HString> examples = exampleExtractor.applyAsList(hString, HString.class);
-      if (labelGenerator == null) {
+      if(labelGenerator == null) {
          return examples.stream().map(h -> featureExtractor.extractExample(h));
       }
       return examples.stream().map(h -> featureExtractor.extractExample(LabeledDatum.of(labelGenerator.apply(h), h)));

@@ -22,6 +22,8 @@
 
 package com.gengoai.hermes.corpus.io.conll;
 
+import com.gengoai.StringTag;
+import com.gengoai.Tag;
 import com.gengoai.conversion.Converter;
 import com.gengoai.hermes.*;
 import com.gengoai.hermes.corpus.io.CoNLLColumnProcessor;
@@ -57,7 +59,7 @@ public abstract class IOBFieldProcessor implements CoNLLColumnProcessor {
    }
 
    private boolean isI(String value, String target) {
-      if (value == null || value.startsWith("O") || value.startsWith("B-")) {
+      if(value == null || value.startsWith("O") || value.startsWith("B-")) {
          return false;
       }
       return value.startsWith("I-") && value.substring(2).toUpperCase().equals(target);
@@ -78,20 +80,20 @@ public abstract class IOBFieldProcessor implements CoNLLColumnProcessor {
                             List<CoNLLRow> rows,
                             Map<Tuple2<Integer, Integer>, Long> sentenceIndexToAnnotationId) {
       final String TYPE = getFieldName();
-      for (int i = 0; i < rows.size(); ) {
-         if (rows.get(i).hasOther(TYPE)) {
+      for(int i = 0; i < rows.size(); ) {
+         if(rows.get(i).hasOther(TYPE)) {
             String value = rows.get(i).getOther(TYPE).toUpperCase();
-            if (Strings.isNotNullOrBlank(value) && (value.startsWith("B-") || value.startsWith("I-"))) {
+            if(Strings.isNotNullOrBlank(value) && (value.startsWith("B-") || value.startsWith("I-"))) {
                int start = rows.get(i).getStart();
                String tag = value.substring(2);
                i++;
-               while (i < rows.size() && isI(rows.get(i).getOther(TYPE), tag)) {
+               while(i < rows.size() && isI(rows.get(i).getOther(TYPE), tag)) {
                   i++;
                }
                i--;
                int end = rows.get(i).getEnd();
                String normalizedTag = normalizeTag(tag);
-               if (Strings.isNotNullOrBlank(normalizedTag)) {
+               if(Strings.isNotNullOrBlank(normalizedTag)) {
                   document.createAnnotation(annotationType,
                                             start,
                                             end,
@@ -109,10 +111,17 @@ public abstract class IOBFieldProcessor implements CoNLLColumnProcessor {
    @Override
    public String processOutput(HString document, Annotation token, int index) {
       Annotation a = token.first(annotationType);
-      if (a.isDetached()) {
+      if(a.isDetached()) {
          return "O";
       }
-      return a.getTag().map(tag -> (a.firstToken() == token ? "B-" : "I-") + tag.name()).orElse("O");
+      Tag tag = a.getTag(new StringTag("O"));
+      if(a.hasTag()) {
+         if(a.firstToken() == token) {
+            return "B-" + tag.name();
+         }
+         return "I-" + tag.name();
+      }
+      return "O";
    }
 
 

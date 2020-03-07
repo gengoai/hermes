@@ -19,7 +19,7 @@
 
 package com.gengoai.hermes.en;
 
-import com.gengoai.collection.Streams;
+import com.gengoai.stream.Streams;
 import com.gengoai.collection.multimap.ArrayListMultimap;
 import com.gengoai.collection.multimap.Multimap;
 import com.gengoai.collection.tree.Trie;

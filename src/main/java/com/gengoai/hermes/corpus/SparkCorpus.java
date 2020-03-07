@@ -68,6 +68,11 @@ public class SparkCorpus implements Corpus, Serializable {
    }
 
    @Override
+   public MStream<Document> parallelStream() {
+      return sparkStream;
+   }
+
+   @Override
    public boolean add(Document document) {
       return false;
    }

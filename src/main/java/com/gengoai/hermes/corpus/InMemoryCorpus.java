@@ -81,6 +81,11 @@ public class InMemoryCorpus implements Corpus, Serializable {
    }
 
    @Override
+   public MStream<Document> parallelStream() {
+      return stream().parallel();
+   }
+
+   @Override
    public Corpus cache() {
       return this;
    }
@@ -92,12 +97,12 @@ public class InMemoryCorpus implements Corpus, Serializable {
 
    @Override
    public Corpus filter(@NonNull SerializablePredicate<? super Document> filter) {
-      return new InMemoryCorpus(corpus.stream().filter(filter));
+      return new InMemoryCorpus(corpus.parallelStream().filter(filter));
    }
 
    @Override
    public Document get(@NonNull String id) {
-      return corpus.stream().filter(d -> d.getId().equals(id)).findFirst().orElse(null);
+      return corpus.parallelStream().filter(d -> d.getId().equals(id)).findFirst().orElse(null);
    }
 
    @Override

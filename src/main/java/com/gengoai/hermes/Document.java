@@ -156,7 +156,7 @@ public interface Document extends HString {
    static Document fromJson(String jsonString) {
       try {
          return Json.parse(jsonString, Document.class);
-      } catch (IOException e) {
+      } catch(IOException e) {
          throw new RuntimeException(e);
       }
    }
@@ -169,7 +169,7 @@ public interface Document extends HString {
     * @return the boolean
     */
    static boolean hasAnnotations(String json, AnnotatableType... types) {
-      if (types.length == 0) {
+      if(types.length == 0) {
          return true;
       }
       Set<AnnotatableType> target = Sets.asLinkedHashSet(Arrays.asList(types));
@@ -178,11 +178,11 @@ public interface Document extends HString {
       Gson gson = new Gson();
       Map<String, Object> rawDoc = gson.fromJson(json, mapType);
       return rawDoc.containsKey("completed") && Cast.<Map<String, Object>>as(rawDoc.get("completed"))
-         .keySet()
-         .stream()
-         .map(AnnotatableType::valueOf)
-         .collect(Collectors.toSet())
-         .containsAll(target);
+            .keySet()
+            .stream()
+            .map(AnnotatableType::valueOf)
+            .collect(Collectors.toSet())
+            .containsAll(target);
    }
 
    /**
@@ -305,7 +305,7 @@ public interface Document extends HString {
 
    @Override
    default Language getLanguage() {
-      if (hasAttribute(Types.LANGUAGE)) {
+      if(hasAttribute(Types.LANGUAGE)) {
          return attribute(Types.LANGUAGE);
       }
       return Hermes.defaultLanguage();
@@ -422,7 +422,7 @@ public interface Document extends HString {
       }
 
       /**
-       * Adds an attribute to the annotation
+       * Sets the value of the given AttributeType on the new Annotation to the given value.
        *
        * @param type  the attribute type
        * @param value the attribute value
@@ -515,12 +515,12 @@ public interface Document extends HString {
          DefaultDocumentImpl document = new DefaultDocumentImpl(entry.getStringProperty("id"),
                                                                 entry.getStringProperty("content"));
 
-         if (entry.hasProperty("attributes")) {
+         if(entry.hasProperty("attributes")) {
             document.attributeMap().putAll(entry.getProperty("attributes").getAs(AttributeMap.class));
          }
 
          AtomicLong id = new AtomicLong(0);
-         if (entry.hasProperty("completed")) {
+         if(entry.hasProperty("completed")) {
             entry.getProperty("completed")
                  .propertyIterator()
                  .forEachRemaining(e -> {
@@ -529,7 +529,7 @@ public interface Document extends HString {
                  });
          }
 
-         if (entry.hasProperty("annotations")) {
+         if(entry.hasProperty("annotations")) {
             entry.getProperty("annotations")
                  .elementIterator()
                  .forEachRemaining(ae -> {
@@ -540,13 +540,13 @@ public interface Document extends HString {
                                                                       ae.getIntProperty("end"));
                     long aid = ae.getLongProperty("id");
                     annotation.setId(aid);
-                    if (aid > id.get()) {
+                    if(aid > id.get()) {
                        id.set(aid + 1);
                     }
-                    if (ae.hasProperty("attributes")) {
+                    if(ae.hasProperty("attributes")) {
                        annotation.attributeMap().putAll(ae.getProperty("attributes").getAs(AttributeMap.class));
                     }
-                    if (ae.hasProperty("relations")) {
+                    if(ae.hasProperty("relations")) {
                        annotation.addAll(ae.getProperty("relations")
                                            .getAsArray(Relation.class));
                     }
@@ -567,15 +567,15 @@ public interface Document extends HString {
                                     .addProperty("attributes", document.attributeMap());
 
          Set<AnnotatableType> completedTypes = document.completed();
-         if (completedTypes.size() > 0) {
+         if(completedTypes.size() > 0) {
             JsonEntry completed = JsonEntry.object();
-            for (AnnotatableType annotatableType : completedTypes) {
+            for(AnnotatableType annotatableType : completedTypes) {
                completed.addProperty(annotatableType.canonicalName(), document.getAnnotationProvider(annotatableType));
             }
             entry.addProperty("completed", completed);
          }
 
-         if (document.numberOfAnnotations() > 0) {
+         if(document.numberOfAnnotations() > 0) {
             final JsonEntry annotations = JsonEntry.array();
             document.annotationStream().forEach(annotation -> {
                JsonEntry aj = JsonEntry.object()
@@ -583,10 +583,10 @@ public interface Document extends HString {
                                        .addProperty("type", annotation.getType().name())
                                        .addProperty("start", annotation.start())
                                        .addProperty("end", annotation.end());
-               if (annotation.attributeMap().size() > 0) {
+               if(annotation.attributeMap().size() > 0) {
                   aj.addProperty("attributes", annotation.attributeMap());
                }
-               if (annotation.outgoingRelations(false).size() > 0) {
+               if(annotation.outgoingRelations(false).size() > 0) {
                   aj.addProperty("relations", annotation.outgoingRelations(false));
                }
                annotations.addValue(aj);

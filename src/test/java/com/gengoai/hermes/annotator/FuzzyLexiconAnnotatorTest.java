@@ -68,7 +68,7 @@ public class FuzzyLexiconAnnotatorTest {
       List<Annotation> annotationList = document.annotations(Types.LEXICON_MATCH);
       assertEquals(5, annotationList.size());
       assertEquals("get very tired", annotationList.get(0).toLowerCase());
-      assertEquals("VERY_SLEEPY", annotationList.get(0).getTag().get().name());
+      assertEquals("VERY_SLEEPY", annotationList.get(0).getTag().name());
       assertEquals("sitting by her sister on the bank", annotationList.get(1).toLowerCase());
       assertEquals("she had peeped", annotationList.get(2).toLowerCase());
       assertEquals("feel very sleepy", annotationList.get(3).toLowerCase());

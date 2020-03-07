@@ -29,6 +29,8 @@ import com.gengoai.hermes.POS;
 import com.gengoai.hermes.Types;
 import lombok.NonNull;
 
+import java.util.regex.Pattern;
+
 /**
  * The type Pos tagger.
  *
@@ -36,13 +38,8 @@ import lombok.NonNull;
  */
 public class POSTagger extends AnnotationTagger {
    private static final long serialVersionUID = 1L;
-   /**
-    * The Featurizer.
-    */
+   private static final Pattern ORDINAL = Pattern.compile("^\\d+(rd|th|st|nd)$", Pattern.CASE_INSENSITIVE);
    final FeatureExtractor<HString> featurizer;
-   /**
-    * The Labeler.
-    */
    final SequenceLabeler labeler;
 
    /**
@@ -64,14 +61,16 @@ public class POSTagger extends AnnotationTagger {
    public void tag(Annotation sentence) {
       LabeledSequence<Annotation> sequenceInput = new LabeledSequence<>(sentence.tokens());
       Labeling result = labeler.label(featurizer.extractExample(sequenceInput));
-      for (int i = 0; i < sentence.tokenLength(); i++) {
-         if (sentence.tokenAt(i - 1).pos().isPronoun()
-            && sentence.tokenAt(i).contentEqualsIgnoreCase("like")
+      for(int i = 0; i < sentence.tokenLength(); i++) {
+         if(ORDINAL.matcher(sentence.tokenAt(i)).matches()) {
+            sentence.tokenAt(i).put(Types.PART_OF_SPEECH, POS.JJ);
+         } else if(sentence.tokenAt(i - 1).pos().isPronoun()
+               && sentence.tokenAt(i).contentEqualsIgnoreCase("like")
          ) {
             sentence.tokenAt(i).put(Types.PART_OF_SPEECH, POS.VB);
-         } else if (sentence.tokenAt(i - 1).pos().isVerb() &&
-            sentence.tokenAt(i + 1).contentEqualsIgnoreCase("to") &&
-            sentence.tokenAt(i).toLowerCase().endsWith("ing")) {
+         } else if(sentence.tokenAt(i - 1).pos().isVerb() &&
+               sentence.tokenAt(i + 1).contentEqualsIgnoreCase("to") &&
+               sentence.tokenAt(i).toLowerCase().endsWith("ing")) {
             //Common error of MODAL + GERUND (where GERUND form is commonly a noun) + to => VBG
             sentence.tokenAt(i).put(Types.PART_OF_SPEECH, POS.VBG);
          } else {

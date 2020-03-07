@@ -69,6 +69,13 @@ public interface Extraction extends Serializable, Iterable<HString> {
       return new StringExtraction(list, null);
    }
 
+   /**
+    * From string list extraction.
+    *
+    * @param list       the list
+    * @param calculator the calculator
+    * @return the extraction
+    */
    static Extraction fromStringList(@NonNull List<String> list, ValueCalculator calculator) {
       return new StringExtraction(list, calculator);
    }
@@ -83,17 +90,38 @@ public interface Extraction extends Serializable, Iterable<HString> {
       return new HStringExtraction(list, HString::toString, null);
    }
 
+   /**
+    * From h string list extraction.
+    *
+    * @param list     the list
+    * @param toString the to string
+    * @return the extraction
+    */
    static Extraction fromHStringList(@NonNull List<HString> list,
                                      @NonNull SerializableFunction<HString, String> toString) {
       return new HStringExtraction(list, toString, null);
    }
 
+   /**
+    * From h string list extraction.
+    *
+    * @param list       the list
+    * @param toString   the to string
+    * @param calculator the calculator
+    * @return the extraction
+    */
    static Extraction fromHStringList(@NonNull List<HString> list,
                                      @NonNull SerializableFunction<HString, String> toString,
                                      ValueCalculator calculator) {
       return new HStringExtraction(list, toString, calculator);
    }
 
+   /**
+    * From counter extraction.
+    *
+    * @param counter the counter
+    * @return the extraction
+    */
    static Extraction fromCounter(@NonNull Counter<String> counter) {
       return new CounterExtraction(counter);
    }

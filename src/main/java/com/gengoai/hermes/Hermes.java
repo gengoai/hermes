@@ -34,7 +34,7 @@ import lombok.NonNull;
 import java.util.Locale;
 import java.util.Optional;
 
-import static com.gengoai.hermes.corpus.Formats.LUCENE;
+import static com.gengoai.hermes.corpus.Formats.HCF;
 import static com.gengoai.string.Re.*;
 
 /**
@@ -79,7 +79,7 @@ public final class Hermes {
     */
    public static String defaultCorpusFormat() {
       return Config.get("hermes.defaultCorpusFormat")
-                   .asString(LUCENE.toString());
+                   .asString(HCF.toString());
    }
 
    public static Class<?> defaultImplementation(@NonNull Language language, @NonNull String resource) {

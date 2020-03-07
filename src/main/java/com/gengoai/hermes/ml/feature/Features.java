@@ -1,15 +1,12 @@
 package com.gengoai.hermes.ml.feature;
 
 import com.gengoai.Language;
-import com.gengoai.apollo.ml.Featurizer;
+import com.gengoai.hermes.BasicCategories;
 import com.gengoai.hermes.HString;
-import com.gengoai.hermes.Types;
+import com.gengoai.string.StringMatcher;
 import com.gengoai.string.Strings;
 
-import java.util.Collections;
-
-import static com.gengoai.apollo.ml.Featurizer.multiValueFeaturizer;
-import static com.gengoai.apollo.ml.Featurizer.valueFeaturizer;
+import static com.gengoai.hermes.ml.feature.PredefinedFeatures.*;
 
 /**
  * The type Features.
@@ -18,57 +15,127 @@ import static com.gengoai.apollo.ml.Featurizer.valueFeaturizer;
  */
 public final class Features {
 
-   public static final Featurizer<HString> Categories = multiValueFeaturizer("CATEGORY",
-                                                                             h -> h.attribute(Types.CATEGORY,
-                                                                                              Collections.emptySet()));
-   /*
-    *
+   /**
     * The constant IsLanguageName.
     */
-   public static final Featurizer<HString> IsLanguageName = valueFeaturizer("IsLanguageName",
-                                                                            h -> {
-                                                                               Language language = Language.fromString(
-                                                                                  h.toPOSString());
-                                                                               if (language != Language.UNKNOWN) {
-                                                                                  return language.getCode();
-                                                                               }
-                                                                               return null;
-                                                                            });
+   public static final PredefinedFeaturizer IsLanguageName = predefinedValueFeature("IsLanguageName",
+                                                                                    h -> {
+                                                                                       Language language = Language.fromString(
+                                                                                             h.toString());
+                                                                                       if(language != Language.UNKNOWN) {
+                                                                                          return language.getCode();
+                                                                                       }
+                                                                                       return null;
+                                                                                    });
+
+   public static final PredefinedFeaturizer IsBeginOfSentence = predefinedPredicateFeature("IsBeginOfSentence",
+                                                                                           h -> h.start() == h.sentence()
+                                                                                                              .start()
+                                                                                          );
    /**
     * The constant Lemma.
     */
-   public static final Featurizer<HString> Lemma = valueFeaturizer("LEMMA", HString::getLemma);
+   public static final PredefinedFeaturizer Lemma = predefinedValueFeature("Lemma", HString::getLemma);
    /**
     * The constant LowerCaseWord.
     */
-   public static final Featurizer<HString> LowerCaseWord = valueFeaturizer("WORD", HString::toLowerCase);
+   public static final PredefinedFeaturizer LowerCaseWord = predefinedValueFeature("LowerWord", HString::toLowerCase);
    /**
     * The constant PartOfSpeech.
     */
-   public static final Featurizer<HString> PartOfSpeech = valueFeaturizer("POS",
-                                                                          hString -> hString.pos() == null
-                                                                                     ? null
-                                                                                     : hString.pos()
-                                                                                              .asString());
+   public static final PredefinedFeaturizer PartOfSpeech = predefinedValueFeature("POS",
+                                                                                  hString -> hString.pos() == null
+                                                                                             ? null
+                                                                                             : hString.pos()
+                                                                                                      .asString());
    /**
     * The constant Word.
     */
-   public static final Featurizer<HString> Word = valueFeaturizer("WORD", HString::toString);
+   public static final PredefinedFeaturizer Word = predefinedValueFeature("Word", HString::toString);
    /**
     * The constant WordAndClass.
     */
-   public static final Featurizer<HString> WordAndClass = valueFeaturizer("WORD_AND_CLASS",
-                                                                          string -> string.toString() +
-                                                                             "," +
-                                                                             WordClassFeaturizer.INSTANCE
-                                                                                .applyAsFeatures(
-                                                                                   string)
-                                                                                .get(0)
-                                                                                .getSuffix());
+   public static final PredefinedFeaturizer WordAndClass = predefinedValueFeature("WordAndClass",
+                                                                                  string -> string.toString() +
+                                                                                        "," +
+                                                                                        WordClassFeaturizer.INSTANCE
+                                                                                              .applyAsFeatures(
+                                                                                                    string)
+                                                                                              .get(0)
+                                                                                              .getSuffix());
+
+   /**
+    * The constant IsInitialCapital.
+    */
+   public static final PredefinedFeaturizer IsInitialCapital = predefinedPredicateFeature("IsInitialCapital",
+                                                                                          h -> Character.isUpperCase(
+                                                                                                h.charAt(0)));
+
+   /**
+    * The constant hasCapital.
+    */
+   public static final PredefinedFeaturizer hasCapital = predefinedPredicateFeature("HasCapital",
+                                                                                    StringMatcher.HasUpperCase);
+
+
+   /**
+    * The constant IsDigit.
+    */
+   public static final PredefinedFeaturizer IsDigit = predefinedPredicateFeature("IsDigit", Strings::isDigit);
+
+
+   /**
+    * The constant IsAlphaNumeric.
+    */
+   public static final PredefinedFeaturizer IsAlphaNumeric = predefinedPredicateFeature("IsAlphaNumeric",
+                                                                                        Strings::isAlphaNumeric);
+
+
+   /**
+    * The constant IsPlace.
+    */
+   public static final PredefinedFeaturizer IsPlace = predefinedPredicateFeature("IsPlace",
+                                                                                 h -> h.isA(BasicCategories.PLACES));
+
+   public static final PredefinedFeaturizer IsStateOrPrefecture = predefinedPredicateFeature("IsStateOrPrefecture",
+                                                                                             h -> h.isA(BasicCategories.STATES_OR_PREFECTURES));
+   /**
+    * The constant IsHuman.
+    */
+   public static final PredefinedFeaturizer IsHuman = predefinedPredicateFeature("IsHuman",
+                                                                                 h -> h.isA(BasicCategories.HUMAN));
+
+   /**
+    * The constant isTime.
+    */
+   public static final PredefinedFeaturizer IsTime = predefinedPredicateFeature("isTime",
+                                                                                h -> h.isA(BasicCategories.TIME));
+
+   public static final PredefinedFeaturizer IsMonth = predefinedPredicateFeature("isMonth",
+                                                                                 h -> h.isA(BasicCategories.MONTHS));
+   /**
+    * The constant isOrganization.
+    */
+   public static final PredefinedFeaturizer IsOrganization = predefinedPredicateFeature("isOrganization",
+                                                                                        h -> h.isA(BasicCategories.ORGANIZATIONS));
+
+   /**
+    * The constant IsAllCaps.
+    */
+   public static final PredefinedFeaturizer IsAllCaps = predefinedPredicateFeature("IsAllCaps",
+                                                                                   Strings::isUpperCase);
+
+   /**
+    * The constant IsPunctuation.
+    */
+   public static final PredefinedFeaturizer IsPunctuation = predefinedPredicateFeature("IsPunctuation",
+                                                                                       Strings::isPunctuation);
+
 
    private Features() {
       throw new IllegalArgumentException();
    }
+
 
    /**
     * Is digit boolean.
@@ -79,39 +146,39 @@ public final class Features {
    public static boolean isDigit(HString word) {
       String norm = word.toLowerCase();
       return Strings.isDigit(word) ||
-         norm.equals("one") ||
-         norm.equals("two") ||
-         norm.equals("three") ||
-         norm.equals("four") ||
-         norm.equals("five") ||
-         norm.equals("six") ||
-         norm.equals("seven") ||
-         norm.equals("eight") ||
-         norm.equals("nine") ||
-         norm.equals("ten") ||
-         norm.equals("eleven") ||
-         norm.equals("twelve") ||
-         norm.equals("thirteen") ||
-         norm.equals("fourteen") ||
-         norm.equals("fifteen") ||
-         norm.equals("sixteen") ||
-         norm.equals("seventeen") ||
-         norm.equals("eighteen") ||
-         norm.equals("nineteen") ||
-         norm.equals("twenty") ||
-         norm.equals("thirty") ||
-         norm.equals("forty") ||
-         norm.equals("fifty") ||
-         norm.equals("sixty") ||
-         norm.equals("seventy") ||
-         norm.equals("eighty") ||
-         norm.equals("ninety") ||
-         norm.equals("hundred") ||
-         norm.equals("thousand") ||
-         norm.equals("million") ||
-         norm.equals("billion") ||
-         norm.equals("trillion") ||
-         Strings.isDigit(word.replaceAll("\\W+", ""));
+            norm.equals("one") ||
+            norm.equals("two") ||
+            norm.equals("three") ||
+            norm.equals("four") ||
+            norm.equals("five") ||
+            norm.equals("six") ||
+            norm.equals("seven") ||
+            norm.equals("eight") ||
+            norm.equals("nine") ||
+            norm.equals("ten") ||
+            norm.equals("eleven") ||
+            norm.equals("twelve") ||
+            norm.equals("thirteen") ||
+            norm.equals("fourteen") ||
+            norm.equals("fifteen") ||
+            norm.equals("sixteen") ||
+            norm.equals("seventeen") ||
+            norm.equals("eighteen") ||
+            norm.equals("nineteen") ||
+            norm.equals("twenty") ||
+            norm.equals("thirty") ||
+            norm.equals("forty") ||
+            norm.equals("fifty") ||
+            norm.equals("sixty") ||
+            norm.equals("seventy") ||
+            norm.equals("eighty") ||
+            norm.equals("ninety") ||
+            norm.equals("hundred") ||
+            norm.equals("thousand") ||
+            norm.equals("million") ||
+            norm.equals("billion") ||
+            norm.equals("trillion") ||
+            Strings.isDigit(word.replaceAll("\\W+", ""));
    }
 
 

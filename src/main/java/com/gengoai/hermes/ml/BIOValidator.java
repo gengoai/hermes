@@ -13,19 +13,17 @@ public class BIOValidator implements SequenceValidator {
 
    @Override
    public boolean isValid(String label, String previousLabel, Example instance) {
-      if (label.startsWith("I-")) {
-         if (previousLabel == null) {
+      if(label.startsWith("I-")) {
+         if(previousLabel == null) {
             return false;
          }
-         if (previousLabel.startsWith("O")) {
+         if(previousLabel.startsWith("O")) {
             return false;
          }
-         if (previousLabel.startsWith("I-") && !label.equals(previousLabel)) {
+         if(previousLabel.startsWith("I-") && !label.equals(previousLabel)) {
             return false;
          }
-         if (previousLabel.startsWith("B-") && !label.substring(2).equals(previousLabel.substring(2))) {
-            return false;
-         }
+         return !previousLabel.startsWith("B-") || label.substring(2).equals(previousLabel.substring(2));
       }
       return true;
    }

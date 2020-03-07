@@ -73,6 +73,11 @@ public final class LexiconManager implements Serializable, Loggable {
       }
 
       @Override
+      public List<LexiconEntry<?>> getEntries(String hString) {
+         return Collections.emptyList();
+      }
+
+      @Override
       public int getMaxLemmaLength() {
          return 0;
       }
@@ -163,7 +168,7 @@ public final class LexiconManager implements Serializable, Loggable {
    protected static Lexicon loadLexicon(String name, Language language) {
       try {
          LexiconSpecification specification = safeParse(Hermes.findConfig(name, Hermes.LEXICON, language).orElse(null));
-         if (specification == null) {
+         if(specification == null) {
             return Hermes.findResource(Strings.appendIfNotPresent(name, ".json"), Hermes.LEXICON, language)
                          .map(r -> "lexicon:mem:json::" + r.descriptor())
                          .map(Unchecked.function(s -> LexiconSpecification.parse(s).create()))
@@ -174,7 +179,7 @@ public final class LexiconManager implements Serializable, Loggable {
                          });
          }
          return specification.create();
-      } catch (IOException e) {
+      } catch(IOException e) {
          log.warn(e);
          return EmptyLexicon;
       }
@@ -223,7 +228,7 @@ public final class LexiconManager implements Serializable, Loggable {
    protected static LexiconSpecification safeParse(String spec) {
       try {
          return LexiconSpecification.parse(spec);
-      } catch (Exception e) {
+      } catch(Exception e) {
          return null;
       }
    }

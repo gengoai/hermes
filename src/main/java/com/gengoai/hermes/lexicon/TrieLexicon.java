@@ -79,7 +79,7 @@ public class TrieLexicon extends Lexicon {
    @Override
    public Set<LexiconEntry<?>> entries(String lemma) {
       lemma = normalize(lemma);
-      if (trie.containsKey(lemma)) {
+      if(trie.containsKey(lemma)) {
          return new HashSet<>(trie.get(lemma));
       }
       return Collections.emptySet();
@@ -93,16 +93,28 @@ public class TrieLexicon extends Lexicon {
    @Override
    public List<LexiconEntry<?>> getEntries(HString hString) {
       String str = normalize(hString);
-      if (!trie.containsKey(str)) {
-         if (isCaseSensitive() && Strings.isUpperCase(hString)) {
+      if(!trie.containsKey(str)) {
+         if(isCaseSensitive() && Strings.isUpperCase(hString)) {
             return Collections.emptyList();
          }
          str = normalize(hString.getLemma());
       }
-      if (trie.containsKey(str)) {
+      if(trie.containsKey(str)) {
          return Cast.as(trie.get(str)
                             .stream()
                             .filter(le -> le.getConstraint() == null || le.getConstraint().test(hString))
+                            .sorted()
+                            .collect(Collectors.toList()));
+      }
+      return Collections.emptyList();
+   }
+
+   @Override
+   public List<LexiconEntry<?>> getEntries(String hString) {
+      String str = normalize(hString);
+      if(trie.containsKey(str)) {
+         return Cast.as(trie.get(str)
+                            .stream()
                             .sorted()
                             .collect(Collectors.toList()));
       }
@@ -203,7 +215,7 @@ public class TrieLexicon extends Lexicon {
       @Override
       public LexiconBuilder add(LexiconEntry<?> entry) {
          String norm = normalize(entry.getLemma());
-         if (!trie.containsKey(norm)) {
+         if(!trie.containsKey(norm)) {
             trie.put(norm, new LinkedList<>());
          }
          updateMax(norm, entry.getTokenLength());

@@ -23,9 +23,10 @@ package com.gengoai.hermes.ml;
 
 import com.gengoai.Stopwatch;
 import com.gengoai.apollo.ml.FeatureExtractor;
+import com.gengoai.apollo.ml.FitParameters;
 import com.gengoai.apollo.ml.Params;
 import com.gengoai.apollo.ml.Split;
-import com.gengoai.apollo.ml.data.Dataset;
+import com.gengoai.apollo.ml.data.ExampleDataset;
 import com.gengoai.apollo.ml.preprocess.MinCountTransform;
 import com.gengoai.apollo.ml.preprocess.PreprocessorList;
 import com.gengoai.apollo.ml.sequence.Labeling;
@@ -37,6 +38,7 @@ import com.gengoai.config.Config;
 import com.gengoai.hermes.AnnotatableType;
 import com.gengoai.hermes.AnnotationType;
 import com.gengoai.hermes.HString;
+import com.gengoai.hermes.Hermes;
 import com.gengoai.hermes.corpus.Corpus;
 import com.gengoai.io.resource.Resource;
 import com.gengoai.logging.Loggable;
@@ -45,8 +47,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Random;
 import java.util.Set;
-
-import static com.gengoai.hermes.corpus.io.CorpusParameters.IN_MEMORY;
 
 /**
  * The type Bio trainer.
@@ -63,13 +63,8 @@ public abstract class BIOTrainer extends CommandLineApplication implements Logga
    /**
     * The Corpus.
     */
-   @Option(description = "Location of the corpus to process", required = true)
-   protected Resource corpus;
-   /**
-    * The Corpus format.
-    */
-   @Option(name = "format", description = "Format of the corpus", required = true)
-   protected String corpusFormat;
+   @Option(name = "corpus", description = "The corpus specification of the corpus to use to train", required = true)
+   protected String corpusSpecification;
    /**
     * The Model.
     */
@@ -85,7 +80,6 @@ public abstract class BIOTrainer extends CommandLineApplication implements Logga
     */
    @Option(description = "TEST or TRAIN", defaultValue = "TEST")
    protected Mode mode;
-
    /**
     * The Training annotation.
     */
@@ -101,9 +95,14 @@ public abstract class BIOTrainer extends CommandLineApplication implements Logga
    public BIOTrainer(String name, AnnotationType annotationType) {
       super(name);
       this.annotationType = annotationType;
-      if (this.trainingAnnotation == null) {
+      if(this.trainingAnnotation == null) {
          this.trainingAnnotation = annotationType;
       }
+   }
+
+   @Override
+   public Set<String> getDependentPackages() {
+      return Collections.singleton(Hermes.HERMES_PACKAGE);
    }
 
    /**
@@ -113,14 +112,12 @@ public abstract class BIOTrainer extends CommandLineApplication implements Logga
     * @return the dataset
     * @throws IOException the io exception
     */
-   protected Dataset getDataset(FeatureExtractor<HString> featurizer) throws IOException {
+   protected ExampleDataset getDataset(FeatureExtractor<HString> featurizer) throws IOException {
       Stopwatch read = Stopwatch.createStarted();
-      Corpus c = Corpus.reader(corpusFormat)
-                       .option(IN_MEMORY, true)
-                       .read(corpus);
+      Corpus c = Corpus.read(corpusSpecification);
       read.stop();
       logInfo("Completed reading corpus in: {0}", read);
-      if (required().length > 0) {
+      if(required().length > 0) {
          c.annotate(required());
       }
       return c.asSequenceDataset(s -> {
@@ -149,7 +146,7 @@ public abstract class BIOTrainer extends CommandLineApplication implements Logga
     * @return the preprocessors
     */
    protected PreprocessorList getPreprocessors() {
-      if (minFeatureCount > 1) {
+      if(minFeatureCount > 1) {
          return new PreprocessorList(new MinCountTransform(minFeatureCount));
       }
       return new PreprocessorList();
@@ -164,6 +161,11 @@ public abstract class BIOTrainer extends CommandLineApplication implements Logga
       return new BIOValidator();
    }
 
+
+   protected FitParameters<?> getFitParameters() {
+      return null;
+   }
+
    /**
     * Label.
     *
@@ -171,14 +173,14 @@ public abstract class BIOTrainer extends CommandLineApplication implements Logga
     */
    protected void label() throws Exception {
       BIOTagger tagger = BIOTagger.read(model);
-      Dataset test = getDataset(tagger.featurizer).sample(true,25);
+      ExampleDataset test = getDataset(tagger.featurizer).sample(true, 25);
       String fname = Config.get("wordFeature").asString("WORD");
       test.forEach(seq -> {
          Labeling labeling = tagger.labeler.label(seq);
-         for (int i = 0; i < seq.size(); i++) {
+         for(int i = 0; i < seq.size(); i++) {
             String word = seq.getExample(i)
-                             .getFeatureByPrefix(fname)
-                             .getSuffix();
+                  .getFeatureByPrefix(fname)
+                  .getSuffix();
             System.out.print(word + "/" + labeling.getLabel(i) + "/" + seq.getExample(i).getDiscreteLabel() + " ");
          }
          System.out.println();
@@ -187,7 +189,7 @@ public abstract class BIOTrainer extends CommandLineApplication implements Logga
 
    @Override
    protected void programLogic() throws Exception {
-      switch (mode) {
+      switch(mode) {
          case TEST:
             test();
             break;
@@ -220,11 +222,11 @@ public abstract class BIOTrainer extends CommandLineApplication implements Logga
    protected void split() throws Exception {
       //TODO: UPDATE
       final FeatureExtractor<HString> featurizer = getFeaturizer();
-      Dataset all = getDataset(featurizer);
+      ExampleDataset all = getDataset(featurizer);
       all = all.shuffle(new Random(56789));
       Split trainTest = all.split(0.80);
       PreprocessorList preprocessors = getPreprocessors();
-      if (preprocessors != null && preprocessors.size() > 0) {
+      if(preprocessors != null && preprocessors.size() > 0) {
          SequenceLabeler labeler = getLearner();
          labeler.setSequenceValidator(getValidator());
          labeler.fit(trainTest.train);
@@ -242,7 +244,7 @@ public abstract class BIOTrainer extends CommandLineApplication implements Logga
     */
    protected void test() throws Exception {
       BIOTagger tagger = BIOTagger.read(model);
-      Dataset test = getDataset(tagger.featurizer);
+      ExampleDataset test = getDataset(tagger.featurizer);
       BIOEvaluation eval = new BIOEvaluation();
       eval.evaluate(tagger.labeler, test);
       eval.output();
@@ -255,10 +257,14 @@ public abstract class BIOTrainer extends CommandLineApplication implements Logga
     */
    protected void train() throws Exception {
       final FeatureExtractor<HString> featurizer = getFeaturizer();
-      Dataset train = getDataset(featurizer);
+      ExampleDataset train = getDataset(featurizer);
       SequenceLabeler labeler = getLearner();
       labeler.setSequenceValidator(getValidator());
-      labeler.fit(train, labeler.getFitParameters().set(Params.verbose, true));
+      FitParameters<?> fitParameters = getFitParameters();
+      if(fitParameters == null) {
+         fitParameters = labeler.getFitParameters().set(Params.verbose, true);
+      }
+      labeler.fit(train, fitParameters);
       BIOTagger tagger = new BIOTagger(featurizer, annotationType, labeler);
       tagger.write(model);
    }

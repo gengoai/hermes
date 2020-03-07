@@ -21,7 +21,6 @@
 
 package com.gengoai.hermes.ml;
 
-import com.gengoai.Tag;
 import com.gengoai.function.SerializableFunction;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.AnnotationType;
@@ -68,12 +67,12 @@ public class BIOLabelMaker implements SerializableFunction<HString, Object> {
    public Object apply(HString annotation) {
       Optional<Annotation> target = annotation.annotations(annotationType).stream().findFirst();
       return target.map(a -> {
-         String tag = a.getTag().map(Tag::name).orElse(Strings.EMPTY);
-         if (Strings.isNotNullOrBlank(tag) && (validTags.isEmpty() || validTags.contains(tag))) {
-            if (a.start() == annotation.start()) {
-               return "B-" + a.getTag().map(Tag::name).orElse(Strings.EMPTY);
+         String tag = a.getTag().name();
+         if(Strings.isNotNullOrBlank(tag) && (validTags.isEmpty() || validTags.contains(tag))) {
+            if(a.start() == annotation.start()) {
+               return "B-" + a.getTag().name();
             } else {
-               return "I-" + a.getTag().map(Tag::name).orElse(Strings.EMPTY);
+               return "I-" + a.getTag().name();
             }
          } else {
             return "O";

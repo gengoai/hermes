@@ -21,7 +21,6 @@
 
 package com.gengoai.hermes;
 
-import com.gengoai.Validation;
 import com.gengoai.string.Strings;
 
 import java.util.Collections;
@@ -173,15 +172,15 @@ public final class Fragments {
 //         return content.length();
 //      }
 
-      @Override
-      public HString find(String text, int start) {
-         Validation.checkElementIndex(start, length());
-         int pos = indexOf(text, start);
-         if (pos == -1) {
-            return Fragments.detachedEmptyHString();
-         }
-         return new SingleToken(content.substring(pos, pos + text.length()));
-      }
+//      @Override
+//      public HString find(String text, int start) {
+//         Validation.checkElementIndex(start, length());
+//         int pos = indexOf(text, start);
+//         if (pos == -1) {
+//            return Fragments.detachedEmptyHString();
+//         }
+//         return new SingleToken(content.substring(pos, pos + text.length()));
+//      }
 
 //      @Override
 //      public int start() {

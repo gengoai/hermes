@@ -75,7 +75,7 @@ public class Lyre {
          }
          return expressions.get(0);
       } catch (ParseException e) {
-         throw new RuntimeException(e.getMessage());
+         throw new RuntimeException(e);
       }
    }
 

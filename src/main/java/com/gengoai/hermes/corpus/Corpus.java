@@ -22,8 +22,8 @@
 
 package com.gengoai.hermes.corpus;
 
-import com.gengoai.apollo.ml.data.Dataset;
 import com.gengoai.apollo.ml.data.DatasetType;
+import com.gengoai.apollo.ml.data.ExampleDataset;
 import com.gengoai.apollo.statistics.measure.Association;
 import com.gengoai.apollo.statistics.measure.ContingencyTable;
 import com.gengoai.apollo.statistics.measure.ContingencyTableCalculator;
@@ -54,10 +54,10 @@ import com.gengoai.io.resource.Resource;
 import com.gengoai.logging.Loggable;
 import com.gengoai.parsing.ParseException;
 import com.gengoai.specification.Specification;
+import com.gengoai.stream.MCounterAccumulator;
+import com.gengoai.stream.MLongAccumulator;
 import com.gengoai.stream.MStream;
 import com.gengoai.stream.StreamingContext;
-import com.gengoai.stream.accumulator.MCounterAccumulator;
-import com.gengoai.stream.accumulator.MLongAccumulator;
 import com.gengoai.tuple.Tuple;
 import lombok.NonNull;
 
@@ -120,7 +120,7 @@ public interface Corpus extends Iterable<Document>, AutoCloseable, Loggable {
     * @return the corpus
     */
    static Corpus create(@NonNull MStream<Document> documents) {
-      if (documents.isDistributed()) {
+      if(documents.isDistributed()) {
          MStream<String> strStream = documents.map(Document::toJson).cache();
          strStream.count();
          return new SparkCorpus(strStream);
@@ -165,7 +165,7 @@ public interface Corpus extends Iterable<Document>, AutoCloseable, Loggable {
       reader.getOptions()
             .parameterNames()
             .forEach(name -> {
-               if (specification.getQueryValue(name, null) != null) {
+               if(specification.getQueryValue(name, null) != null) {
                   reader.option(name, specification.getQueryValue(name, null));
                }
             });
@@ -231,7 +231,7 @@ public interface Corpus extends Iterable<Document>, AutoCloseable, Loggable {
    default Corpus annotate(@NonNull AnnotatableType... annotatableTypes) {
       AnnotationPipeline pipeline = new AnnotationPipeline(Sets.difference(Arrays.asList(annotatableTypes),
                                                                            getCompletedAnnotations()));
-      if (pipeline.requiresUpdate()) {
+      if(pipeline.requiresUpdate()) {
          return update(pipeline::annotate);
       }
       return this;
@@ -263,7 +263,7 @@ public interface Corpus extends Iterable<Document>, AutoCloseable, Loggable {
       notNull(onMatch, "OnMatch consumer must not be null");
       update(doc -> {
          TokenMatcher matcher = pattern.matcher(doc);
-         while (matcher.find()) {
+         while(matcher.find()) {
             onMatch.accept(matcher.asTokenMatch());
          }
       });
@@ -276,11 +276,18 @@ public interface Corpus extends Iterable<Document>, AutoCloseable, Loggable {
     * @param exampleGenerator the example generator to use to construct the dataset
     * @return the dataset
     */
-   default Dataset asDataset(@NonNull ExampleGenerator exampleGenerator, @NonNull DatasetType datasetType) {
-      return Dataset.builder()
-                    .type(datasetType)
-                    .source(stream().flatMap(exampleGenerator::apply));
+   default ExampleDataset asDataset(@NonNull ExampleGenerator exampleGenerator, @NonNull DatasetType datasetType) {
+      return ExampleDataset.builder()
+                           .type(datasetType)
+                           .source(stream().flatMap(exampleGenerator::apply));
    }
+
+
+   default List<String> getIds(){
+      return stream().map(Document::getId).sorted(true).collect();
+   }
+
+   MStream<Document> parallelStream();
 
    /**
     * Constructs a Dataset from the Corpus according to the {@link ExampleGenerator}
@@ -288,7 +295,7 @@ public interface Corpus extends Iterable<Document>, AutoCloseable, Loggable {
     * @param exampleGenerator the example generator to use to construct the dataset
     * @return the dataset
     */
-   default Dataset asDataset(@NonNull ExampleGenerator exampleGenerator) {
+   default ExampleDataset asDataset(@NonNull ExampleGenerator exampleGenerator) {
       return asDataset(exampleGenerator, getStreamingContext().isDistributed()
                                          ? DatasetType.Distributed
                                          : DatasetType.InMemory);
@@ -300,7 +307,8 @@ public interface Corpus extends Iterable<Document>, AutoCloseable, Loggable {
     * @param updater the dataset definition
     * @return the dataset
     */
-   default Dataset asInstanceDataset(@NonNull Consumer<InstanceGenerator> updater, @NonNull DatasetType datasetType) {
+   default ExampleDataset asInstanceDataset(@NonNull Consumer<InstanceGenerator> updater,
+                                            @NonNull DatasetType datasetType) {
       return asDataset(ExampleGenerator.instance(updater), datasetType);
    }
 
@@ -310,7 +318,7 @@ public interface Corpus extends Iterable<Document>, AutoCloseable, Loggable {
     * @param updater the dataset definition
     * @return the dataset
     */
-   default Dataset asInstanceDataset(@NonNull Consumer<InstanceGenerator> updater) {
+   default ExampleDataset asInstanceDataset(@NonNull Consumer<InstanceGenerator> updater) {
       return asDataset(ExampleGenerator.instance(updater));
    }
 
@@ -320,7 +328,7 @@ public interface Corpus extends Iterable<Document>, AutoCloseable, Loggable {
     * @param updater the dataset definition
     * @return the dataset
     */
-   default Dataset asSequenceDataset(@NonNull Consumer<SequenceGenerator> updater) {
+   default ExampleDataset asSequenceDataset(@NonNull Consumer<SequenceGenerator> updater) {
       return asDataset(ExampleGenerator.sequence(updater));
    }
 
@@ -330,7 +338,8 @@ public interface Corpus extends Iterable<Document>, AutoCloseable, Loggable {
     * @param updater the dataset definition
     * @return the dataset
     */
-   default Dataset asSequenceDataset(@NonNull Consumer<SequenceGenerator> updater, @NonNull DatasetType datasetType) {
+   default ExampleDataset asSequenceDataset(@NonNull Consumer<SequenceGenerator> updater,
+                                            @NonNull DatasetType datasetType) {
       return asDataset(ExampleGenerator.sequence(updater), datasetType);
    }
 
@@ -487,8 +496,10 @@ public interface Corpus extends Iterable<Document>, AutoCloseable, Loggable {
                                 .flatMap(doc -> {
                                    counter.add(1);
                                    counter.report(
-                                      count -> count % reportInterval == 0,
-                                      count -> log(reportLevel, "documentFrequencies: Processed {0} documents", count));
+                                         count -> count % reportInterval == 0,
+                                         count -> log(reportLevel,
+                                                      "documentFrequencies: Processed {0} documents",
+                                                      count));
                                    return nGramExtractor.extractStringTuples(doc).stream();
                                 })
                                 .countByValue());
@@ -573,14 +584,14 @@ public interface Corpus extends Iterable<Document>, AutoCloseable, Loggable {
     * @return the sampled corpus
     */
    default Corpus sample(int count, @NonNull Random random) {
-      if (count <= 0) {
+      if(count <= 0) {
          return new StreamingCorpus(StreamingContext.local().empty());
       }
       List<Document> sample = stream().limit(count).collect();
       AtomicInteger k = new AtomicInteger(count + 1);
       stream().skip(count).forEach(document -> {
          int rndIndex = random.nextInt(k.getAndIncrement());
-         if (rndIndex < count) {
+         if(rndIndex < count) {
             sample.set(rndIndex, document);
          }
       });
@@ -624,7 +635,7 @@ public interface Corpus extends Iterable<Document>, AutoCloseable, Loggable {
                                                                         unigrams.get(bigram.slice(0, 1)),
                                                                         unigrams.get(bigram.slice(1, 2)),
                                                                         unigrams.sum()));
-         if (score >= minScore) {
+         if(score >= minScore) {
             filtered.set(bigram, score);
          }
       });
@@ -675,7 +686,7 @@ public interface Corpus extends Iterable<Document>, AutoCloseable, Loggable {
     * @return the distributed corpus
     */
    default Corpus toDistributed() {
-      if (this instanceof SparkCorpus) {
+      if(this instanceof SparkCorpus) {
          return this;
       }
       return new SparkCorpus(stream().map(Document::toJson).toDistributedStream());
@@ -687,7 +698,7 @@ public interface Corpus extends Iterable<Document>, AutoCloseable, Loggable {
     * @return the in-memory corpus
     */
    default Corpus toInMemory() {
-      if (this instanceof InMemoryCorpus) {
+      if(this instanceof InMemoryCorpus) {
          return this;
       }
       return new InMemoryCorpus(this.stream().javaStream());
@@ -753,7 +764,7 @@ public interface Corpus extends Iterable<Document>, AutoCloseable, Loggable {
       writer.getOptions()
             .parameterNames()
             .forEach(name -> {
-               if (specification.getQueryValue(name, null) != null) {
+               if(specification.getQueryValue(name, null) != null) {
                   writer.option(name, specification.getQueryValue(name, null));
                }
             });

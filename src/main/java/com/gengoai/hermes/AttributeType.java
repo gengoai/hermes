@@ -35,25 +35,24 @@ import java.util.Collection;
 
 /**
  * <p> An <code>Attribute</code> represents a name and value type. Attributes are crated via the {@link
- * #make(String)}***  or the {@link #make(String, Type)} static methods. The value type of an attribute is
+ * #make(String)} or the {@link #make(String, Type)} static methods. The value type of an attribute is
  * either defined via the create method or via a config parameter (<pre>{@code Attribute.AttributeName =
- * VALUE_TYPE}***</pre>). Attributes that do not have a defined type default to being String types. </p>
+ * VALUE_TYPE}***</pre>). Attributes that do not have a defined type default to being Object types.</p>
  *
  * <p> Attribute names are normalized, so that an Attribute created with the name <code>partofspeech</code> and one
- * created with the name <code>PartOfSpeech</code> are equal (see {@link EnumValue} for normalization information).
- * </p>
+ * created with the name <code>PartOfSpeech</code> are equal (see {@link EnumValue} for normalization information).</p>
  *
  * @param <T> the type parameter
  * @author David B. Bracewell
  */
 @JsonHandler(value = AnnotatableType.Marshaller.class, isHierarchical = false)
-public final class AttributeType<T> extends EnumValue implements AnnotatableType {
+public final class AttributeType<T> extends EnumValue<AttributeType> implements AnnotatableType {
+   private static final Registry<AttributeType> registry = new Registry<>(AttributeType::new, AttributeType.class);
+   private static final long serialVersionUID = 1L;
    /**
     * Type information for AnnotatableType
     */
    public static final String TYPE = "Attribute";
-   private static final Registry<AttributeType> registry = new Registry<>(AttributeType::new, AttributeType.class);
-   private static final long serialVersionUID = 1L;
    private volatile Type valueType;
 
    private AttributeType(String name) {
@@ -91,14 +90,14 @@ public final class AttributeType<T> extends EnumValue implements AnnotatableType
     */
    public static <T> AttributeType<T> make(String name, Type valueType) {
       AttributeType<T> attributeType = Cast.as(registry.make(name));
-      if (valueType == null && attributeType.valueType == null) {
-         attributeType.valueType = Config.get(TYPE, attributeType.name(), "type").as(Type.class, String.class);
-      } else if (valueType != null && attributeType.valueType == null) {
+      if(valueType == null && attributeType.valueType == null) {
+         attributeType.valueType = Config.get(TYPE, attributeType.name(), "type").as(Type.class, Object.class);
+      } else if(valueType != null && attributeType.valueType == null) {
          attributeType.valueType = valueType;
          Config.setProperty(TYPE + "." + attributeType.name() + ".type", valueType.getTypeName());
-      } else if (valueType != null && !valueType.equals(attributeType.valueType)) {
+      } else if(valueType != null && !valueType.equals(attributeType.valueType)) {
          throw new IllegalArgumentException(
-            "Attempting to change value type of " + name + " from " + attributeType.getValueType());
+               "Attempting to change value type of " + name + " from " + attributeType.getValueType());
       }
       return attributeType;
    }
@@ -111,7 +110,7 @@ public final class AttributeType<T> extends EnumValue implements AnnotatableType
     * @param valueType the value type
     * @return the AttributeType
     */
-   public static <T> AttributeType<T> make(String name, Class<T> valueType) {
+   public static <T> AttributeType<T> make(String name, Class<? extends T> valueType) {
       return make(name, Cast.<Type>as(valueType));
    }
 
@@ -144,7 +143,7 @@ public final class AttributeType<T> extends EnumValue implements AnnotatableType
    public T decode(Object o) {
       try {
          return Converter.convert(o, valueType);
-      } catch (TypeConversionException e) {
+      } catch(TypeConversionException e) {
          throw new RuntimeException(e);
       }
    }
@@ -173,7 +172,7 @@ public final class AttributeType<T> extends EnumValue implements AnnotatableType
    public JsonEntry toJson(Object o) {
       try {
          return JsonEntry.from(Converter.convert(o, valueType));
-      } catch (TypeConversionException e) {
+      } catch(TypeConversionException e) {
          throw new RuntimeException(e);
       }
    }

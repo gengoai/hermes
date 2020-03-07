@@ -40,7 +40,7 @@ class AnnotationTree extends IntervalTree<Annotation> {
     * @return the annotation
     */
    public Annotation ceiling(Annotation annotation, AnnotationType type) {
-      if (annotation == null || type == null) {
+      if(annotation == null || type == null) {
          return Fragments.detachedEmptyAnnotation();
       }
       return Iterators.first(Iterators.filter(ceilingIterator(annotation),
@@ -64,20 +64,14 @@ class AnnotationTree extends IntervalTree<Annotation> {
     * @return the annotation
     */
    public Annotation floor(Annotation annotation, AnnotationType type) {
-      if (annotation == null || type == null) {
+      if(annotation == null || type == null) {
          return Fragments.detachedEmptyAnnotation();
       }
       return Iterators.first(Iterators.filter(floorIterator(annotation),
-                                              ann -> ann.getType().isInstance(type) && ann != annotation))
+                                              ann -> ann.getType().isInstance(type) &&
+                                                    ann != annotation &&
+                                                    !ann.overlaps(annotation)))
                       .orElse(Fragments.detachedEmptyAnnotation());
-//      Iterator<Annotation> itr = Iterators.filter(new NodeIterator<>(root, -1, annotation.start(), false),
-//                                                  ann -> ann.getType().isInstance(type));
-//      for (Annotation a : Iterables.asIterable(itr)) {
-//         if (a.isInstance(type) && a != annotation) {
-//            return a;
-//         }
-//      }
-//      return Fragments.detachedEmptyAnnotation();
    }
 
 }//END OF AnnotationTree

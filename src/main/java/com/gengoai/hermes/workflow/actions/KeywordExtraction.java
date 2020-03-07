@@ -20,13 +20,15 @@
 package com.gengoai.hermes.workflow.actions;
 
 import com.gengoai.Validation;
+import com.gengoai.collection.counter.Counter;
+import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.Types;
 import com.gengoai.hermes.corpus.Corpus;
 import com.gengoai.hermes.extraction.keyword.KeywordExtractor;
 import com.gengoai.hermes.extraction.keyword.TermKeywordExtractor;
 import com.gengoai.hermes.workflow.Action;
 import com.gengoai.hermes.workflow.Context;
-import com.gengoai.stream.accumulator.MCounterAccumulator;
+import com.gengoai.stream.MCounterAccumulator;
 import lombok.Data;
 import lombok.NonNull;
 
@@ -49,6 +51,10 @@ public class KeywordExtraction implements Action {
 
    public KeywordExtraction() {
 
+   }
+
+   public static Counter<String> getKeywords(@NonNull Context context) {
+      return Cast.as(context.get(Types.KEYWORDS.name()));
    }
 
    @Override

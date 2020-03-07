@@ -71,15 +71,6 @@ public abstract class HermesCorpusCLI extends HermesCLI {
       super(applicationName);
    }
 
-   /**
-    * Instantiates a new Hermes command line app.
-    *
-    * @param applicationName  the application name
-    * @param requiredPackages the extra packages
-    */
-   protected HermesCorpusCLI(String applicationName, String[] requiredPackages) {
-      super(applicationName, requiredPackages);
-   }
 
    /**
     * Creates a corpus based on the command line parameters.

@@ -49,14 +49,6 @@ public interface CorpusFormat extends Serializable {
    CorpusWriter getCorpusWriter(Corpus corpus);
 
    /**
-    * Gets the name of the format which is used in calls to {@link Corpus#reader(String)} and {@link
-    * Corpus#writer(String)}*
-    *
-    * @return the name of the format
-    */
-   String getName();
-
-   /**
     * Gets the default set of {@link CorpusParameters} associated with this format
     *
     * @return the default set of {@link CorpusParameters} for this format
@@ -64,5 +56,13 @@ public interface CorpusFormat extends Serializable {
    default CorpusParameters getFormatParameters() {
       return new CorpusParameters();
    }
+
+   /**
+    * Gets the name of the format which is used in calls to {@link Corpus#reader(CharSequence)} } and {@link
+    * Corpus#writer(CharSequence)}*
+    *
+    * @return the name of the format
+    */
+   String getName();
 
 }//END OF CorpusFormat

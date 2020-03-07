@@ -23,7 +23,7 @@ package com.gengoai.hermes.ml;
 
 import com.gengoai.Validation;
 import com.gengoai.apollo.ml.Example;
-import com.gengoai.apollo.ml.data.Dataset;
+import com.gengoai.apollo.ml.data.ExampleDataset;
 import com.gengoai.apollo.ml.sequence.Labeling;
 import com.gengoai.apollo.ml.sequence.SequenceLabeler;
 import com.gengoai.apollo.ml.sequence.SequenceLabelerEvaluation;
@@ -243,7 +243,7 @@ public class BIOEvaluation implements SequenceLabelerEvaluation {
 
 
    @Override
-   public void evaluate(SequenceLabeler model, Dataset dataset) {
+   public void evaluate(SequenceLabeler model, ExampleDataset dataset) {
       dataset.forEach(Example -> entry(tags(Example), tags(model.label(Example))));
    }
 

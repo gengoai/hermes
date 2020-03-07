@@ -48,9 +48,9 @@ public class DiskLexicon extends Lexicon implements PrefixSearchable {
       this.metadata = connection.connect();
    }
 
-   public static DiskLexiconBuilder builder(boolean caseSensitive,
+   public static DiskLexiconBuilder builder(AttributeType tagAttributeType,
+                                            boolean caseSensitive,
                                             String name,
-                                            AttributeType tagAttributeType,
                                             Resource path) {
       return new DiskLexiconBuilder(tagAttributeType, caseSensitive, name, path);
    }
@@ -63,7 +63,7 @@ public class DiskLexicon extends Lexicon implements PrefixSearchable {
    @Override
    public Set<LexiconEntry<?>> entries(String lemma) {
       lemma = normalize(lemma);
-      if (lexiconEntries.containsKey(lemma)) {
+      if(lexiconEntries.containsKey(lemma)) {
          return new HashSet<>(lexiconEntries.get(lemma));
       }
       return Collections.emptySet();
@@ -77,16 +77,28 @@ public class DiskLexicon extends Lexicon implements PrefixSearchable {
    @Override
    public List<LexiconEntry<?>> getEntries(@NonNull HString hString) {
       String str = normalize(hString);
-      if (!lexiconEntries.containsKey(str)) {
-         if (isCaseSensitive() && Strings.isUpperCase(hString)) {
+      if(!lexiconEntries.containsKey(str)) {
+         if(isCaseSensitive() && Strings.isUpperCase(hString)) {
             return Collections.emptyList();
          }
          str = normalize(hString.getLemma());
       }
-      if (lexiconEntries.containsKey(str)) {
+      if(lexiconEntries.containsKey(str)) {
          return Cast.as(lexiconEntries.get(str)
                                       .stream()
                                       .filter(le -> le.getConstraint() == null || le.getConstraint().test(hString))
+                                      .sorted()
+                                      .collect(Collectors.toList()));
+      }
+      return Collections.emptyList();
+   }
+
+   @Override
+   public List<LexiconEntry<?>> getEntries(String hString) {
+      String str = normalize(hString);
+      if(lexiconEntries.containsKey(str)) {
+         return Cast.as(lexiconEntries.get(str)
+                                      .stream()
                                       .sorted()
                                       .collect(Collectors.toList()));
       }
@@ -121,10 +133,10 @@ public class DiskLexicon extends Lexicon implements PrefixSearchable {
    @Override
    public boolean isPrefixMatch(String hString) {
       Iterator<String> itr = lexiconEntries.keyIterator(normalize(Validation.notNullOrBlank(hString)));
-      while (true) {
-         if (itr.hasNext()) {
+      while(true) {
+         if(itr.hasNext()) {
             String n = itr.next();
-            if (!hString.equals(n)) {
+            if(!hString.equals(n)) {
                return hString.startsWith(n);
             }
          } else {
@@ -147,9 +159,9 @@ public class DiskLexicon extends Lexicon implements PrefixSearchable {
    public Set<String> prefixes(String string) {
       Iterator<String> itr = lexiconEntries.keyIterator(Validation.notNullOrBlank(string));
       Set<String> prefixes = new HashSet<>();
-      while (itr.hasNext()) {
+      while(itr.hasNext()) {
          String p = itr.next();
-         if (p.startsWith(string)) {
+         if(p.startsWith(string)) {
             prefixes.add(p);
          } else {
             break;
@@ -196,10 +208,10 @@ public class DiskLexicon extends Lexicon implements PrefixSearchable {
          List<LexiconEntry<?>> entries = lexiconEntries.getOrDefault(norm, new LinkedList<>());
          updateMax(norm, entry.getTokenLength());
          entries.add(entry);
-         if (entry.getProbability() != 1.0) {
+         if(entry.getProbability() != 1.0) {
             metdata.put("isProbabilistic", true);
          }
-         if (entry.getConstraint() != null) {
+         if(entry.getConstraint() != null) {
             metdata.put("isConstrained", true);
          }
          lexiconEntries.put(norm, entries);

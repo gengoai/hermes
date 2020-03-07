@@ -22,31 +22,49 @@ package com.gengoai.hermes.annotator;
 import com.gengoai.Language;
 import com.gengoai.cache.AutoCalculatingLRUCache;
 import com.gengoai.cache.Cache;
+import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.Annotation;
+import com.gengoai.hermes.BasicCategories;
 import com.gengoai.hermes.Document;
 import com.gengoai.hermes.Types;
 import com.gengoai.hermes.lexicon.Lexicon;
+import com.gengoai.hermes.lexicon.LexiconEntry;
 import com.gengoai.hermes.lexicon.LexiconManager;
+import com.gengoai.hermes.morphology.TokenType;
+import com.gengoai.string.Strings;
 import lombok.NonNull;
 
+import java.util.Collections;
 import java.util.stream.Collectors;
 
 public class BaseWordCategorization {
    public static final BaseWordCategorization INSTANCE = new BaseWordCategorization();
    private Cache<Language, Lexicon> cache = new AutoCalculatingLRUCache<>(100,
                                                                           language -> LexiconManager.getLexicon(
-                                                                             "base_categories", language));
+                                                                                "base_categories", language));
 
    public void categorize(@NonNull Document document) {
       Lexicon lexicon = cache.get(document.getLanguage());
       lexicon.extract(document)
              .forEach(h -> {
-                for (Annotation token : h.tokens()) {
+                for(Annotation token : h.tokens()) {
                    token.putAdd(Types.CATEGORY, lexicon.getEntries(h).stream()
-                                                       .map(e -> e.getTag().name())
+                                                       .map(LexiconEntry::getTag)
+                                                       .map(Cast::<BasicCategories>as)
                                                        .collect(Collectors.toList()));
                 }
              });
+      for(Annotation token : document.tokens()) {
+         if(Strings.isDigit(token) || token.attributeIsA(Types.TOKEN_TYPE, TokenType.NUMBER)) {
+            token.putAdd(Types.CATEGORY, Collections.singleton(BasicCategories.NUMBERS));
+         } else if(token.attributeIsA(Types.TOKEN_TYPE, TokenType.TIME)) {
+            token.putAdd(Types.CATEGORY, Collections.singleton(BasicCategories.TIME));
+         } else if(token.attributeIsA(Types.TOKEN_TYPE, TokenType.EMOTICON)) {
+            token.putAdd(Types.CATEGORY, Collections.singleton(BasicCategories.INTERNET));
+         } else if(token.attributeIsA(Types.TOKEN_TYPE, TokenType.URL)) {
+            token.putAdd(Types.CATEGORY, Collections.singleton(BasicCategories.INTERNET));
+         }
+      }
    }
 
 }//END OF WordCategorization

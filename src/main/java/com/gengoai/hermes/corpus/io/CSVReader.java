@@ -27,7 +27,7 @@ import com.gengoai.ParameterDef;
 import com.gengoai.collection.HashMapIndex;
 import com.gengoai.collection.Index;
 import com.gengoai.collection.Lists;
-import com.gengoai.collection.Streams;
+import com.gengoai.stream.Streams;
 import com.gengoai.conversion.Cast;
 import com.gengoai.conversion.Converter;
 import com.gengoai.conversion.TypeConversionException;
@@ -155,7 +155,7 @@ public class CSVReader extends CorpusReader {
    public final Stream<Document> parse(String content) {
       final DocumentFactory documentFactory = getOptions().get(DOCUMENT_FACTORY);
       final LinkedList<List<String>> rows = Cast.as(Lists.asLinkedList(rows(content)));
-      return Streams.asStream(new Iterator<Document>() {
+      return Streams.asStream(new Iterator<>() {
 
          @Override
          public boolean hasNext() {
@@ -164,7 +164,7 @@ public class CSVReader extends CorpusReader {
 
          @Override
          public Document next() {
-            if (rows.isEmpty()) {
+            if(rows.isEmpty()) {
                throw new NoSuchElementException();
             }
             return createDocument(rows.removeFirst(), documentFactory);

@@ -25,7 +25,10 @@ package com.gengoai.hermes.extraction.lyre;
 import com.gengoai.Tag;
 import com.gengoai.Validation;
 import com.gengoai.apollo.ml.Feature;
-import com.gengoai.collection.*;
+import com.gengoai.collection.Iterables;
+import com.gengoai.collection.Lists;
+import com.gengoai.collection.Sets;
+import com.gengoai.collection.Sorting;
 import com.gengoai.collection.counter.Counters;
 import com.gengoai.conversion.Cast;
 import com.gengoai.conversion.Converter;
@@ -39,6 +42,7 @@ import com.gengoai.hermes.ml.feature.ValueCalculator;
 import com.gengoai.hermes.morphology.StopWords;
 import com.gengoai.math.NumericComparison;
 import com.gengoai.reflection.TypeUtils;
+import com.gengoai.stream.Streams;
 import com.gengoai.string.Re;
 import com.gengoai.string.Strings;
 import lombok.NonNull;
@@ -63,8 +67,10 @@ import static java.util.Comparator.comparingInt;
  */
 public final class LyreDSL {
 
+   private static final Pattern FLAGS = Pattern.compile("^\\(\\?[a-z]+\\)", Pattern.CASE_INSENSITIVE);
    /**
-    * Returns the current HString or Object being processed
+    * Returns the current Object being processed.
+    * Note that one-argument methods in Lyre (e.g. lower, isUpper, etc.) have an implied `$_` argument if none is given.
     * <pre>
     *    Usage:  $_
     * </pre>
@@ -328,10 +334,9 @@ public final class LyreDSL {
     * </pre>
     */
    public static final LyreExpression upper = upper($_);
-   private static final Pattern FLAGS = Pattern.compile("^\\(\\?[a-z]+\\)", Pattern.CASE_INSENSITIVE);
 
    /**
-    * Determines if all items in the list expression evaluates to true using the predicate expression.
+    * Returns <b>true</b> if all items in the given list evaluates to *true* for the given predicate expression.
     * <pre>
     *    usage: all( list_expression, predicate_expression )
     *    e.g.: all( @TOKEN, #VERB ) -- returns true if all token on the current HString is a verb
@@ -345,6 +350,24 @@ public final class LyreDSL {
       return new LyreExpression(formatMethod("all", list, predicate),
                                 PREDICATE,
                                 o -> list.applyAsList(o).stream().allMatch(predicate::testObject));
+   }
+
+
+   /**
+    * Returns <b>true</b> if none of the items in the given list evaluates to *true* for the given predicate expression.
+    * <pre>
+    *    usage: none( list_expression, predicate_expression )
+    *    e.g.: none( @TOKEN, #VERB ) -- returns true if none of the tokens on the current HString is a verb
+    * </pre>
+    *
+    * @param list      the list of items to apply the predicate to
+    * @param predicate the predicate to use for testing
+    * @return the LyreExpression
+    */
+   public static LyreExpression none(@NonNull LyreExpression list, @NonNull LyreExpression predicate) {
+      return new LyreExpression(formatMethod("none", list, predicate),
+                                PREDICATE,
+                                o -> list.applyAsList(o).stream().noneMatch(predicate::testObject));
    }
 
    /**
@@ -392,7 +415,7 @@ public final class LyreDSL {
    public static LyreExpression annotation(@NonNull AnnotationType type, @NonNull LyreExpression expression) {
       Validation.checkArgument(expression.isInstance(STRING, HSTRING, OBJECT),
                                "Illegal Expression: annotation only accepts a STRING, HSTRING, or OBJECT, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression(formatMethod(String.format("@%s", type), expression),
                                 HSTRING,
                                 o -> process(true, expression.applyAsObject(o),
@@ -400,7 +423,7 @@ public final class LyreDSL {
    }
 
    /**
-    * Determines if any item in the list expression evaluates to true using the predicate expression.
+    * Returns <b>true</b> if any item in the given list evaluates to *true* for the given predicate expression.
     * <pre>
     *    usage: any( list_expression, predicate_expression )
     *    e.g.: any( @TOKEN, #VERB ) -- returns true if any token on the current HString is a verb
@@ -415,6 +438,7 @@ public final class LyreDSL {
                                 PREDICATE,
                                 o -> list.applyAsList(o).stream().anyMatch(predicate::testObject));
    }
+
 
    /**
     * Applies the right-hand expression on the object resulting from the left-hand expression.
@@ -484,8 +508,10 @@ public final class LyreDSL {
    public static LyreExpression attribute(@NonNull AttributeType<?> type, @NonNull LyreExpression expression) {
       Validation.checkArgument(expression.isInstance(HSTRING),
                                "Illegal Expression: attribute only accepts a HSTRING, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
-      LyreExpressionType eType = TypeUtils.isAssignable(type.getValueType(), String.class) ? STRING : OBJECT;
+                                     + expression + "' was provided which is of type " + expression.getType());
+      LyreExpressionType eType = TypeUtils.isAssignable(type.getValueType(), String.class)
+                                 ? STRING
+                                 : OBJECT;
       return new LyreExpression(formatMethod(String.format("$%s", type), expression),
                                 eType,
                                 o -> process(false, expression.applyAsObject(o),
@@ -548,8 +574,8 @@ public final class LyreDSL {
    }
 
    private static boolean compareObjectPredicate(Object l, Object r, NumericComparison comparison) {
-      if (l == null || r == null) {
-         switch (comparison) {
+      if(l == null || r == null) {
+         switch(comparison) {
             case EQ:
                return l == r;
             case NE:
@@ -558,60 +584,60 @@ public final class LyreDSL {
                return false;
          }
       }
-      if (l instanceof Number && r instanceof Number) {
+      if(l instanceof Number && r instanceof Number) {
          return comparison.compare(Cast.<Number>as(l).doubleValue(),
                                    Cast.<Number>as(r).doubleValue());
       }
-      if (l instanceof Tag && r instanceof Tag) {
+      if(l instanceof Tag && r instanceof Tag) {
          Tag lTag = Cast.as(l);
          Tag rTag = Cast.as(r);
-         switch (comparison) {
+         switch(comparison) {
             case EQ:
                return lTag.isInstance(rTag);
             case NE:
                return !lTag.isInstance(rTag);
             default:
-               return comparison.compare(Sorting.compare(l.toString(), r.toString()), 0);
+               return comparison.compare(Sorting.compare(lTag.name(), rTag.name()), 0);
          }
       }
-      if (l.getClass().isInstance(r) || r.getClass().isInstance(l)) {
-         if (comparison == NumericComparison.EQ) {
+      if(l.getClass().isInstance(r) || r.getClass().isInstance(l)) {
+         if(comparison == NumericComparison.EQ) {
             return l.equals(r);
          }
-         if (comparison == NumericComparison.NE) {
+         if(comparison == NumericComparison.NE) {
             return !l.equals(r);
          }
          return comparison.compare(Sorting.compare(l, r), 0);
       }
 
-      if ((l instanceof CharSequence) && (r instanceof CharSequence)) {
+      if((l instanceof CharSequence) && (r instanceof CharSequence)) {
          String lStr = l.toString();
          String rStr = r.toString();
-         if (comparison == NumericComparison.EQ) {
+         if(comparison == NumericComparison.EQ) {
             return Objects.equals(lStr, rStr);
          }
-         if (comparison == NumericComparison.NE) {
+         if(comparison == NumericComparison.NE) {
             return !Objects.equals(lStr, rStr);
          }
          return comparison.compare(Sorting.compare(lStr, rStr), 0);
       }
 
-      if (!(r instanceof CharSequence)) {
+      if(!(r instanceof CharSequence)) {
          Object lConv = Converter.convertSilently(l, r.getClass());
-         if (lConv != null) {
+         if(lConv != null) {
             return compareObjectPredicate(lConv, r, comparison);
          }
-         if (r instanceof Number) {
+         if(r instanceof Number) {
             return compareObjectPredicate(Double.NaN, r, comparison);
          }
       }
 
-      if (!(l instanceof CharSequence)) {
+      if(!(l instanceof CharSequence)) {
          Object rConv = Converter.convertSilently(r, l.getClass());
-         if (rConv != null) {
+         if(rConv != null) {
             return compareObjectPredicate(l, rConv, comparison);
          }
-         if (l instanceof Number) {
+         if(l instanceof Number) {
             return compareObjectPredicate(l, Double.NaN, comparison);
          }
       }
@@ -620,58 +646,55 @@ public final class LyreDSL {
    }
 
    /**
-    * Concatenates the results the given expressions.
+    * The plus operator can be used to concatenate strings, perform addition on numeric values, or append to a list.
     *
     * @param expressions the expressions to concatenate
     * @return the LyreExpression
     */
-   public static LyreExpression concat(@NonNull LyreExpression... expressions) {
+   public static LyreExpression plus(@NonNull LyreExpression... expressions) {
       Validation.checkArgument(expressions.length > 1, "Must concatenate two or more expressions");
-      LyreExpression toReturn = concat(expressions[0], expressions[1]);
-      for (int i = 2; i < expressions.length; i++) {
-         toReturn = concat(toReturn, expressions[i]);
+      LyreExpression toReturn = plus(expressions[0], expressions[1]);
+      for(int i = 2; i < expressions.length; i++) {
+         toReturn = plus(toReturn, expressions[i]);
       }
       return toReturn;
    }
 
    /**
-    * Concatenates the results of a left and right expression. Concatenation works as follows:
-    * <ol>
-    *    <li>If the left expression results in a collection: </li>
-    * </ol>
+    * The plus operator can be used to concatenate strings, perform addition on numeric values, or append to a list.
     *
-    * @param left  the left
-    * @param right the right
+    * @param left  the left expression to concatenate
+    * @param right the right  expression to concatenate
     * @return the LyreExpression
     */
-   public static LyreExpression concat(@NonNull LyreExpression left, @NonNull LyreExpression right) {
+   public static LyreExpression plus(@NonNull LyreExpression left, @NonNull LyreExpression right) {
       return new LyreExpression(String.format("(%s + %s)", left, right),
                                 LyreExpressionType.determineCommonType(Arrays.asList(left, right)),
                                 o -> {
                                    Object l = left.applyAsObject(o);
                                    Object r = right.applyAsObject(o);
-                                   if (l instanceof Collection<?>) {
+                                   if(l instanceof Collection<?>) {
                                       List<?> list = new ArrayList<>(Cast.as(l));
-                                      if (r instanceof Collection<?>) {
+                                      if(r instanceof Collection<?>) {
                                          list.addAll(Cast.as(r));
-                                      } else if (r != null) {
+                                      } else if(r != null) {
                                          list.add(Cast.as(r));
                                       }
                                       return list;
                                    }
-                                   if (r instanceof Collection && l == null) {
+                                   if(r instanceof Collection && l == null) {
                                       return r;
                                    }
-                                   if (l instanceof HString && r instanceof HString) {
+                                   if(l instanceof HString && r instanceof HString) {
                                       return toHString(l).union(toHString(r));
                                    }
-                                   if (l instanceof Number && r instanceof Number) {
+                                   if(l instanceof Number && r instanceof Number) {
                                       return Cast.<Number>as(l).doubleValue() + Cast.<Number>as(r).doubleValue();
-                                   } else if (l == null && r == null) {
+                                   } else if(l == null && r == null) {
                                       return Collections.emptyList();
-                                   } else if (l == null) {
+                                   } else if(l == null) {
                                       return r;
-                                   } else if (r == null) {
+                                   } else if(r == null) {
                                       return l;
                                    }
                                    return l.toString() + r.toString();
@@ -709,20 +732,20 @@ public final class LyreDSL {
    public static LyreExpression context(@NonNull LyreExpression expression, @NonNull LyreExpression relative_position) {
       Validation.checkArgument(expression.isInstance(HSTRING),
                                "Illegal Expression: context only accepts a HSTRING, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression(formatMethod("cxt", expression, relative_position),
                                 HSTRING,
                                 o -> {
                                    HString targ = toHString(expression.applyAsObject(o));
                                    int pos = (int) relative_position.applyAsDouble(toHString(o));
-                                   if (pos == 0) {
+                                   if(pos == 0) {
                                       return targ;
-                                   } else if (pos > 0) {
-                                      for (int i = 0; i < pos; i++) {
+                                   } else if(pos > 0) {
+                                      for(int i = 0; i < pos; i++) {
                                          targ = targ.next(Types.TOKEN);
                                       }
                                    } else {
-                                      for (int i = 0; i < Math.abs(pos); i++) {
+                                      for(int i = 0; i < Math.abs(pos); i++) {
                                          targ = targ.previous(Types.TOKEN);
                                       }
                                    }
@@ -764,7 +787,7 @@ public final class LyreDSL {
    public static LyreExpression count(@NonNull LyreExpression expression, @NonNull LyreExpression valueCalculator) {
       Validation.checkArgument(valueCalculator.isInstance(STRING),
                                "Illegal Expression: valueCalculater only accepts a STRING representing the ValueCalculator to use, but '"
-                                  + valueCalculator + "' was provided which is of type " + valueCalculator.getType());
+                                     + valueCalculator + "' was provided which is of type " + valueCalculator.getType());
       return count(expression, ValueCalculator.valueOf(valueCalculator.apply(null)));
    }
 
@@ -785,7 +808,7 @@ public final class LyreDSL {
    public static LyreExpression count(@NonNull LyreExpression expression, @NonNull ValueCalculator valueCalculator) {
       Validation.checkArgument(expression.isInstance(OBJECT, HSTRING, STRING),
                                "Illegal Expression: count only accepts OBJECT, HSTRING, or STRING expressions, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression(formatMethod("count", expression),
                                 COUNTER,
                                 o -> valueCalculator.adjust(Counters.newCounter(expression.applyAsList(o))));
@@ -856,20 +879,24 @@ public final class LyreDSL {
                                     @NonNull LyreExpression expression) {
       Validation.checkArgument(expression.isInstance(HSTRING),
                                "Illegal Expression: dep only accepts a HSTRING, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression(formatMethod(String.format("@%sdep%s",
-                                                           direction == OUTGOING ? ">" : "<",
-                                                           Strings.isNullOrBlank(relation) ? "" : "{" + relation + "}"),
+                                                           direction == OUTGOING
+                                                           ? ">"
+                                                           : "<",
+                                                           Strings.isNullOrBlank(relation)
+                                                           ? ""
+                                                           : "{" + relation + "}"),
                                              expression),
                                 HSTRING, o -> process(true, expression.applyAsObject(o), a -> {
          HString h = toHString(a);
-         if (direction == OUTGOING) {
-            if (Strings.isNullOrBlank(relation) || h.dependencyIsA(relation)) {
+         if(direction == OUTGOING) {
+            if(Strings.isNullOrBlank(relation) || h.dependencyIsA(relation)) {
                return h.dependency().v2;
             }
             return null;
          } else {
-            if (Strings.isNullOrBlank(relation)) {
+            if(Strings.isNullOrBlank(relation)) {
                return h.children();
             }
             return h.children(relation);
@@ -930,7 +957,7 @@ public final class LyreDSL {
                                 PREDICATE,
                                 o -> processPred(expression.applyAsObject(o),
                                                  a -> {
-                                                    if (a instanceof List) {
+                                                    if(a instanceof List) {
                                                        return Cast.<List>as(a).size() > 0;
                                                     }
                                                     return Optional.ofNullable(a)
@@ -984,7 +1011,7 @@ public final class LyreDSL {
                                         @NonNull ValueCalculator calculator,
                                         @NonNull LyreExpression expression) {
       StringBuilder name = new StringBuilder();
-      switch (calculator) {
+      switch(calculator) {
          case Binary:
             name.append("binary");
             break;
@@ -994,7 +1021,7 @@ public final class LyreDSL {
          case Frequency:
             name.append("frequency");
       }
-      if (Strings.isNotNullOrBlank(prefix)) {
+      if(Strings.isNotNullOrBlank(prefix)) {
          name.append("{'").append(prefix).append("'}");
       }
       return new LyreExpression(formatMethod(name.toString(), expression),
@@ -1021,7 +1048,7 @@ public final class LyreDSL {
       return new LyreExpression(formatMethod("filter", list, predicate),
                                 list.getType(),
                                 obj -> list.applyAsList(obj).stream().filter(predicate::testObject).collect(
-                                   Collectors.toList()));
+                                      Collectors.toList()));
    }
 
    /**
@@ -1058,8 +1085,8 @@ public final class LyreDSL {
 
    private static List<Object> flatten(Collection<Object> list) {
       List<Object> output = new ArrayList<>();
-      for (Object o : list) {
-         if (o instanceof Collection) {
+      for(Object o : list) {
+         if(o instanceof Collection) {
             output.addAll(flatten(Cast.<Collection<Object>>as(o)));
          } else {
             output.add(o);
@@ -1069,7 +1096,7 @@ public final class LyreDSL {
    }
 
    private static String formatMethod(String methodName, LyreExpression... arguments) {
-      if (arguments == null || arguments.length < 1 || (arguments.length == 1 && arguments[0] == $_)) {
+      if(arguments == null || arguments.length < 1 || (arguments.length == 1 && arguments[0] == $_)) {
          return methodName;
       }
       return String.format("%s(%s)", methodName, Stream.of(arguments)
@@ -1136,8 +1163,8 @@ public final class LyreDSL {
     * Gets the i-th element in the given list or null if the index is invalid
     * <pre>
     *    Usage: get( index, list_expression )
-    *    e.g.: get(0, @TOKENS) -- get the first token
-    *    e.g.: get(10, @TOKENS) -- get the 10th token
+    *    e.g.: get(@TOKEN, 0) -- get the first token
+    *    e.g.: get(@TOKEN, 10) -- get the 10th token
     * </pre>
     *
     * @param list  the container
@@ -1152,8 +1179,8 @@ public final class LyreDSL {
     * Gets the i-th element in the given list or null if the index is invalid
     * <pre>
     *    Usage: get( index, list_expression )
-    *    e.g.: get(0, @TOKENS) -- get the first token
-    *    e.g.: get(10, @TOKENS) -- get the 10th token
+    *    e.g.: get(@TOKEN, 0) -- get the first token
+    *    e.g.: get(@TOKEN, 10) -- get the 10th token
     * </pre>
     *
     * @param listExpression the container
@@ -1163,13 +1190,13 @@ public final class LyreDSL {
    public static LyreExpression get(@NonNull LyreExpression listExpression, @NonNull LyreExpression index) {
       Validation.checkArgument(index.isInstance(NUMERIC),
                                "Illegal Expression: index only accepts a NUMERIC, but '"
-                                  + index + "' was provided which is of type " + index.getType());
+                                     + index + "' was provided which is of type " + index.getType());
       return new LyreExpression(formatMethod("get", listExpression, index),
                                 listExpression.getType(),
                                 o -> {
                                    List<?> list = listExpression.applyAsList(o);
                                    int ei = (int) index.applyAsDouble(toHString(o));
-                                   if (ei < 0) {
+                                   if(ei < 0) {
                                       ei = Math.max(list.size() + ei, 0);
                                    }
                                    return Iterables.get(list, ei).orElse(null);
@@ -1262,13 +1289,13 @@ public final class LyreDSL {
    public static LyreExpression has(@NonNull LyreExpression container, @NonNull LyreExpression expression) {
       Validation.checkArgument(container.isInstance(HSTRING),
                                "Illegal Expression: has.container only accepts a HSTRING, but '"
-                                  + container + "' was provided which is of type " + container.getType());
+                                     + container + "' was provided which is of type " + container.getType());
       return new LyreExpression(String.format("(%s has %s)", container, expression),
                                 PREDICATE,
                                 obj -> {
                                    HString bucket = toHString(container.applyAsObject(obj));
                                    final SerializablePredicate<HString> effective;
-                                   if (expression.getType().isInstance(PREDICATE)) {
+                                   if(expression.getType().isInstance(PREDICATE)) {
                                       effective = expression;
                                    } else {
                                       effective = v -> expression.applyAsObject(v) != null;
@@ -1290,7 +1317,7 @@ public final class LyreDSL {
    public static LyreExpression hasStopWord(@NonNull LyreExpression expression) {
       Validation.checkArgument(expression.isInstance(HSTRING, STRING, OBJECT),
                                "Illegal Expression: hasStopWord only accepts a HSTRING, STRING, or OBJECT, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression(formatMethod("hasStopWord", expression),
                                 PREDICATE,
                                 o -> processPred(expression.applyAsObject(o),
@@ -1324,7 +1351,7 @@ public final class LyreDSL {
    }
 
    /**
-    * Chekcs if the left-hand object is "in" the right-hand object, where in means "contains".
+    * Checks if the left-hand object is "in" the right-hand object, where in means "contains".
     * <pre>
     *    Usage:  object_expression in container_expression -- is te object from the object_expression contained in the container
     *                                                         from the container_expression
@@ -1342,32 +1369,22 @@ public final class LyreDSL {
                                 o -> {
                                    Object bucket = container.applyAsObject(o);
                                    Object searchingFor = object.applyAsObject(o);
-                                   if (bucket == null || searchingFor == null) {
+                                   if(bucket == null || searchingFor == null) {
                                       return false;
                                    }
-                                   if (bucket instanceof WordList) {
+                                   if(bucket instanceof WordList) {
                                       WordList wordList = Cast.as(bucket);
-                                      return wordList != null && wordList.contains(searchingFor.toString());
+                                      return wordList.contains(searchingFor.toString());
                                    }
-                                   if (bucket instanceof Collection) {
+                                   if(bucket instanceof Collection) {
                                       Collection<?> c = Cast.as(bucket);
-                                      if (c.isEmpty()) {
+                                      if(c.isEmpty()) {
                                          return false;
                                       }
-                                      if (searchingFor instanceof HString) {
+                                      if(searchingFor instanceof HString) {
                                          return c.contains(searchingFor) || c.contains(searchingFor.toString());
                                       }
                                       return c.contains(searchingFor);
-                                   }
-                                   if (bucket instanceof HString && searchingFor instanceof AnnotationType) {
-                                      return Cast.<HString>as(bucket).hasAnnotation(Cast.as(searchingFor));
-                                   }
-                                   if (bucket instanceof HString && searchingFor instanceof AttributeType) {
-                                      return Cast.<HString>as(bucket).hasAttribute(Cast.as(searchingFor));
-                                   }
-                                   if (bucket instanceof HString && searchingFor instanceof RelationType) {
-                                      return Cast.<HString>as(bucket).hasIncomingRelation(Cast.as(searchingFor))
-                                         || Cast.<HString>as(bucket).hasOutgoingRelation(Cast.as(searchingFor));
                                    }
                                    return bucket.toString().contains(searchingFor.toString());
                                 });
@@ -1375,7 +1392,7 @@ public final class LyreDSL {
 
    /**
     * Returns all annotations of the given types in interleaved fashion (see {@link
-    * HString#interleaved(AnnotationType...)}*
+    * HString#interleaved(AnnotationType...)}**
     * <pre>
     *    Usage:  interleave( ANNOTATION_TYPE1, ANNOTATION_TYPE2, ..., ANNOTATION_TYPEN )
     *    e.g.: interleave( PHRASE_CHUNK, TOKEN ) -- return a list of annotations first trying to get phrase chunks and
@@ -1429,9 +1446,9 @@ public final class LyreDSL {
    /**
     * Generates IOB-formatted tags for the given expression
     * <pre>
-    *    Usage: iob{ANNOTATION TYPE}( expression )
-    *    e.g.: iob{PHRASE_CHUNK} -- generates iob formatted chunk part-of-speech tags over the current HString
-    *    e.g.: iob{PHRASE_CHUNK}(@SENTENCE) -- generates iob formatted chunk part-of-speech tags over the sentences in
+    *    Usage: iob('ANNOTATION_TYPE', expression )
+    *    e.g.: iob('PHRASE_CHUNK')-- generates iob formatted chunk part-of-speech tags over the current HString
+    *    e.g.: iob('PHRASE_CHUNK', @SENTENCE)-- generates iob formatted chunk part-of-speech tags over the sentences in
     *                                            current HString
     * </pre>
     *
@@ -1446,9 +1463,9 @@ public final class LyreDSL {
    /**
     * Generates IOB-formatted tags for the given expression
     * <pre>
-    *    Usage: iob(ANNOTATION TYPE, expression )
-    *    e.g.: iob('PHRASE_CHUNK') -- generates iob formatted chunk part-of-speech tags over the current HString
-    *    e.g.: iob('PHRASE_CHUNK', @SENTENCE) -- generates iob formatted chunk part-of-speech tags over the sentences in
+    *    Usage: iob('ANNOTATION_TYPE', expression )
+    *    e.g.: iob('PHRASE_CHUNK')-- generates iob formatted chunk part-of-speech tags over the current HString
+    *    e.g.: iob('PHRASE_CHUNK', @SENTENCE)-- generates iob formatted chunk part-of-speech tags over the sentences in
     *                                            current HString
     * </pre>
     *
@@ -1459,29 +1476,28 @@ public final class LyreDSL {
    public static LyreExpression iob(@NonNull LyreExpression type, @NonNull LyreExpression expression) {
       Validation.checkArgument(type.isInstance(STRING),
                                "Illegal Expression: type only accepts a STRING, but '"
-                                  + type + "' was provided which is of type " + type.getType());
+                                     + type + "' was provided which is of type " + type.getType());
       Validation.checkArgument(expression.isInstance(HSTRING),
                                "Illegal Expression: annotation only accepts a HSTRING, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression(formatMethod("iob", type, expression),
                                 STRING,
                                 o -> {
                                    final AnnotationType aType = Types.annotation(type.apply(toHString(o)));
                                    final LyreExpression token = annotation(Types.TOKEN);
-                                   return process(false, pipe(expression, token).applyAsObject(o), o2 -> {
-                                      if (o2 == null) {
+                                   return process(false, andPipe(expression, token).applyAsObject(o), o2 -> {
+                                      if(o2 == null) {
                                          return "O";
                                       }
                                       final HString h = toHString(o2);
-                                      if (h.isEmpty() || !h.hasAnnotation(aType)) {
+                                      if(h.isEmpty() || !h.hasAnnotation(aType)) {
                                          return "O";
                                       }
                                       final Annotation a = Iterables.getFirst(h.annotations(aType), null);
-                                      String tag = a.asAnnotation()
-                                                    .getTag()
-                                                    .map(Tag::name)
-                                                    .orElse(null);
-                                      if (h.start() == a.start()) {
+                                      String tag = a.hasTag()
+                                                   ? a.getTag().name()
+                                                   : null;
+                                      if(h.start() == a.start()) {
                                          return "B-" + tag;
                                       }
                                       return "I-" + tag;
@@ -1502,7 +1518,7 @@ public final class LyreDSL {
    public static LyreExpression isAlphaNumeric(@NonNull LyreExpression expression) {
       Validation.checkArgument(expression.isInstance(HSTRING, STRING, OBJECT),
                                "Illegal Expression: isAlphaNumeric only accepts a HSTRING, STRING, or OBJECT, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression(formatMethod("isAlphaNumeric", expression),
                                 PREDICATE,
                                 o -> processPred(expression.applyAsObject(o),
@@ -1525,7 +1541,7 @@ public final class LyreDSL {
    public static LyreExpression isContentWord(@NonNull LyreExpression expression) {
       Validation.checkArgument(expression.isInstance(HSTRING, STRING, OBJECT),
                                "Illegal Expression: isContentWord only accepts a HSTRING, STRING, or OBJECT, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression(formatMethod("isContentWord", expression),
                                 PREDICATE,
                                 o -> processPred(expression.applyAsObject(o),
@@ -1548,7 +1564,7 @@ public final class LyreDSL {
    public static LyreExpression isDigit(@NonNull LyreExpression expression) {
       Validation.checkArgument(expression.isInstance(HSTRING, STRING, OBJECT),
                                "Illegal Expression: isDigit only accepts a HSTRING, STRING, or OBJECT, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression(formatMethod("isDigit", expression),
                                 PREDICATE,
                                 o -> processPred(expression.applyAsObject(o),
@@ -1571,7 +1587,7 @@ public final class LyreDSL {
    public static LyreExpression isLetter(@NonNull LyreExpression expression) {
       Validation.checkArgument(expression.isInstance(HSTRING, STRING, OBJECT),
                                "Illegal Expression: isLetter only accepts a HSTRING, STRING, or OBJECT, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression(formatMethod("isLetter", expression),
                                 PREDICATE,
                                 o -> processPred(expression.applyAsObject(o),
@@ -1594,7 +1610,7 @@ public final class LyreDSL {
    public static LyreExpression isLower(@NonNull LyreExpression expression) {
       Validation.checkArgument(expression.isInstance(HSTRING, STRING, OBJECT),
                                "Illegal Expression: isLower only accepts a HSTRING, STRING, or OBJECT, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression(formatMethod("isLower", expression),
                                 PREDICATE,
                                 o -> processPred(expression.applyAsObject(o),
@@ -1617,7 +1633,7 @@ public final class LyreDSL {
    public static LyreExpression isPunctuation(@NonNull LyreExpression expression) {
       Validation.checkArgument(expression.isInstance(HSTRING, STRING, OBJECT),
                                "Illegal Expression: isPunctuation only accepts a HSTRING, STRING, or OBJECT, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression(formatMethod("isPunctuation", expression),
                                 PREDICATE,
                                 o -> processPred(expression.applyAsObject(o),
@@ -1640,7 +1656,7 @@ public final class LyreDSL {
    public static LyreExpression isStopWord(@NonNull LyreExpression expression) {
       Validation.checkArgument(expression.isInstance(HSTRING, STRING, OBJECT),
                                "Illegal Expression: isStopWord only accepts a HSTRING, STRING, or OBJECT, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression(formatMethod("isStopWord", expression),
                                 PREDICATE,
                                 o -> processPred(expression.applyAsObject(o),
@@ -1651,19 +1667,19 @@ public final class LyreDSL {
    }
 
    /**
-    * Predicate checking if the HString returned from the given expression is upper case
+    * Predicate checking if the HString returned from the given expression is uppercase
     * <pre>
     *    Usage:  isUpper( expression )
-    *    e.g.: isUpper( @TOKEN ) -- check if the tokens on the current HString are upper case
+    *    e.g.: isUpper( @TOKEN ) -- check if the tokens on the current HString are uppercase
     * </pre>
     *
-    * @param expression the expression returning an HString to check is upper case
+    * @param expression the expression returning an HString to check is uppercase
     * @return the LyreExpression
     */
    public static LyreExpression isUpper(@NonNull LyreExpression expression) {
       Validation.checkArgument(expression.isInstance(HSTRING, STRING, OBJECT),
                                "Illegal Expression: isUpper only accepts a HSTRING, STRING, or OBJECT, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression(formatMethod("isUpper", expression),
                                 PREDICATE,
                                 o -> processPred(expression.applyAsObject(o),
@@ -1774,7 +1790,7 @@ public final class LyreDSL {
    public static LyreExpression lemma(@NonNull LyreExpression expression) {
       Validation.checkArgument(expression.isInstance(HSTRING, STRING, OBJECT),
                                "Illegal Expression: lemma only accepts a HSTRING, STRING, or OBJECT, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression(formatMethod("lemma", expression),
                                 STRING,
                                 o -> process(true, expression.applyAsObject(o), a -> toHString(a).getLemma()));
@@ -1796,10 +1812,10 @@ public final class LyreDSL {
                                 NUMERIC,
                                 o -> {
                                    Object a = expression.applyAsObject(o);
-                                   if (a == null) {
+                                   if(a == null) {
                                       return 0.0;
                                    }
-                                   if (a instanceof Collection) {
+                                   if(a instanceof Collection) {
                                       return (double) Cast.<Collection>as(a).size();
                                    }
                                    return (double) a.toString().length();
@@ -1847,10 +1863,10 @@ public final class LyreDSL {
                                    Object out = process(false, o, h -> elements.stream()
                                                                                .map(e -> e.applyAsObject(h))
                                                                                .collect(Collectors.toList()));
-                                   if (out == null) {
+                                   if(out == null) {
                                       return Collections.emptyList();
                                    }
-                                   if (!(out instanceof Collection)) {
+                                   if(!(out instanceof Collection)) {
                                       return Collections.singletonList(out);
                                    }
                                    return out;
@@ -1858,7 +1874,8 @@ public final class LyreDSL {
    }
 
    /**
-    * Literal String value
+    * Lyre allows for string literals to be specified using single quotes (').
+    * The backslash character can be use to escape a single quote if it is required in the literal.
     * <pre>
     *    usage: 'value'
     *    e.g.: 'now is the time...'
@@ -1871,8 +1888,17 @@ public final class LyreDSL {
       return new LyreExpression(String.format("'%s'", value), STRING, o -> value);
    }
 
-   public static LyreExpression literalArray(Iterator<String> elements) {
-      return list(Streams.asStream(elements).map(LyreDSL::literal).collect(Collectors.toList()));
+
+   /**
+    * Convenience method for constructing an array (list) of literal values.
+    *
+    * @param literals the literal values
+    * @return the LyreExpression
+    */
+   public static LyreExpression literalArray(Iterator<String> literals) {
+      return list(Streams.asStream(literals)
+                         .map(LyreDSL::literal)
+                         .collect(Collectors.toList()));
    }
 
    /**
@@ -1891,10 +1917,10 @@ public final class LyreDSL {
                                 NUMERIC,
                                 o -> {
                                    Object a = expression.applyAsObject(o);
-                                   if (a == null) {
+                                   if(a == null) {
                                       return 0.0;
                                    }
-                                   if (a instanceof Collection) {
+                                   if(a instanceof Collection) {
                                       return (double) Cast.<Collection>as(a).size();
                                    }
                                    return 1;
@@ -1927,13 +1953,20 @@ public final class LyreDSL {
     *    e.g.: (?> #VERB) -- returns true if the next Token is a verb
     * </pre>
     *
-    * @param condition the condition to be met by the next Token in order to evaluate to True
+    * @param condition  the condition to be met by the next Token in order to evaluate to True
+    * @param expression the expression
     * @return the LyreExpression
     */
-   public static LyreExpression lookAhead(@NonNull LyreExpression condition) {
-      return new LyreExpression(String.format("(?> %s)", condition),
+   public static LyreExpression lookAhead(@NonNull LyreExpression condition, @NonNull LyreExpression expression) {
+      return new LyreExpression(String.format("%s (?> %s)", expression, condition),
                                 PREDICATE,
-                                o -> condition.test(toHString(o).next(Types.TOKEN)));
+                                o -> {
+                                   HString hString = toHString(o).next(Types.TOKEN);
+                                   if(condition.test(hString)) {
+                                      return expression.applyAsObject(o);
+                                   }
+                                   return null;
+                                });
    }
 
    /**
@@ -1943,13 +1976,20 @@ public final class LyreDSL {
     *    e.g.: (?< #VERB) -- returns true if the previous Token is a verb
     * </pre>
     *
-    * @param condition the condition to be met by the previous Token in order to evaluate to True
+    * @param condition  the condition to be met by the previous Token in order to evaluate to True
+    * @param expression the expression
     * @return the LyreExpression
     */
-   public static LyreExpression lookBehind(@NonNull LyreExpression condition) {
-      return new LyreExpression(String.format("(?< %s)", condition),
+   public static LyreExpression lookBehind(@NonNull LyreExpression condition, @NonNull LyreExpression expression) {
+      return new LyreExpression(String.format("(?< %s) %s", condition, expression),
                                 PREDICATE,
-                                o -> condition.test(toHString(o).previous(Types.TOKEN)));
+                                o -> {
+                                   HString hString = toHString(o).previous(Types.TOKEN);
+                                   if(condition.test(hString)) {
+                                      return expression.applyAsObject(o);
+                                   }
+                                   return null;
+                                });
    }
 
    /**
@@ -2005,19 +2045,19 @@ public final class LyreDSL {
                                      @NonNull LyreExpression paddingCharacter) {
       Validation.checkArgument(expression.isInstance(HSTRING, STRING, OBJECT),
                                "Illegal Expression: lpad expression only accepts a HSTRING, STRING, or OBJECT, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       Validation.checkArgument(minimumLength.isInstance(NUMERIC),
                                "Illegal Expression: lpad minimumLength expression only accepts a NUMERIC, but '"
-                                  + minimumLength + "' was provided which is of type " + minimumLength.getType());
+                                     + minimumLength + "' was provided which is of type " + minimumLength.getType());
       Validation.checkArgument(paddingCharacter.isInstance(HSTRING, STRING, OBJECT),
                                "Illegal Expression: lpad paddingCharacter only accepts a HSTRING, STRING, or OBJECT, but '"
-                                  + paddingCharacter + "' was provided which is of type " + paddingCharacter.getType());
+                                     + paddingCharacter + "' was provided which is of type " + paddingCharacter.getType());
       return new LyreExpression(formatMethod("lpad", expression, minimumLength, paddingCharacter),
                                 STRING,
                                 o -> {
                                    int amt = (int) minimumLength.applyAsDouble(o);
                                    String pad = paddingCharacter.applyAsString(o);
-                                   if (Strings.isNullOrBlank(pad) || pad.length() > 1) {
+                                   if(Strings.isNullOrBlank(pad) || pad.length() > 1) {
                                       throw new IllegalArgumentException("Invalid padding character: " + pad);
                                    }
                                    return process(true,
@@ -2117,7 +2157,7 @@ public final class LyreDSL {
    }
 
    /**
-    * Return the annotation in thelist expression with maximum <code>confidence</code> as obtained via the
+    * Return the annotation in the list expression with maximum <code>confidence</code> as obtained via the
     * <code>CONFIDENCE</code> attribute or null if none.
     * <pre>
     *    Usage: max( list_expression )
@@ -2134,7 +2174,7 @@ public final class LyreDSL {
                                          .stream()
                                          .max(Comparator.comparingDouble(h -> (h instanceof HString)
                                                                               ? Cast.<HString>as(h)
-                                                                                 .attribute(Types.CONFIDENCE, 0.0)
+                                                                                    .attribute(Types.CONFIDENCE, 0.0)
                                                                               : 0.0
                                                                         ))
                                          .orElse(null));
@@ -2182,13 +2222,20 @@ public final class LyreDSL {
     *    e.g.: (?!> #VERB) -- returns true if the next Token is NOT a verb
     * </pre>
     *
-    * @param condition the condition that must NOT be met by the next Token in order to evaluate to True
+    * @param condition  the condition that must NOT be met by the next Token in order to evaluate to True
+    * @param expression the expression
     * @return the LyreExpression
     */
-   public static LyreExpression negLookAhead(@NonNull LyreExpression condition) {
-      return new LyreExpression(String.format("(?!> %s)", condition),
+   public static LyreExpression negLookAhead(@NonNull LyreExpression condition, @NonNull LyreExpression expression) {
+      return new LyreExpression(String.format("%s (?!> %s)", expression, condition),
                                 PREDICATE,
-                                o -> !condition.test(toHString(o).next(Types.TOKEN)));
+                                o -> {
+                                   HString hString = toHString(o).next(Types.TOKEN);
+                                   if(!condition.test(hString)) {
+                                      return expression.applyAsObject(o);
+                                   }
+                                   return null;
+                                });
    }
 
    /**
@@ -2198,13 +2245,20 @@ public final class LyreDSL {
     *    e.g.: (?!< #VERB) -- returns true if the previous Token is NOT a verb
     * </pre>
     *
-    * @param condition the condition that must NOT be met by the previous Token in order to evaluate to True
+    * @param condition  the condition that must NOT be met by the previous Token in order to evaluate to True
+    * @param expression the expression
     * @return the LyreExpression
     */
-   public static LyreExpression negLookBehind(@NonNull LyreExpression condition) {
-      return new LyreExpression(String.format("(?!< %s)", condition),
+   public static LyreExpression negLookBehind(@NonNull LyreExpression condition, @NonNull LyreExpression expression) {
+      return new LyreExpression(String.format("(?!< %s) %s", condition, expression),
                                 PREDICATE,
-                                o -> !condition.test(toHString(o).previous(Types.TOKEN)));
+                                o -> {
+                                   HString hString = toHString(o).previous(Types.TOKEN);
+                                   if(!condition.test(hString)) {
+                                      return expression.applyAsObject(o);
+                                   }
+                                   return null;
+                                });
    }
 
    /**
@@ -2241,7 +2295,7 @@ public final class LyreDSL {
                                 LyreExpressionType.determineCommonType(Arrays.asList(expression, defaultValue)),
                                 o -> {
                                    Object o1 = expression.applyAsObject(o);
-                                   if (o1 == null) {
+                                   if(o1 == null) {
                                       return defaultValue.applyAsObject(o);
                                    }
                                    return o1;
@@ -2249,7 +2303,7 @@ public final class LyreDSL {
    }
 
    /**
-    * Numeric literal expression
+    * Lyres accepts numerical literal values in the form of ints and doubles and allows for scientific notation.
     * <pre>
     *    e.g.: 123.4
     *    e.g.: 1e-5
@@ -2280,24 +2334,42 @@ public final class LyreDSL {
                                 o -> left.testObject(o) || right.testObject(o));
    }
 
+   private static boolean isNullOrEmpty(Object o) {
+      if(o == null) {
+         return true;
+      }
+      if(o instanceof Collection) {
+         return Cast.<Collection<?>>as(o).isEmpty();
+      }
+      if(o instanceof CharSequence) {
+         return Strings.isNullOrBlank(o.toString());
+      }
+      if(o instanceof Number) {
+         return Double.isFinite(Cast.<Number>as(o).doubleValue());
+      }
+      return false;
+   }
+
    /**
-    * Pipes a series of expressions together.
+    * Sequentially processes each expression with the input object, returning the result of the first expression that
+    * evaluates to a non-null, non-empty list, or finite numeric value.
     * <pre>
     *    Usage: expression1 |> expression2 |> ... |> expresisonN
     * </pre>
     *
     * @param expressions The expressions to chain together.
+    * @return the lyre expression
     */
-   public static LyreExpression ore(@NonNull LyreExpression... expressions) {
+   public static LyreExpression orPipe(@NonNull LyreExpression... expressions) {
       Validation.checkArgument(expressions.length > 1);
       return new LyreExpression(Stream.of(expressions)
                                       .map(Object::toString)
                                       .collect(Collectors.joining(" |> ")),
                                 LyreExpressionType.determineCommonType(Arrays.asList(expressions)),
                                 o -> {
-                                   for (LyreExpression expression : expressions) {
+                                   for(LyreExpression expression : expressions) {
                                       Object out = expression.applyAsObject(o);
-                                      if (out != null) {
+                                      if(!isNullOrEmpty(out)) {
                                          return out;
                                       }
                                    }
@@ -2306,14 +2378,16 @@ public final class LyreDSL {
    }
 
    /**
-    * Pipes a series of expressions together.
+    * Sequentially processes each expression with the output of the previous expression or the input object for the
+    * first expression.
     * <pre>
-    *    Usage: expression1 |> expression2 |> ... |> expresisonN
+    *    Usage: expression1 &> expression2 &> ... &> expression
     * </pre>
     *
     * @param expressions The expressions to chain together.
+    * @return the lyre expression
     */
-   public static LyreExpression pipe(@NonNull LyreExpression... expressions) {
+   public static LyreExpression andPipe(@NonNull LyreExpression... expressions) {
       Validation.checkArgument(expressions.length > 1);
       return new LyreExpression(Stream.of(expressions)
                                       .map(Object::toString)
@@ -2321,7 +2395,7 @@ public final class LyreDSL {
                                 LyreExpressionType.determineCommonType(Arrays.asList(expressions)),
                                 o -> {
                                    Object out = o;
-                                   for (LyreExpression expression : expressions) {
+                                   for(LyreExpression expression : expressions) {
                                       out = expression.applyAsObject(out);
                                    }
                                    return out;
@@ -2341,25 +2415,25 @@ public final class LyreDSL {
    public static LyreExpression pos(@NonNull LyreExpression expression) {
       Validation.checkArgument(expression.isInstance(HSTRING),
                                "Illegal Expression: pos only accepts a HSTRING, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression(formatMethod("pos", expression),
                                 OBJECT,
                                 o -> process(true, expression.applyAsObject(o), a -> toHString(a).pos()));
    }
 
    private static List<?> recursiveListApply(Collection<?> c, Function<Object, ?> operator) {
-      if (c == null) {
+      if(c == null) {
          return null;
       }
       List<Object> output = new ArrayList<>();
-      for (Object o : c) {
+      for(Object o : c) {
          Object toAdd;
-         if (o instanceof Collection) {
+         if(o instanceof Collection) {
             toAdd = Lyre.postProcess(recursiveListApply(Cast.as(o), operator));
          } else {
             toAdd = Lyre.postProcess(operator.apply(o));
          }
-         if (toAdd != null) {
+         if(toAdd != null) {
             output.add(toAdd);
          }
       }
@@ -2407,14 +2481,18 @@ public final class LyreDSL {
     */
    public static LyreExpression regex(@NonNull String pattern, boolean matchFullSpan) {
       String str = "/" + FLAGS.matcher(pattern).replaceFirst("") + "/"
-         + (Re.next(FLAGS.matcher(pattern)).contains("i") ? "i" : "")
-         + (matchFullSpan ? "g" : "");
+            + (Re.next(FLAGS.matcher(pattern)).contains("i")
+               ? "i"
+               : "")
+            + (matchFullSpan
+               ? "g"
+               : "");
       final Pattern regex = Pattern.compile(pattern);
       return new LyreExpression(str,
                                 PREDICATE,
                                 o -> {
                                    HString hString = toHString(o);
-                                   if (matchFullSpan) {
+                                   if(matchFullSpan) {
                                       return regex.matcher(hString).matches();
                                    }
                                    return regex.matcher(hString).find();
@@ -2422,10 +2500,10 @@ public final class LyreDSL {
    }
 
    /**
-    * Gets the annotation(s) having the given relation in the given direction (INCOMING or OUTGOING).
+    * Gets the annotation(s) having the given relation type in the given direction (INCOMING or OUTGOING).
     * <pre>
-    *    Usage:  @>type -- annotations from outgoing  given relation
-    *    Usage:  @<type -- annotations from incoming given relation
+    *    Usage:  @>type -- annotations reachable from outgoing  given relation
+    *    Usage:  @<type -- annotations reachable from incoming given relation
     *    e.g.: @>COREFERENCE -- return the annotation that the current token has a COREFERENCE relation with
     * </pre>
     *
@@ -2438,10 +2516,11 @@ public final class LyreDSL {
    }
 
    /**
-    * Gets the annotation(s) having the following dependency relation in the given direction (INCOMING or OUTGOING).
+    * Gets the annotation(s) having the the given relation type with the given relation value in the given direction
+    * (INCOMING or OUTGOING).
     * <pre>
-    *    Usage:  @>type{'relation'} -- annotations from outgoing relation of given type and value
-    *    Usage:  @<type{'relation'} -- annotations from incoming relation of given type and value
+    *    Usage:  @>type{'relation'} -- annotations reachable from outgoing relation of given type and value
+    *    Usage:  @<type{'relation'} -- annotations  reachable from incoming relation of given type and value
     *    e.g.: @>COREFERNCE{'pronominal'} -- return the annotation having a COREFERENCE relation with value pronominal
     * </pre>
     *
@@ -2455,10 +2534,10 @@ public final class LyreDSL {
    }
 
    /**
-    * Gets the annotation(s) having the following dependency relation in the given direction (INCOMING or OUTGOING).
+    * Gets the annotation(s) having the given relation type in the given direction (INCOMING or OUTGOING).
     * <pre>
-    *    Usage:  @>type{'relation'} -- annotations from outgoing relation of given type and value
-    *    Usage:  @<type{'relation'} -- annotations from incoming relation of given type and value
+    *    Usage:  @>type{'relation'} -- annotations reachable from outgoing relation of given type and value
+    *    Usage:  @<type{'relation'} -- annotations reachable from incoming relation of given type and value
     *    e.g.: @>COREFERNCE{'pronominal'} -- return the annotation having a COREFERENCE relation with value pronominal
     * </pre>
     *
@@ -2467,16 +2546,18 @@ public final class LyreDSL {
     * @param expression the expression returning the HString to extract dependency relations over
     * @return the LyreExpression
     */
-   public static LyreExpression rel(@NonNull RelationDirection direction, @NonNull RelationType type,
+   public static LyreExpression rel(@NonNull RelationDirection direction,
+                                    @NonNull RelationType type,
                                     @NonNull LyreExpression expression) {
       return rel(direction, type, null, expression);
    }
 
    /**
-    * Gets the annotation(s) having the following dependency relation in the given direction (INCOMING or OUTGOING).
+    * Gets the annotation(s) having the the given relation type with the given relation value in the given direction
+    * (INCOMING or OUTGOING).
     * <pre>
-    *    Usage:  @>type{'relation'}(expression) -- annotations from outgoing relation of given type and value
-    *    Usage:  @<type{'relation'}(expression) -- annotations from incoming relation of given type and value
+    *    Usage:  @>type{'relation'}(expression) -- annotations reachable from outgoing relation of given type and value
+    *    Usage:  @<type{'relation'}(expression) -- annotations reachable from incoming relation of given type and value
     *    e.g.: @>COREFERNCE{'pronominal'}(@PHRASE_CHUNK) -- return the annotation that the phrase chunks on the current token
     *                                                       have an COREFERENCE relation with value pronominal
     * </pre>
@@ -2493,22 +2574,26 @@ public final class LyreDSL {
                                     @NonNull LyreExpression expression) {
       Validation.checkArgument(expression.isInstance(HSTRING),
                                "Illegal Expression: rel only accepts a HSTRING, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression(formatMethod(String.format("@%s%s%s",
-                                                           direction == OUTGOING ? ">" : "<",
+                                                           direction == OUTGOING
+                                                           ? ">"
+                                                           : "<",
                                                            type.name(),
-                                                           Strings.isNullOrBlank(relation) ? "" : "{" + relation + "}"),
+                                                           Strings.isNullOrBlank(relation)
+                                                           ? ""
+                                                           : "{" + relation + "}"),
                                              expression),
                                 HSTRING,
                                 o -> process(true, expression.applyAsObject(o), a -> {
                                    HString h = toHString(a);
-                                   if (direction == OUTGOING) {
-                                      if (Strings.isNullOrBlank(relation)) {
+                                   if(direction == OUTGOING) {
+                                      if(Strings.isNullOrBlank(relation)) {
                                          return h.outgoing(type);
                                       }
                                       return h.outgoing(type, relation);
                                    } else {
-                                      if (Strings.isNullOrBlank(relation)) {
+                                      if(Strings.isNullOrBlank(relation)) {
                                          return h.incoming(type);
                                       }
                                       return h.incoming(type, relation);
@@ -2554,19 +2639,19 @@ public final class LyreDSL {
                                      @NonNull LyreExpression paddingCharacter) {
       Validation.checkArgument(expression.isInstance(HSTRING, STRING, OBJECT),
                                "Illegal Expression: rpad expression only accepts a HSTRING, STRING, or OBJECT, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       Validation.checkArgument(minimumLength.isInstance(NUMERIC),
                                "Illegal Expression: rpad minimumLength expression only accepts a NUMERIC, but '"
-                                  + minimumLength + "' was provided which is of type " + minimumLength.getType());
+                                     + minimumLength + "' was provided which is of type " + minimumLength.getType());
       Validation.checkArgument(paddingCharacter.isInstance(HSTRING, STRING, OBJECT),
                                "Illegal Expression: rpad paddingCharacter only accepts a HSTRING, STRING, or OBJECT, but '"
-                                  + paddingCharacter + "' was provided which is of type " + paddingCharacter.getType());
+                                     + paddingCharacter + "' was provided which is of type " + paddingCharacter.getType());
       return new LyreExpression(formatMethod("rpad", expression, minimumLength, paddingCharacter),
                                 STRING,
                                 o -> {
                                    int amt = (int) minimumLength.applyAsDouble(o);
                                    String pad = paddingCharacter.applyAsString(o);
-                                   if (Strings.isNullOrBlank(pad) || pad.length() > 1) {
+                                   if(Strings.isNullOrBlank(pad) || pad.length() > 1) {
                                       throw new IllegalArgumentException("Invalid padding character: " + pad);
                                    }
                                    return process(true,
@@ -2618,15 +2703,19 @@ public final class LyreDSL {
     */
    public static LyreExpression rsub(@NonNull String pattern, @NonNull String replacement, boolean replaceAll) {
       String str = "/" + FLAGS.matcher(pattern).replaceFirst("") + "/"
-         + replacement + "/"
-         + (Re.next(FLAGS.matcher(pattern)).contains("i") ? "i" : "")
-         + (replaceAll ? "g" : "");
+            + replacement + "/"
+            + (Re.next(FLAGS.matcher(pattern)).contains("i")
+               ? "i"
+               : "")
+            + (replaceAll
+               ? "g"
+               : "");
       final Pattern regex = Pattern.compile(pattern);
       return new LyreExpression(str,
                                 STRING,
                                 o -> {
                                    HString hString = toHString(o);
-                                   if (replaceAll) {
+                                   if(replaceAll) {
                                       return regex.matcher(hString).replaceAll(replacement);
                                    }
                                    return regex.matcher(hString).replaceFirst(replacement);
@@ -2665,18 +2754,22 @@ public final class LyreDSL {
                                 expression.getType(),
                                 obj -> {
                                    Object o = expression.applyAsObject(obj);
-                                   if (o == null) {
+                                   if(o == null) {
                                       return null;
                                    }
-                                   if (o instanceof Collection) {
+                                   if(o instanceof Collection) {
                                       List<?> list = Lists.asArrayList(Cast.<Iterable<?>>as(o));
-                                      if (list.isEmpty()) {
+                                      if(list.isEmpty()) {
                                          return list;
                                       }
-                                      int s = start >= 0 ? start : Math.max(0, list.size() + start);
-                                      int e = Math.min(end > 0 ? end : Math.max(0, list.size() + end),
+                                      int s = start >= 0
+                                              ? start
+                                              : Math.max(0, list.size() + start);
+                                      int e = Math.min(end > 0
+                                                       ? end
+                                                       : Math.max(0, list.size() + end),
                                                        list.size());
-                                      if (e - s == 1) {
+                                      if(e - s == 1) {
                                          return list.get(s);
                                       }
                                       return list.subList(s, e);
@@ -2687,10 +2780,10 @@ public final class LyreDSL {
                                    int e = end > 0
                                            ? Math.min(end, o.toString().length())
                                            : Math.max(0, o.toString().length() + end);
-                                   if (o instanceof HString) {
+                                   if(o instanceof HString) {
                                       return Cast.<HString>as(o).substring(s, e);
                                    }
-                                   if (s >= o.toString().length()) {
+                                   if(s >= o.toString().length()) {
                                       return null;
                                    }
                                    return o.toString().substring(s, e);
@@ -2710,7 +2803,7 @@ public final class LyreDSL {
    public static LyreExpression stem(@NonNull LyreExpression expression) {
       Validation.checkArgument(expression.isInstance(HSTRING, STRING, OBJECT),
                                "Illegal Expression: stem only accepts a HSTRING, STRING, OBJECT, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression(formatMethod("stem", expression),
                                 STRING,
                                 o -> process(true, expression.applyAsObject(o),
@@ -2775,17 +2868,12 @@ public final class LyreDSL {
    public static LyreExpression tag(@NonNull Tag value, @NonNull LyreExpression expression) {
       Validation.checkArgument(expression.isInstance(HSTRING),
                                "Illegal Expression: tag only accepts a HSTRING, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression(formatMethod(String.format("#%s", value.name()), expression),
                                 PREDICATE,
                                 o -> process(true,
                                              expression.applyAsObject(o),
-                                             h -> {
-                                                System.out.println(toHString(h).pos());
-                                                System.out.println(toHString(h).asAnnotation().pos());
-                                                System.out.println(toHString(h).asAnnotation().getTag());
-                                                return toHString(h).asAnnotation().tagIsA(value);
-                                             }));
+                                             h -> toHString(h).asAnnotation().tagIsA(value)));
    }
 
    /**
@@ -2802,19 +2890,19 @@ public final class LyreDSL {
    public static LyreExpression tag(@NonNull String value, @NonNull LyreExpression expression) {
       Validation.checkArgument(expression.isInstance(HSTRING),
                                "Illegal Expression: tag only accepts a HSTRING, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression(formatMethod(String.format("#%s", value), expression),
                                 PREDICATE,
                                 o -> process(true,
                                              expression.applyAsObject(o),
                                              h -> {
                                                 Annotation annotation = toHString(h).asAnnotation();
-                                                if (annotation.tagIsA(value)) {
+                                                if(annotation.tagIsA(value)) {
                                                    return true;
                                                 }
                                                 try {
                                                    return annotation.pos().isInstance(POS.fromString(value));
-                                                } catch (IllegalArgumentException e) {
+                                                } catch(IllegalArgumentException e) {
                                                    return false;
                                                 }
                                              }));
@@ -2833,12 +2921,12 @@ public final class LyreDSL {
    public static LyreExpression tlen(@NonNull LyreExpression expression) {
       Validation.checkArgument(expression.isInstance(HSTRING, STRING),
                                "Illegal Expression: tlen only accepts a HSTRING or STRING, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression("tokenLen", NUMERIC, o -> toHString(expression.applyAsObject(o)).tokenLength());
    }
 
    /**
-    * Trims the HString resulting from the given object expression using the given predicate expression.
+    * Removes tokens from the left and right of the input HString if they evaluate to true with the given predicate.
     * <pre>
     *    Usage: trim( object_expression, predicate_expression )
     *    e.g.: trim( $_, isStopWord || len < 3 ) -- remove tokens that are stopwords or have a length less than three
@@ -2852,7 +2940,7 @@ public final class LyreDSL {
    public static LyreExpression trim(@NonNull LyreExpression expression, @NonNull LyreExpression predicate) {
       Validation.checkArgument(expression.isInstance(HSTRING),
                                "Illegal Expression: trim only accepts a HSTRING, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression(formatMethod("trim", expression, predicate),
                                 expression.getType(),
                                 o -> process(true,
@@ -2873,7 +2961,7 @@ public final class LyreDSL {
    public static LyreExpression upos(@NonNull LyreExpression expression) {
       Validation.checkArgument(expression.isInstance(HSTRING),
                                "Illegal Expression: upos only accepts a HSTRING, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression(formatMethod("upos", expression),
                                 OBJECT,
                                 o -> process(true,
@@ -2894,7 +2982,7 @@ public final class LyreDSL {
    public static LyreExpression upper(@NonNull LyreExpression expression) {
       Validation.checkArgument(expression.isInstance(HSTRING, STRING, OBJECT),
                                "Illegal Expression: upper only accepts a HSTRING, STRING, OBJECT, but '"
-                                  + expression + "' was provided which is of type " + expression.getType());
+                                     + expression + "' was provided which is of type " + expression.getType());
       return new LyreExpression(formatMethod("upper", expression),
                                 STRING,
                                 o -> process(true, expression.applyAsObject(o), a -> a.toString().toUpperCase()));
@@ -2916,19 +3004,33 @@ public final class LyreDSL {
       return new LyreExpression(formatMethod("when", condition, expression),
                                 expression.getType(),
                                 o -> {
-                                   if (condition.testObject(o)) {
+                                   if(condition.testObject(o)) {
                                       return expression.applyAsObject(o);
                                    }
                                    return null;
                                 });
    }
 
+   /**
+    * Constructs a temporary word list to use as a predicate or as a container for checking for the existence of words
+    * and phrases.
+    *
+    * @param wordList the word list
+    * @return the LyreExpression
+    */
    public static LyreExpression wordList(@NonNull WordList wordList) {
       return new LyreExpression(formatMethod("wordList", literalArray(wordList.iterator())),
                                 OBJECT,
                                 o -> wordList);
    }
 
+   /**
+    * Constructs a temporary word list to use as a predicate or as a container for checking for the existence of words
+    * and phrases.
+    *
+    * @param wordList the word list expression
+    * @return the LyreExpression
+    */
    public static LyreExpression wordList(@NonNull LyreExpression wordList) {
       final WordList wl = new SimpleWordList(Sets.asHashSet(wordList.applyAsList(null, String.class)));
       return new LyreExpression(formatMethod("wordList", wordList),

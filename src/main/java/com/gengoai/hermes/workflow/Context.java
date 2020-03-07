@@ -48,6 +48,9 @@ public class Context implements Serializable, Copyable<Context> {
 
    }
 
+   public Object get(String name){
+      return properties.get(name);
+   }
 
    /**
     * Instantiates a new Processor context.

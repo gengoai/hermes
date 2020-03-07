@@ -36,14 +36,14 @@ import static com.gengoai.hermes.corpus.io.CorpusParameters.SAVE_MODE;
  *
  * @author David B. Bracewell
  */
-public class LuceneWriter extends CorpusWriter {
+public class HCFWriter extends CorpusWriter {
 
    /**
     * Instantiates a new Lucene writer.
     *
     * @param corpus the corpus
     */
-   public LuceneWriter(Corpus corpus) {
+   public HCFWriter(Corpus corpus) {
       super(corpus);
    }
 
@@ -60,4 +60,4 @@ public class LuceneWriter extends CorpusWriter {
    public String writeToString(Document document) {
       throw new UnsupportedOperationException();
    }
-}//END OF LuceneWriter
+}//END OF HCFWriter

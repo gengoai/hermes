@@ -54,6 +54,11 @@ class SearchCorpus implements Corpus {
    }
 
    @Override
+   public MStream<Document> parallelStream() {
+      return stream().parallel();
+   }
+
+   @Override
    public Corpus cache() {
       return new InMemoryCorpus(stream().javaStream());
    }

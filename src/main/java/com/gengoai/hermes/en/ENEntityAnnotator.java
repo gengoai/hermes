@@ -35,7 +35,7 @@ public class ENEntityAnnotator extends SubTypeAnnotator implements Serializable 
    private final DefaultTokenTypeEntityAnnotator tokenTypeEntityAnnotator = new DefaultTokenTypeEntityAnnotator();
 
    public ENEntityAnnotator() {
-      super(Types.ENTITY, true, Arrays.asList(Types.TOKEN_TYPE_ENTITY, Types.ML_ENTITY));
+      super(Types.ENTITY, false, Arrays.asList(Types.TOKEN_TYPE_ENTITY, Types.ML_ENTITY));
    }
 
    @Override
