@@ -43,13 +43,7 @@ import static com.gengoai.hermes.Hermes.IDENTIFIER;
 import static com.gengoai.string.Re.*;
 import static com.gengoai.string.StringMatcher.regex;
 
-/**
- * The enum Regex types.
- */
-public enum RegexTypes implements TokenDef, GrammarRegistrable {
-   /**
-    * The Phrase.
-    */
+enum RegexTypes implements TokenDef, GrammarRegistrable {
    CASE_INSENSITIVE_PHRASE(re("'",
                               namedGroup("", oneOrMore(or(ESC_BACKSLASH + ".", notChars("'")))),
                               "'")) {
@@ -97,9 +91,6 @@ public enum RegexTypes implements TokenDef, GrammarRegistrable {
          });
       }
    },
-   /**
-    * The Regex.
-    */
    REGEX(re(e('/'),
             namedGroup("", oneOrMore(or(ESC_BACKSLASH + ".", notChars("/")))),
             e('/'),
@@ -119,9 +110,6 @@ public enum RegexTypes implements TokenDef, GrammarRegistrable {
          });
       }
    },
-   /**
-    * The Tag.
-    */
    TAG(re(e('#'),
           namedGroup("", IDENTIFIER))) {
       @Override
@@ -133,9 +121,6 @@ public enum RegexTypes implements TokenDef, GrammarRegistrable {
          }, this));
       }
    },
-   /**
-    * The Attribute.
-    */
    NUMERIC_ATTRIBUTE(re(e('$'),
                         namedGroup("", IDENTIFIER),
                         "\\s*",
@@ -172,9 +157,6 @@ public enum RegexTypes implements TokenDef, GrammarRegistrable {
          });
       }
    },
-   /**
-    * The Attribute.
-    */
    STRING_ATTRIBUTE(re(e('$'),
                        namedGroup("", IDENTIFIER),
                        "\\s*",
@@ -217,9 +199,6 @@ public enum RegexTypes implements TokenDef, GrammarRegistrable {
          });
       }
    },
-   /**
-    * Lexicon regex types.
-    */
    LEXICON(re(e('%'), namedGroup("", IDENTIFIER))) {
       @Override
       public void register(Grammar grammar) {
@@ -228,9 +207,6 @@ public enum RegexTypes implements TokenDef, GrammarRegistrable {
                                                                                token.getVariable(0)).test(h), this));
       }
    },
-   /**
-    * The Annotation.
-    */
    ANNOTATION(re(e('@'),
                  namedGroup("", IDENTIFIER))) {
       @Override
@@ -506,9 +482,6 @@ public enum RegexTypes implements TokenDef, GrammarRegistrable {
       this.pattern = pattern;
    }
 
-   /**
-    * As sequence transition function.
-    */
    static TransitionFunction asSequence(List<TransitionFunction> transitionFunctions) {
       TransitionFunction tf = null;
       for(TransitionFunction transitionFunction : transitionFunctions) {

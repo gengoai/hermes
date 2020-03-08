@@ -1839,7 +1839,10 @@ while (matcher.find()) {
 }
 ....
 
-The following table lists the regular expression constructs that can be used.
+=== Syntax
+
+* *Literals*
+
 
 
 TIP: Take a look at *TokenRegexExample.java* in the Hermes examples project to see example patterns.
