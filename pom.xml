@@ -216,6 +216,7 @@
                                     <backend>html5</backend>
                                     <sourceHighlighter>coderay</sourceHighlighter>
                                     <outputDirectory>docs/</outputDirectory>
+                                    <outputFile>index.html</outputFile>
                                 </configuration>
                             </execution>
                             <execution>
