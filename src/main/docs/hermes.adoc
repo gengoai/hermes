@@ -14,6 +14,8 @@
 :sectnums:
 :sectlinks:
 :source-highlighter: coderay
+ifndef::imagesdir[:imagesdir: images]
+ifndef::sourcedir[:sourcedir: ../../main/java]
 
 ifdef::backend-html5[]
 image::hermes.png[align="center"]

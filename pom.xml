@@ -197,7 +197,7 @@
                         <configuration>
                             <doctype>article</doctype>
                             <attributes>
-                                <imagesdir>${project.basedir}/docs/</imagesdir>
+<!--                                <imagesdir>${project.basedir}/docs/</imagesdir>-->
                             </attributes>
                             <sourceDirectory>src/main/docs/</sourceDirectory>
                             <gemPath>${project.build.directory}/gems-provided</gemPath>
@@ -217,23 +217,24 @@
                                     <sourceHighlighter>coderay</sourceHighlighter>
                                     <outputDirectory>docs/</outputDirectory>
                                     <outputFile>index.html</outputFile>
+                                    <preserveDirectories>true</preserveDirectories>
                                 </configuration>
                             </execution>
-                            <execution>
-                                <id>output-pdf</id>
-                                <phase>generate-resources</phase>
-                                <goals>
-                                    <goal>process-asciidoc</goal>
-                                </goals>
-                                <configuration>
-                                    <backend>pdf</backend>
-                                    <sourceHighlighter>coderay</sourceHighlighter>
-                                    <attributes>
-                                        <pdf-stylesdir>src/main/docs/</pdf-stylesdir>
-                                        <pdf-style>custom</pdf-style>
-                                    </attributes>
-                                </configuration>
-                            </execution>
+<!--                            <execution>-->
+<!--                                <id>output-pdf</id>-->
+<!--                                <phase>generate-resources</phase>-->
+<!--                                <goals>-->
+<!--                                    <goal>process-asciidoc</goal>-->
+<!--                                </goals>-->
+<!--                                <configuration>-->
+<!--                                    <backend>pdf</backend>-->
+<!--                                    <sourceHighlighter>coderay</sourceHighlighter>-->
+<!--                                    <attributes>-->
+<!--                                        <pdf-stylesdir>src/main/docs/</pdf-stylesdir>-->
+<!--                                        <pdf-style>custom</pdf-style>-->
+<!--                                    </attributes>-->
+<!--                                </configuration>-->
+<!--                            </execution>-->
                         </executions>
                         <dependencies>
                             <dependency>
