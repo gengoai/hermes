@@ -22,8 +22,10 @@
 
 package com.gengoai.hermes.corpus;
 
+import com.gengoai.LogUtils;
 import com.gengoai.collection.counter.ConcurrentHashMapCounter;
 import com.gengoai.collection.counter.Counter;
+import com.gengoai.config.Config;
 import com.gengoai.function.SerializableConsumer;
 import com.gengoai.function.SerializablePredicate;
 import com.gengoai.hermes.AnnotatableType;
@@ -34,6 +36,7 @@ import lombok.NonNull;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.stream.Stream;
 
 /**
@@ -161,9 +164,17 @@ public class InMemoryCorpus implements Corpus, Serializable {
 
    @Override
    public Corpus update(@NonNull SerializableConsumer<Document> documentProcessor) {
+      final long reportInterval = Config.get(REPORT_INTERVAL).asLongValue(5_000);
+      final Level reportLevel = Config.get(REPORT_LEVEL).as(Level.class, Level.FINE);
+      final ProgressLogger progressLogger = ProgressLogger.getProgressLogger(getStreamingContext());
       corpus.parallelStream().forEach(document -> {
          typeCounter.decrementAll(document.completed());
+         progressLogger.start();
          documentProcessor.accept(document);
+         progressLogger.stop(document.tokenLength());
+         if(progressLogger.documentsProcessed() % reportInterval == 0) {
+            progressLogger.report(LogUtils.getLogger(getClass()), reportLevel);
+         }
          typeCounter.incrementAll(document.completed());
       });
       return this;

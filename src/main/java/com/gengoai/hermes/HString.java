@@ -157,20 +157,18 @@ public interface HString extends Span, StringLike, Serializable {
             if(!relationTypeList.contains(relation.getType())) {
                continue;
             }
-            relation.getTarget(this)
-                    .map(target -> g.containsVertex(target)
-                                   ? target
-                                   : target.annotationStream()
-                                           .filter(g::containsVertex)
-                                           .findFirst()
-                                           .orElse(null))
-                    .ifPresent(target -> {
-                       if(!g.containsEdge(source, target)) {
-                          RelationEdge edge = g.addEdge(source, target);
-                          edge.setRelation(relation.getValue());
-                          edge.setRelationType(relation.getType());
-                       }
-                    });
+            Annotation target = relation.getTarget(this);
+            if(!g.containsVertex(target)) {
+               target = target.annotationStream()
+                              .filter(g::containsVertex)
+                              .findFirst()
+                              .orElse(null);
+            }
+            if(target != null && !g.containsEdge(source, target)) {
+               RelationEdge edge = g.addEdge(source, target);
+               edge.setRelation(relation.getValue());
+               edge.setRelationType(relation.getType());
+            }
          }
       }
       return g;
@@ -842,6 +840,17 @@ public interface HString extends Span, StringLike, Serializable {
    }
 
    /**
+    * Runs the given processor on the HString if it is not empty.
+    *
+    * @param processor the processor to run on this HString if it is not empty.
+    */
+   default void ifNotEmpty(@NonNull Consumer<? super HString> processor) {
+      if(!isEmpty()) {
+         processor.accept(this);
+      }
+   }
+
+   /**
     * Gets all annotations that have relation with this HString as the target where this HString includes all
     * sub-annotations.
     *
@@ -867,8 +876,7 @@ public interface HString extends Span, StringLike, Serializable {
    default List<Annotation> incoming(@NonNull RelationType type, @NonNull String value, boolean includeSubAnnotations) {
       return incomingRelationStream(includeSubAnnotations)
             .filter(r -> r.getType().isInstance(type) && r.getValue().equals(value))
-            .map(r -> document().annotation(r.getTarget())
-                                .orElseThrow(() -> new IllegalStateException(r.getTarget() + " is invalid annotation id")))
+            .map(r -> document().annotation(r.getTarget()))
             .collect(Collectors.toList());
    }
 
@@ -898,9 +906,7 @@ public interface HString extends Span, StringLike, Serializable {
          return Collections.emptyList();
       }
       return incomingRelationStream(includeSubAnnotations).filter(r -> r.getType().isInstance(type))
-                                                          .map(r -> document().annotation(r.getTarget())
-                                                                              .orElseThrow(() -> new IllegalStateException(
-                                                                                    r.getTarget() + " is invalid annotation id")))
+                                                          .map(r -> document().annotation(r.getTarget()))
                                                           .distinct()
                                                           .collect(Collectors.toList());
    }
@@ -925,9 +931,7 @@ public interface HString extends Span, StringLike, Serializable {
          return annotations().stream()
                              .filter(a -> a != this)
                              .flatMap(a -> a.incomingRelationStream(false))
-                             .filter(rel -> rel.getTarget(document())
-                                               .map(aa -> !aa.overlaps(this))
-                                               .orElse(false));
+                             .filter(rel -> !rel.getTarget(document()).overlaps(this));
       }
       return Stream.empty();
    }
@@ -1168,10 +1172,7 @@ public interface HString extends Span, StringLike, Serializable {
    default List<Annotation> outgoing(@NonNull RelationType type, boolean includeSubAnnotations) {
       return outgoingRelationStream(includeSubAnnotations)
             .filter(r -> r.getType().equals(type))
-            .map(r -> document().annotation(r.getTarget())
-                                .orElseThrow(
-                                      () -> new IllegalStateException(
-                                            r.getTarget() + " is invalid annotation id")))
+            .map(r -> document().annotation(r.getTarget()))
             .filter(Objects::nonNull)
             .distinct()
             .collect(Collectors.toList());
@@ -1201,10 +1202,7 @@ public interface HString extends Span, StringLike, Serializable {
    default List<Annotation> outgoing(@NonNull RelationType type, String value, boolean includeSubAnnotations) {
       return outgoingRelationStream(includeSubAnnotations)
             .filter(r -> r.getType().equals(type) && Strings.safeEquals(r.getValue(), value, true))
-            .map(r -> document().annotation(r.getTarget())
-                                .orElseThrow(
-                                      () -> new IllegalStateException(
-                                            r.getTarget() + " is invalid annotation id")))
+            .map(r -> document().annotation(r.getTarget()))
             .filter(Objects::nonNull)
             .collect(Collectors.toList());
    }
@@ -1541,8 +1539,7 @@ public interface HString extends Span, StringLike, Serializable {
          idMap.put(annotation.getId(), id);
       }
       for(Annotation annotation : enclosedAnnotations()) {
-         final Annotation targetAnnotation = document().annotation(annotation.getId()).orElseThrow(
-               IllegalStateException::new);
+         final Annotation targetAnnotation = document().annotation(annotation.getId());
          annotation.outgoingRelationStream(false)
                    .filter(r -> idMap.containsKey(r.getTarget()))
                    .forEach(r -> targetAnnotation.add(new Relation(r.getType(),

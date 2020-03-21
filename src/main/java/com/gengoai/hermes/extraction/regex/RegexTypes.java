@@ -21,10 +21,11 @@ package com.gengoai.hermes.extraction.regex;
 
 import com.gengoai.Tag;
 import com.gengoai.Validation;
+import com.gengoai.collection.multimap.ListMultimap;
 import com.gengoai.conversion.Cast;
 import com.gengoai.conversion.Converter;
 import com.gengoai.conversion.TypeConversionException;
-import com.gengoai.function.SerializableFunction;
+import com.gengoai.function.SerializableBiFunction;
 import com.gengoai.hermes.*;
 import com.gengoai.hermes.lexicon.LexiconManager;
 import com.gengoai.hermes.morphology.StopWords;
@@ -32,6 +33,7 @@ import com.gengoai.hermes.morphology.TokenType;
 import com.gengoai.math.NumericComparison;
 import com.gengoai.parsing.*;
 import com.gengoai.reflection.TypeUtils;
+import com.gengoai.string.Re;
 import com.gengoai.string.StringMatcher;
 import com.gengoai.string.Strings;
 
@@ -132,9 +134,10 @@ enum RegexTypes implements TokenDef, GrammarRegistrable {
                                           q(">="))),
                         "\\s*",
                         namedGroup("", zeroOrOne(chars("-")),
-                                   or(re(zeroOrMore(DIGIT), nonMatchingGroup(e('.'), oneOrMore(DIGIT))),
-                                      re(oneOrMore(DIGIT), zeroOrOne(nonMatchingGroup(e('.'), oneOrMore(DIGIT))))),
-                                   zeroOrOne("e", zeroOrOne(e('-')), oneOrMore(DIGIT))))) {
+                                   or(re(zeroOrMore(Re.DIGIT), nonMatchingGroup(e('.'), oneOrMore(Re.DIGIT))),
+                                      re(oneOrMore(Re.DIGIT),
+                                         zeroOrOne(nonMatchingGroup(e('.'), oneOrMore(Re.DIGIT))))),
+                                   zeroOrOne("e", zeroOrOne(e('-')), oneOrMore(Re.DIGIT))))) {
       @Override
       public void register(Grammar grammar) {
          grammar.prefix(this, (parser, token) -> {
@@ -182,14 +185,12 @@ enum RegexTypes implements TokenDef, GrammarRegistrable {
                   return new PredicateTransition(token.getText(), h -> !h.attributeEquals(type, value), this);
                case "~":
                   return new PredicateTransition(token.getText(), h -> {
-                     System.out.println(type.getValueType());
                      if(TypeUtils.isCollection(type.getValueType())) {
                         Collection<?> c = Cast.as(h.attribute(type));
                         if(c == null) {
                            return false;
                         }
                         Object t = Converter.convertSilently(value, TypeUtils.getOrObject(1, type.getValueType()));
-                        System.out.println(t);
                         return c.contains(t);
                      }
                      return h.attributeEquals(type, value);
@@ -239,7 +240,7 @@ enum RegexTypes implements TokenDef, GrammarRegistrable {
                                                                          this));
       }
    },
-   HAS_STOP_WORD("hasStopWord") {
+   HAS_STOP_WORD("HasStopWord") {
       @Override
       public void register(Grammar grammar) {
          grammar.prefix(this, (parser, token) -> new PredicateTransition(token.getText(),
@@ -302,6 +303,14 @@ enum RegexTypes implements TokenDef, GrammarRegistrable {
       public void register(Grammar grammar) {
          grammar.prefix(this, (parser, token) -> new PredicateTransition(token.getText(),
                                                                          StringMatcher.Punctuation,
+                                                                         this));
+      }
+   },
+   DIGIT("Digit") {
+      @Override
+      public void register(Grammar grammar) {
+         grammar.prefix(this, (parser, token) -> new PredicateTransition(token.getText(),
+                                                                         StringMatcher.Digit,
                                                                          this));
       }
    },
@@ -392,6 +401,12 @@ enum RegexTypes implements TokenDef, GrammarRegistrable {
                                                                                 true), 0);
       }
    },
+   BACKREFERNCE(re(e('\\'),namedGroup("", IDENTIFIER))){
+      @Override
+      public void register(Grammar grammar) {
+         grammar.prefix(this, (parser, token) -> new BackreferenceTransition(token.getVariable(0)));
+      }
+   },
    NAMED_GROUP(re(e('('), e('?'), e('<'), namedGroup("", IDENTIFIER), e('>'))) {
       @Override
       public void register(Grammar grammar) {
@@ -434,11 +449,11 @@ enum RegexTypes implements TokenDef, GrammarRegistrable {
    },
    RANGE(re(e('{'),
             zeroOrMore(WHITESPACE),
-            namedGroup("", oneOrMore(DIGIT)),
+            namedGroup("", oneOrMore(Re.DIGIT)),
             zeroOrMore(WHITESPACE),
             zeroOrOne(",",
                       zeroOrMore(WHITESPACE),
-                      namedGroup("", or(e('*'), oneOrMore(DIGIT)))),
+                      namedGroup("", or(e('*'), oneOrMore(Re.DIGIT)))),
             zeroOrMore(WHITESPACE),
             e('}')
            )) {
@@ -501,14 +516,15 @@ enum RegexTypes implements TokenDef, GrammarRegistrable {
       return new PredicateTransition(".", h -> true, ANY);
    }
 
-   private static SerializableFunction<HString, Integer> getRelationMatcher(Parser parser,
-                                                                            ParserToken token) throws ParseException {
+   private static SerializableBiFunction<HString, ListMultimap<String, HString>, Integer> getRelationMatcher(Parser parser,
+                                                                                                             ParserToken token) throws
+                                                                                                                                ParseException {
       ParserToken next = parser.peek();
-      SerializableFunction<HString, Integer> matcher;
+      SerializableBiFunction<HString, ListMultimap<String, HString>, Integer> matcher;
       if(next.isInstance(OPEN_PARENS) && next.getStartOffset() == token.getEndOffset()) {
          matcher = asSequence(parser.parseExpressionList(OPEN_PARENS, CLOSE_PARENS, null))::matches;
       } else {
-         matcher = h -> 1;
+         matcher = (h, m) -> 1;
       }
       return matcher;
    }

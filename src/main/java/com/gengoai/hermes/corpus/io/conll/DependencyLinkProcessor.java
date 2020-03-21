@@ -47,7 +47,7 @@ public class DependencyLinkProcessor implements CoNLLColumnProcessor {
       documentRows.forEach(row -> {
          if (row.getParent() > 0) {
             long target = sentenceIndexToAnnotationId.get($(row.getSentence(), row.getParent()));
-            document.annotation(row.getAnnotationID()).get()
+            document.annotation(row.getAnnotationID())
                     .add(new Relation(Types.DEPENDENCY, row.getDepRelation(), target));
          }
       });

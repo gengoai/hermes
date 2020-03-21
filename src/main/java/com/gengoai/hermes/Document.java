@@ -198,7 +198,9 @@ public interface Document extends HString {
     * @param id the id of the annotation to retrieve
     * @return the annotation
     */
-   Optional<Annotation> annotation(long id);
+   Annotation annotation(long id);
+
+
 
    /**
     * Creates an annotation builder for adding annotations to the document.

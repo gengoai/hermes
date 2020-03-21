@@ -36,15 +36,34 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * The type Caduceus program.
+ */
 @ToString
 @EqualsAndHashCode
 public final class CaduceusProgram implements Serializable, Extractor {
+   /**
+    * The Rules.
+    */
    final List<Rule> rules = new ArrayList<>();
 
+   /**
+    * Read caduceus program.
+    *
+    * @param resource the resource
+    * @return the caduceus program
+    * @throws IOException    the io exception
+    * @throws ParseException the parse exception
+    */
    public static CaduceusProgram read(@NonNull Resource resource) throws IOException, ParseException {
       return CaduceusParser.parse(resource);
    }
 
+   /**
+    * Execute.
+    *
+    * @param document the document
+    */
    public void execute(@NonNull Document document) {
       for(Rule rule : rules) {
          rule.execute(document);

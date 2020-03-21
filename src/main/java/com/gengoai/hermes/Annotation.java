@@ -70,9 +70,9 @@ public interface Annotation extends HString {
    default Tuple2<String, Annotation> dependency() {
       return outgoingRelationStream(true)
             .filter(r -> r.getType() == Types.DEPENDENCY)
-            .filter(r -> r.getTarget(this).isPresent())
-            .filter(r -> !this.overlaps(r.getTarget(this).orElse(null)))
-            .map(r -> Tuple2.of(r.getValue(), r.getTarget(this).orElse(null)))
+            .filter(r -> !r.getTarget(this).isEmpty())
+            .filter(r -> !this.overlaps(r.getTarget(this)))
+            .map(r -> Tuple2.of(r.getValue(), r.getTarget(this)))
             .findFirst()
             .orElse($(Strings.EMPTY, Fragments.emptyAnnotation(document())));
    }

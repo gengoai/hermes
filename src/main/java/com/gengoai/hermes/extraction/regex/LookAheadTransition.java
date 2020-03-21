@@ -20,6 +20,7 @@
 package com.gengoai.hermes.extraction.regex;
 
 import com.gengoai.Tag;
+import com.gengoai.collection.multimap.ListMultimap;
 import com.gengoai.hermes.HString;
 
 import java.io.Serializable;
@@ -55,17 +56,19 @@ final class LookAheadTransition implements TransitionFunction, Serializable {
 
    @Override
    public Tag getType() {
-      return negativeLookAhead ? RegexTypes.NEGATIVE_LOOKAHEAD : RegexTypes.LOOKAHEAD;
+      return negativeLookAhead
+             ? RegexTypes.NEGATIVE_LOOKAHEAD
+             : RegexTypes.LOOKAHEAD;
    }
 
    @Override
-   public int matches(HString input) {
-      int m = child.matches(input);
-      if (m > 0) {
-         int n = lookAhead.matches(input.asAnnotation().next());
-         if (n <= 0 && negativeLookAhead) {
+   public int matches(HString input, ListMultimap<String, HString> namedGroups) {
+      int m = child.matches(input, namedGroups);
+      if(m > 0) {
+         int n = lookAhead.matches(input.asAnnotation().next(), namedGroups);
+         if(n <= 0 && negativeLookAhead) {
             return m;
-         } else if (n > 0 && !negativeLookAhead) {
+         } else if(n > 0 && !negativeLookAhead) {
             return m;
          }
       }
@@ -73,7 +76,7 @@ final class LookAheadTransition implements TransitionFunction, Serializable {
    }
 
    @Override
-   public int nonMatches(HString input) {
+   public int nonMatches(HString input, ListMultimap<String, HString> namedGroups) {
       throw new UnsupportedOperationException();
    }
 
@@ -81,7 +84,9 @@ final class LookAheadTransition implements TransitionFunction, Serializable {
    public String toString() {
       return String.format("%s (?%s> %s)",
                            child,
-                           (negativeLookAhead ? "!" : ""),
+                           (negativeLookAhead
+                            ? "!"
+                            : ""),
                            lookAhead);
    }
 

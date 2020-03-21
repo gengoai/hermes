@@ -21,6 +21,7 @@
 
 package com.gengoai.hermes.annotator;
 
+import com.gengoai.MultithreadedStopwatch;
 import com.gengoai.hermes.AnnotatableType;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.Document;
@@ -42,16 +43,20 @@ import java.util.Set;
  */
 public class DefaultTokenAnnotator implements Annotator, Serializable {
    private static final long serialVersionUID = 1L;
+   private final MultithreadedStopwatch stopwatch = new MultithreadedStopwatch("Annotator.DefaultTokenAnnotator");
+
 
    @Override
    public void annotate(Document document) {
+      stopwatch.start();
       Tokenizer tokenizer = Tokenizers.getTokenizer(document.getLanguage());
-      for (Tokenizer.Token token : tokenizer.tokenize(document.toString())) {
+      for(Tokenizer.Token token : tokenizer.tokenize(document.toString())) {
          Annotation aToken = document.createAnnotation(Types.TOKEN, token.charStartIndex, token.charEndIndex,
                                                        token.properties);
          aToken.put(Types.TOKEN_TYPE, token.type);
       }
       BaseWordCategorization.INSTANCE.categorize(document);
+      stopwatch.stop();
    }
 
    @Override

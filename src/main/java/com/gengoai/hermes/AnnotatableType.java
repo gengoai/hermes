@@ -23,13 +23,13 @@ package com.gengoai.hermes;
 
 import com.gengoai.HierarchicalEnumValue;
 import com.gengoai.Language;
+import com.gengoai.LogUtils;
 import com.gengoai.Validation;
 import com.gengoai.annotation.JsonHandler;
 import com.gengoai.config.Config;
 import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.annotator.Annotator;
 import com.gengoai.json.JsonEntry;
-import com.gengoai.logging.Logger;
 import com.gengoai.reflection.BeanUtils;
 import com.gengoai.reflection.Reflect;
 import com.gengoai.reflection.ReflectionException;
@@ -38,6 +38,7 @@ import lombok.NonNull;
 
 import java.lang.reflect.Type;
 
+import static com.gengoai.LogUtils.logFine;
 import static com.gengoai.collection.Arrays2.arrayOf;
 import static com.gengoai.hermes.Hermes.HERMES_PACKAGE;
 
@@ -157,7 +158,7 @@ public interface AnnotatableType {
             try {
                annotator = Cast.as(BeanUtils.getBean(annotatorClass));
             } catch(ReflectionException e) {
-               Logger.getGlobalLogger().fine(e);
+               logFine(LogUtils.getGlobalLogger(), e);
             }
          }
       }

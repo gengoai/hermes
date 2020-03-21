@@ -56,7 +56,7 @@ public final class POSFieldProcessor implements CoNLLColumnProcessor {
          if (posStr.contains("|")) {
             posStr = posStr.substring(0, posStr.indexOf('|'));
          }
-         document.annotation(row.getAnnotationID()).get().put(Types.PART_OF_SPEECH,
+         document.annotation(row.getAnnotationID()).put(Types.PART_OF_SPEECH,
                                                               POS.fromString(POSCorrection.pos(row.getWord(), posStr)));
 
       });

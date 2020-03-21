@@ -27,7 +27,6 @@ import com.gengoai.hermes.AnnotatableType;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.Types;
 import com.gengoai.hermes.ml.BIOTagger;
-import com.gengoai.logging.Loggable;
 
 import java.io.Serializable;
 import java.util.Collections;
@@ -40,14 +39,14 @@ import static com.gengoai.hermes.Hermes.modelCache;
  *
  * @author David B. Bracewell
  */
-public class DefaultMlEntityAnnotator extends SentenceLevelAnnotator implements Serializable, Loggable {
+public class DefaultMlEntityAnnotator extends SentenceLevelAnnotator implements Serializable {
    private static final Cache<Language, BIOTagger> cache = modelCache("Annotation.ML_ENTITY", "ner.model.bin");
    private static final long serialVersionUID = 1L;
 
    @Override
    public void annotate(Annotation sentence) {
       BIOTagger tagger = cache.get(sentence.getLanguage());
-      if (tagger != null) {
+      if(tagger != null) {
          tagger.tag(sentence);
       }
    }

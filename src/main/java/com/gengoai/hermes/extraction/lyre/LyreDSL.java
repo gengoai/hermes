@@ -402,6 +402,21 @@ public final class LyreDSL {
    }
 
    /**
+    * Returns all annotations of the given type overlapping with the current HString
+    * <pre>
+    *    Usage:  @ANNOTATION_TYPE
+    *    e.g.: @PHRASE_CHUNK
+    * </pre>
+    *
+    * @param type the annotation type
+    * @param tag  the tag to filter the annotations on
+    * @return the LyreExpression
+    */
+   public static LyreExpression annotation(@NonNull AnnotationType type, String tag) {
+      return annotation(type, $_, tag);
+   }
+
+   /**
     * Returns all annotations of the given type overlapping with the HString resulting from the given expression.
     * <pre>
     *    Usage:  @ANNOTATION_TYPE(expression)
@@ -420,6 +435,38 @@ public final class LyreDSL {
                                 HSTRING,
                                 o -> process(true, expression.applyAsObject(o),
                                              h -> toHString(h).annotations(type)));
+   }
+
+   /**
+    * Returns all annotations of the given type overlapping with the HString resulting from the given expression.
+    * <pre>
+    *    Usage:  @ANNOTATION_TYPE(expression)
+    *    e.g.: @TOKEN(@PHRASE_CHUNK) -- returns a list of tokens over the phrase chunks on the current HString
+    * </pre>
+    *
+    * @param type       the annotation type
+    * @param expression the expression returning the HString from which annotations will be extracted.
+    * @param tag        the tag to filter the annotations on
+    * @return the LyreExpression
+    */
+   public static LyreExpression annotation(@NonNull AnnotationType type,
+                                           @NonNull LyreExpression expression,
+                                           String tag) {
+      Validation.checkArgument(expression.isInstance(STRING, HSTRING, OBJECT),
+                               "Illegal Expression: annotation only accepts a STRING, HSTRING, or OBJECT, but '"
+                                     + expression + "' was provided which is of type " + expression.getType());
+      return new LyreExpression(formatMethod(String.format("@%s", type), expression),
+                                HSTRING,
+                                o -> process(true, expression.applyAsObject(o),
+                                             h -> {
+                                                if(Strings.isNullOrBlank(tag)) {
+                                                   return toHString(h).annotations(type);
+                                                } else {
+                                                   return toHString(h).annotationStream(type)
+                                                                      .filter(a -> a.tagIsA(tag))
+                                                                      .collect(Collectors.toList());
+                                                }
+                                             }));
    }
 
    /**
@@ -880,7 +927,7 @@ public final class LyreDSL {
       Validation.checkArgument(expression.isInstance(HSTRING),
                                "Illegal Expression: dep only accepts a HSTRING, but '"
                                      + expression + "' was provided which is of type " + expression.getType());
-      return new LyreExpression(formatMethod(String.format("@%sdep%s",
+      return new LyreExpression(formatMethod(String.format("@%s%s",
                                                            direction == OUTGOING
                                                            ? ">"
                                                            : "<",

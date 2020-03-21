@@ -22,6 +22,8 @@
 
 package com.gengoai.hermes.corpus;
 
+import com.gengoai.LogUtils;
+import com.gengoai.config.Config;
 import com.gengoai.function.SerializableConsumer;
 import com.gengoai.function.SerializablePredicate;
 import com.gengoai.hermes.AnnotatableType;
@@ -33,6 +35,7 @@ import lombok.NonNull;
 
 import java.io.Serializable;
 import java.util.Iterator;
+import java.util.logging.Level;
 
 /**
  * Generic corpus implementation backed my an MStream.
@@ -53,14 +56,14 @@ public class StreamingCorpus implements Corpus, Serializable {
    }
 
    @Override
-   public Corpus annotate(@NonNull AnnotatableType... annotatableTypes) {
-      return update(new AnnotationPipeline(annotatableTypes)::annotate);
-   }
-
-   @Override
    public boolean add(@NonNull Document document) {
       this.stream = this.stream.union(stream.getContext().stream(document));
       return true;
+   }
+
+   @Override
+   public Corpus annotate(@NonNull AnnotatableType... annotatableTypes) {
+      return update(new AnnotationPipeline(annotatableTypes)::annotate);
    }
 
    @Override
@@ -90,6 +93,11 @@ public class StreamingCorpus implements Corpus, Serializable {
    }
 
    @Override
+   public boolean isEmpty() {
+      return stream.isEmpty();
+   }
+
+   @Override
    public boolean isPersistent() {
       return false;
    }
@@ -97,6 +105,11 @@ public class StreamingCorpus implements Corpus, Serializable {
    @Override
    public Iterator<Document> iterator() {
       return stream.iterator();
+   }
+
+   @Override
+   public MStream<Document> parallelStream() {
+      return stream.parallel();
    }
 
    @Override
@@ -116,11 +129,6 @@ public class StreamingCorpus implements Corpus, Serializable {
    }
 
    @Override
-   public MStream<Document> parallelStream() {
-      return stream.parallel();
-   }
-
-   @Override
    public MStream<Document> stream() {
       return stream;
    }
@@ -132,15 +140,18 @@ public class StreamingCorpus implements Corpus, Serializable {
 
    @Override
    public Corpus update(@NonNull SerializableConsumer<Document> documentProcessor) {
+      final long reportInterval = Config.get(REPORT_INTERVAL).asLongValue(5_000);
+      final Level reportLevel = Config.get(REPORT_LEVEL).as(Level.class, Level.FINE);
+      final ProgressLogger progressLogger = ProgressLogger.getProgressLogger(getStreamingContext());
       stream = stream.map(doc -> {
+         progressLogger.start();
          documentProcessor.accept(doc);
+         progressLogger.stop(doc.tokenLength());
+         if(progressLogger.documentsProcessed() % reportInterval == 0) {
+            progressLogger.report(LogUtils.getLogger(getClass()), reportLevel);
+         }
          return doc;
       });
       return this;
-   }
-
-   @Override
-   public boolean isEmpty() {
-      return stream.isEmpty();
    }
 }//END OF StreamingCorpus

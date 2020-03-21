@@ -22,6 +22,7 @@
 
 package com.gengoai.hermes.corpus;
 
+import com.gengoai.LogUtils;
 import com.gengoai.apollo.ml.data.DatasetType;
 import com.gengoai.apollo.ml.data.ExampleDataset;
 import com.gengoai.apollo.statistics.measure.Association;
@@ -44,6 +45,7 @@ import com.gengoai.hermes.corpus.io.CorpusWriter;
 import com.gengoai.hermes.corpus.io.SaveMode;
 import com.gengoai.hermes.extraction.Extractor;
 import com.gengoai.hermes.extraction.NGramExtractor;
+import com.gengoai.hermes.extraction.caduceus.CaduceusProgram;
 import com.gengoai.hermes.extraction.regex.TokenMatch;
 import com.gengoai.hermes.extraction.regex.TokenMatcher;
 import com.gengoai.hermes.extraction.regex.TokenRegex;
@@ -51,7 +53,6 @@ import com.gengoai.hermes.lexicon.Lexicon;
 import com.gengoai.hermes.workflow.Context;
 import com.gengoai.hermes.workflow.SequentialWorkflow;
 import com.gengoai.io.resource.Resource;
-import com.gengoai.logging.Loggable;
 import com.gengoai.parsing.ParseException;
 import com.gengoai.specification.Specification;
 import com.gengoai.stream.MCounterAccumulator;
@@ -69,6 +70,7 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.gengoai.LogUtils.log;
 import static com.gengoai.Validation.notNull;
 import static com.gengoai.collection.counter.Counters.newCounter;
 
@@ -83,7 +85,7 @@ import static com.gengoai.collection.counter.Counters.newCounter;
  *
  * @author David B. Bracewell
  */
-public interface Corpus extends Iterable<Document>, AutoCloseable, Loggable {
+public interface Corpus extends Iterable<Document>, AutoCloseable {
    /**
     * The constant REPORT_INTERVAL.
     */
@@ -282,13 +284,6 @@ public interface Corpus extends Iterable<Document>, AutoCloseable, Loggable {
                            .source(stream().flatMap(exampleGenerator::apply));
    }
 
-
-   default List<String> getIds(){
-      return stream().map(Document::getId).sorted(true).collect();
-   }
-
-   MStream<Document> parallelStream();
-
    /**
     * Constructs a Dataset from the Corpus according to the {@link ExampleGenerator}
     *
@@ -374,7 +369,9 @@ public interface Corpus extends Iterable<Document>, AutoCloseable, Loggable {
       stream().forEach(doc -> {
          counter.add(1);
          counter.report(count -> count % reportInterval == 0,
-                        count -> log(reportLevel, "documentFrequencies: Processed {0} documents", count));
+                        count -> log(LogUtils.getLogger(getClass()),
+                                     reportLevel,
+                                     "documentFrequencies: Processed {0} documents", count));
          extractor.extract(doc)
                   .count()
                   .forEach((term, count) -> termCounts.increment(term, 1.0));
@@ -446,6 +443,10 @@ public interface Corpus extends Iterable<Document>, AutoCloseable, Loggable {
                      .collect(Collectors.toSet());
    }
 
+   default List<String> getIds() {
+      return stream().map(Document::getId).sorted(true).collect();
+   }
+
    /**
     * Gets streaming context.
     *
@@ -497,13 +498,16 @@ public interface Corpus extends Iterable<Document>, AutoCloseable, Loggable {
                                    counter.add(1);
                                    counter.report(
                                          count -> count % reportInterval == 0,
-                                         count -> log(reportLevel,
+                                         count -> log(LogUtils.getLogger(getClass()),
+                                                      reportLevel,
                                                       "documentFrequencies: Processed {0} documents",
                                                       count));
                                    return nGramExtractor.extractStringTuples(doc).stream();
                                 })
                                 .countByValue());
    }
+
+   MStream<Document> parallelStream();
 
    /**
     * Processes the corpus using the given {@link SequentialWorkflow}
@@ -673,7 +677,8 @@ public interface Corpus extends Iterable<Document>, AutoCloseable, Loggable {
               .forEach(doc -> {
                  counter.add(1);
                  counter.report(count -> count % reportInterval == 0,
-                                count -> log(reportLevel, "termCount: Processed {0} documents", count));
+                                count -> log(LogUtils.getLogger(getClass()),
+                                             reportLevel, "termCount: Processed {0} documents", count));
                  termCounts.merge(extractor.extract(doc)
                                            .count());
               });
@@ -719,6 +724,16 @@ public interface Corpus extends Iterable<Document>, AutoCloseable, Loggable {
     * @return this corpus with updates
     */
    Corpus update(@NonNull SerializableConsumer<Document> documentProcessor);
+
+   /**
+    * Updates all documents in the corpus using the given {@link CaduceusProgram}
+    *
+    * @param program the CaduceusProgram to execute on each document.
+    * @return this corpus with updates
+    */
+   default Corpus update(@NonNull CaduceusProgram program) {
+      return this.update(program::execute);
+   }
 
    /**
     * Writes the corpus to disk as a LUCENE index

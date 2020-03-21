@@ -43,6 +43,7 @@ import com.gengoai.parsing.ParseException;
 import com.gengoai.stream.MStream;
 import com.gengoai.stream.StreamingContext;
 import lombok.NonNull;
+import lombok.extern.java.Log;
 import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -64,6 +65,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.logging.Level;
 
+import static com.gengoai.LogUtils.log;
+import static com.gengoai.LogUtils.logInfo;
 import static com.gengoai.collection.Maps.hashMapOf;
 import static com.gengoai.tuple.Tuples.$;
 
@@ -72,6 +75,7 @@ import static com.gengoai.tuple.Tuples.$;
  *
  * @author David B. Bracewell
  */
+@Log
 public class LuceneCorpus implements Corpus {
    /**
     * The Lucene Field used to store the completed annotations
@@ -314,8 +318,7 @@ public class LuceneCorpus implements Corpus {
    @Override
    public SearchResults query(@NonNull Query query) {
       try {
-         IndexReader reader = getIndexReader();
-         return new LuceneSearchResults(ResourceMonitor.monitor(reader), query);
+         return new LuceneSearchResults(ResourceMonitor.monitor(getIndexReader()), query);
       } catch(IOException e) {
          throw new RuntimeException(e);
       }
@@ -471,7 +474,9 @@ public class LuceneCorpus implements Corpus {
       } catch(IOException e) {
          e.printStackTrace();
       }
-      logInfo("Documents/Second: {0}", consumer.documentCounter.get() / timer.elapsed(TimeUnit.SECONDS));
+      logInfo(LuceneCorpus.log,
+              "Documents/Second: {0}",
+              consumer.documentCounter.get() / timer.elapsed(TimeUnit.SECONDS));
       return this;
    }
 
@@ -593,12 +598,13 @@ public class LuceneCorpus implements Corpus {
             return true;
          }
          try {
-
             if(docs == null) {
                docs = searcher.search(query, 10_000);
                hasMoreDocs = docs.scoreDocs.length > 0;
-               scoreDoc = docs.scoreDocs[0];
-               index = 1;
+               if(hasMoreDocs) {
+                  scoreDoc = docs.scoreDocs[0];
+                  index = 1;
+               }
                return hasMoreDocs;
             } else if(index >= docs.scoreDocs.length) {
                docs = searcher.searchAfter(scoreDoc, query, 10_000);
@@ -655,11 +661,12 @@ public class LuceneCorpus implements Corpus {
             return size;
          }
          long cnt = 0;
+
          try {
             IndexSearcher searcher = new IndexSearcher(reader.object);
             TopDocs d = searcher.search(luceneQuery, 10_000);
             cnt += d.scoreDocs.length;
-            while(true) {
+            while(d.scoreDocs.length > 0) {
                d = searcher.searchAfter(d.scoreDocs[d.scoreDocs.length - 1], luceneQuery, 10_000);
                cnt += d.scoreDocs.length;
                if(d.scoreDocs.length == 0) {
@@ -670,6 +677,11 @@ public class LuceneCorpus implements Corpus {
          } catch(IOException ioe) {
             throw new RuntimeException(ioe);
          }
+
+         if(size == null) {
+            size = cnt;
+         }
+         return size;
       }
 
       @Override
@@ -769,11 +781,17 @@ public class LuceneCorpus implements Corpus {
                long docCount;
                long wrdCount = wordCounter.addAndGet(document.tokenLength());
                if((docCount = documentCounter.incrementAndGet()) % reportInterval == 0) {
-                  log(logLevel, "Documents Update: {0}", docCount);
+                  log(LuceneCorpus.log, logLevel, "Documents Update: {0}", docCount);
                   if(stopwatch != null) {
-                     log(logLevel, "Updating at {0} documents/second", docCount / stopwatch.elapsed(TimeUnit.SECONDS));
+                     log(LuceneCorpus.log,
+                         logLevel,
+                         "Updating at {0} documents/second",
+                         docCount / stopwatch.elapsed(TimeUnit.SECONDS));
                      if(wrdCount > 0) {
-                        log(logLevel, "Updating at {0} words/second", wrdCount / stopwatch.elapsed(TimeUnit.SECONDS));
+                        log(LuceneCorpus.log,
+                            logLevel,
+                            "Updating at {0} words/second",
+                            wrdCount / stopwatch.elapsed(TimeUnit.SECONDS));
                      }
                   }
                }

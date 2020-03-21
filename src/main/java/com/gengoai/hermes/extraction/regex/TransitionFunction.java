@@ -19,6 +19,7 @@
 
 package com.gengoai.hermes.extraction.regex;
 
+import com.gengoai.collection.multimap.ListMultimap;
 import com.gengoai.hermes.HString;
 import com.gengoai.parsing.Expression;
 
@@ -37,7 +38,7 @@ interface TransitionFunction extends Expression {
     * @param input the token to check
     * @return True if the consumer matches, i.e. can consume, the given token
     */
-   int matches(HString input);
+   int matches(HString input, ListMultimap<String, HString> namedGroups);
 
    /**
     * Non match int.
@@ -45,6 +46,6 @@ interface TransitionFunction extends Expression {
     * @param input the input
     * @return the int
     */
-   int nonMatches(HString input);
+   int nonMatches(HString input, ListMultimap<String, HString> namedGroups);
 
 }//END OF TransitionFunction

@@ -21,6 +21,7 @@
 
 package com.gengoai.hermes.ml;
 
+import com.gengoai.LogUtils;
 import com.gengoai.Stopwatch;
 import com.gengoai.apollo.ml.FeatureExtractor;
 import com.gengoai.apollo.ml.FitParameters;
@@ -41,19 +42,20 @@ import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Hermes;
 import com.gengoai.hermes.corpus.Corpus;
 import com.gengoai.io.resource.Resource;
-import com.gengoai.logging.Loggable;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Random;
 import java.util.Set;
 
+import static com.gengoai.LogUtils.logInfo;
+
 /**
  * The type Bio trainer.
  *
  * @author David B. Bracewell
  */
-public abstract class BIOTrainer extends CommandLineApplication implements Loggable {
+public abstract class BIOTrainer extends CommandLineApplication {
    private static final long serialVersionUID = 1L;
 
    /**
@@ -100,11 +102,6 @@ public abstract class BIOTrainer extends CommandLineApplication implements Logga
       }
    }
 
-   @Override
-   public Set<String> getDependentPackages() {
-      return Collections.singleton(Hermes.HERMES_PACKAGE);
-   }
-
    /**
     * Gets dataset.
     *
@@ -116,7 +113,7 @@ public abstract class BIOTrainer extends CommandLineApplication implements Logga
       Stopwatch read = Stopwatch.createStarted();
       Corpus c = Corpus.read(corpusSpecification);
       read.stop();
-      logInfo("Completed reading corpus in: {0}", read);
+      logInfo(LogUtils.getLogger(getClass()), "Completed reading corpus in: {0}", read);
       if(required().length > 0) {
          c.annotate(required());
       }
@@ -126,12 +123,21 @@ public abstract class BIOTrainer extends CommandLineApplication implements Logga
       });
    }
 
+   @Override
+   public Set<String> getDependentPackages() {
+      return Collections.singleton(Hermes.HERMES_PACKAGE);
+   }
+
    /**
     * Gets featurizer.
     *
     * @return the featurizer
     */
    protected abstract FeatureExtractor<HString> getFeaturizer();
+
+   protected FitParameters<?> getFitParameters() {
+      return null;
+   }
 
    /**
     * Gets learner.
@@ -161,11 +167,6 @@ public abstract class BIOTrainer extends CommandLineApplication implements Logga
       return new BIOValidator();
    }
 
-
-   protected FitParameters<?> getFitParameters() {
-      return null;
-   }
-
    /**
     * Label.
     *
@@ -179,8 +180,8 @@ public abstract class BIOTrainer extends CommandLineApplication implements Logga
          Labeling labeling = tagger.labeler.label(seq);
          for(int i = 0; i < seq.size(); i++) {
             String word = seq.getExample(i)
-                  .getFeatureByPrefix(fname)
-                  .getSuffix();
+                             .getFeatureByPrefix(fname)
+                             .getSuffix();
             System.out.print(word + "/" + labeling.getLabel(i) + "/" + seq.getExample(i).getDiscreteLabel() + " ");
          }
          System.out.println();

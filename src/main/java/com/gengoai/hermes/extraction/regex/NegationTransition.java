@@ -20,6 +20,7 @@
 package com.gengoai.hermes.extraction.regex;
 
 import com.gengoai.Tag;
+import com.gengoai.collection.multimap.ListMultimap;
 import com.gengoai.hermes.HString;
 
 import java.io.Serializable;
@@ -53,13 +54,13 @@ final class NegationTransition implements TransitionFunction, Serializable {
    }
 
    @Override
-   public int matches(HString token) {
-      return c1.nonMatches(token);
+   public int matches(HString token, ListMultimap<String, HString> namedGroups) {
+      return c1.nonMatches(token, namedGroups);
    }
 
    @Override
-   public int nonMatches(HString input) {
-      return c1.matches(input);
+   public int nonMatches(HString input, ListMultimap<String, HString> namedGroups) {
+      return c1.matches(input, namedGroups);
    }
 
    @Override

@@ -27,7 +27,7 @@ import com.gengoai.hermes.*;
 import com.gengoai.io.Resources;
 import com.gengoai.io.resource.FileResource;
 import com.gengoai.io.resource.Resource;
-import com.gengoai.logging.Loggable;
+import lombok.extern.java.Log;
 import org.maltparser.concurrent.ConcurrentMaltParserModel;
 import org.maltparser.concurrent.ConcurrentMaltParserService;
 import org.maltparser.concurrent.graph.ConcurrentDependencyEdge;
@@ -42,12 +42,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static com.gengoai.LogUtils.logFine;
+
 /**
  * The type Default dependency annotator.
  *
  * @author David B. Bracewell
  */
-public class DefaultDependencyAnnotator extends SentenceLevelAnnotator implements Loggable {
+@Log
+public class DefaultDependencyAnnotator extends SentenceLevelAnnotator {
    private static final long serialVersionUID = 1L;
    private static volatile Map<Language, ConcurrentMaltParserModel> models = new ConcurrentHashMap<>();
 
@@ -56,7 +59,7 @@ public class DefaultDependencyAnnotator extends SentenceLevelAnnotator implement
       ConcurrentMaltParserModel model = getModel(sentence.getLanguage());
       List<Annotation> tokens = sentence.tokens();
       String[] input = new String[tokens.size()];
-      for (int i = 0; i < tokens.size(); i++) {
+      for(int i = 0; i < tokens.size(); i++) {
          Annotation token = tokens.get(i);
          input[i] = i + "\t" + token.toString() + "\t" + token.getLemma() + "\t" + token.pos()
                                                                                         .asString() + "\t" + token.pos()
@@ -64,17 +67,17 @@ public class DefaultDependencyAnnotator extends SentenceLevelAnnotator implement
       }
       try {
          ConcurrentDependencyGraph graph = model.parse(input);
-         for (int i = 1; i <= graph.nTokenNodes(); i++) {
+         for(int i = 1; i <= graph.nTokenNodes(); i++) {
             ConcurrentDependencyNode node = graph.getTokenNode(i);
             ConcurrentDependencyEdge edge = node.getHeadEdge();
 
             Annotation child = tokens.get(node.getIndex() - 1);
-            if (edge.getSource().getIndex() != 0) {
+            if(edge.getSource().getIndex() != 0) {
                Annotation parent = tokens.get(edge.getSource().getIndex() - 1);
                child.add(new Relation(Types.DEPENDENCY, edge.getLabel("DEPREL"), parent.getId()));
             }
          }
-      } catch (MaltChainedException e) {
+      } catch(MaltChainedException e) {
          throw new RuntimeException(e);
       }
    }
@@ -85,35 +88,35 @@ public class DefaultDependencyAnnotator extends SentenceLevelAnnotator implement
    }
 
    private ConcurrentMaltParserModel getModel(Language language) {
-      if (!models.containsKey(language)) {
-         synchronized (this) {
-            if (!models.containsKey(language)) {
+      if(!models.containsKey(language)) {
+         synchronized(this) {
+            if(!models.containsKey(language)) {
                Resource r = Hermes.findModelResource("dependency", "Relation.DEPENDENCY", language)
                                   .orElse(null);
                Exception thrownException = null;
-               if (r != null && r.exists()) {
-                  if (!(r instanceof FileResource)) {
+               if(r != null && r.exists()) {
+                  if(!(r instanceof FileResource)) {
                      Resource tmpLocation = Resources.temporaryFile();
                      tmpLocation.deleteOnExit();
                      try {
-                        logFine("Writing dependency model to temporary file [{0}].", tmpLocation);
+                        logFine(log,"Writing dependency model to temporary file [{0}].", tmpLocation);
                         tmpLocation.write(r.readBytes());
                         r = tmpLocation;
-                     } catch (IOException e) {
+                     } catch(IOException e) {
                         //no opt
                      }
                   }
-                  if (r instanceof FileResource) {
+                  if(r instanceof FileResource) {
                      try {
                         models.put(language,
                                    ConcurrentMaltParserService.initializeParserModel(r.asURL().get()));
                         return models.get(language);
-                     } catch (Exception e) {
+                     } catch(Exception e) {
                         thrownException = e;
                      }
                   }
                }
-               if (thrownException == null) {
+               if(thrownException == null) {
                   throw new RuntimeException("Dependency model does not exist");
                } else {
                   throw new RuntimeException(thrownException);

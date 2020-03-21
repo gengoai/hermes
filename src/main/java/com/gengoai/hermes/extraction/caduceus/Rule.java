@@ -42,20 +42,20 @@ import java.util.stream.Collectors;
 
 @Value
 @Builder
-final class Rule implements Serializable {
+class Rule implements Serializable {
    private static final long serialVersionUID = 1L;
    @NonNull
    @Singular
-   private final List<AnnotationProvider> annotationProviders;
+   List<AnnotationProvider> annotationProviders;
    @NonNull
-   private final String name;
+   String name;
    @NonNull
-   private final String programFile;
+   String programFile;
    @NonNull
    @Singular
-   private final List<RelationProvider> relationProviders;
+   List<RelationProvider> relationProviders;
    @NonNull
-   private final TokenRegex trigger;
+   TokenRegex trigger;
 
    private Annotation createOrGet(Document document, AnnotationType type, HString span, AttributeMap attributeValMap) {
       return document.substring(span.start(), span.end()).annotations(type).stream()
@@ -152,7 +152,10 @@ final class Rule implements Serializable {
       List<Annotation> toReturn = new ArrayList<>();
       for(Annotation annotation : annotations) {
          for(HString hString : point.v2.applyAsList(annotation, HString.class)) {
-            toReturn.add(hString.asAnnotation());
+            Annotation a = hString.asAnnotation();
+            if(!a.isEmpty()) {
+               toReturn.add(a);
+            }
          }
       }
       return toReturn;

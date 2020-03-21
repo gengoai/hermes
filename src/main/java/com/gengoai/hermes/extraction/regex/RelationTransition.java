@@ -20,6 +20,7 @@
 package com.gengoai.hermes.extraction.regex;
 
 import com.gengoai.Tag;
+import com.gengoai.collection.multimap.ListMultimap;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.RelationType;
@@ -28,7 +29,7 @@ import com.gengoai.string.Strings;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 /**
  * The type Relation transition.
@@ -39,7 +40,7 @@ final class RelationTransition implements TransitionFunction, Serializable {
     * The Is outgoing.
     */
    final boolean isOutgoing;
-   private final Function<? super HString, Integer> matcher;
+   private final BiFunction<? super HString, ListMultimap<String,HString>, Integer> matcher;
    private final String pattern;
    private final RelationType type;
    private final String value;
@@ -57,7 +58,7 @@ final class RelationTransition implements TransitionFunction, Serializable {
                              String value,
                              String pattern,
                              boolean isOutgoing,
-                             Function<? super HString, Integer> matcher) {
+                             BiFunction<? super HString, ListMultimap<String,HString>, Integer> matcher) {
       this.pattern = pattern;
       this.matcher = matcher;
       this.value = value;
@@ -73,26 +74,30 @@ final class RelationTransition implements TransitionFunction, Serializable {
    }
 
    private List<Annotation> getTargets(HString input) {
-      if (!input.isAnnotation()) {
+      if(!input.isAnnotation()) {
          return Collections.emptyList();
       }
-      if (Strings.isNullOrBlank(value)) {
-         return isOutgoing ? input.asAnnotation().outgoing(type)
-                           : input.asAnnotation().incoming(type);
+      if(Strings.isNullOrBlank(value)) {
+         return isOutgoing
+                ? input.asAnnotation().outgoing(type)
+                : input.asAnnotation().incoming(type);
       }
-      return isOutgoing ? input.asAnnotation().outgoing(type, value)
-                        : input.asAnnotation().incoming(type, value);
+      return isOutgoing
+             ? input.asAnnotation().outgoing(type, value)
+             : input.asAnnotation().incoming(type, value);
    }
 
    @Override
    public Tag getType() {
-      return isOutgoing ? RegexTypes.OUTGOING_RELATION : RegexTypes.INCOMING_RELATION;
+      return isOutgoing
+             ? RegexTypes.OUTGOING_RELATION
+             : RegexTypes.INCOMING_RELATION;
    }
 
    @Override
-   public int matches(HString input) {
-      for (Annotation a : getTargets(input)) {
-         if (matcher.apply(a) > 0) {
+   public int matches(HString input, ListMultimap<String, HString> namedGroups) {
+      for(Annotation a : getTargets(input)) {
+         if(matcher.apply(a,namedGroups) > 0) {
             return input.tokenLength();
          }
       }
@@ -100,9 +105,9 @@ final class RelationTransition implements TransitionFunction, Serializable {
    }
 
    @Override
-   public int nonMatches(HString input) {
-      for (Annotation a : getTargets(input)) {
-         if (matcher.apply(a) > 0) {
+   public int nonMatches(HString input, ListMultimap<String, HString> namedGroups) {
+      for(Annotation a : getTargets(input)) {
+         if(matcher.apply(a,namedGroups) > 0) {
             return 0;
          }
       }
@@ -111,7 +116,9 @@ final class RelationTransition implements TransitionFunction, Serializable {
 
    @Override
    public String toString() {
-      String toStr = Strings.isNullOrBlank(value) ? Strings.EMPTY :
+      String toStr = Strings.isNullOrBlank(value)
+                     ? Strings.EMPTY
+                     :
                      ":\"" + value.replace("\"", "\\\"") + "\"";
       return "{@" + type.name() + toStr + " " + pattern + "}";
    }

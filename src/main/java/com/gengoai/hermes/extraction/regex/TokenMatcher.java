@@ -66,38 +66,6 @@ public class TokenMatcher {
       this.tokens = input.tokens();
    }
 
-//   /**
-//    * End int.
-//    *
-//    * @return The end end token of the match
-//    */
-//   public int end() {
-//      Validation.checkState(match != null, "Have not called find()");
-//      if (match.getCharEndOffset() >= 0) {
-//         return tokens.get(match.getCharEndOffset() - 1).end();
-//      }
-//      return -1;
-//   }
-
-   /**
-    * Find boolean.
-    *
-    * @return True if the pattern finds a next match
-    */
-   public boolean find() {
-      start = last;
-      for (; start < tokens.size(); start++) {
-         match = automaton.matches(input, start);
-         if (match.getTokenEnd() != -1) {
-            last = match.getTokenEnd();
-            return true;
-         }
-      }
-      start = -1;
-      match = new TokenMatch(input, -1, -1, null);
-      return false;
-   }
-
    /**
     * As token match token match.
     *
@@ -106,6 +74,35 @@ public class TokenMatcher {
    public TokenMatch asTokenMatch() {
       Validation.notNull(match, "No Match Found or find() not called");
       return match;
+   }
+
+   /**
+    * End int.
+    *
+    * @return The end end token of the match
+    */
+   public int end() {
+      Validation.checkState(match != null, "Have not called find()");
+      return last;
+   }
+
+   /**
+    * Find boolean.
+    *
+    * @return True if the pattern finds a next match
+    */
+   public boolean find() {
+      start = last;
+      for(; start < tokens.size(); start++) {
+         match = automaton.matches(input, start);
+         if(match.getTokenEnd() != -1) {
+            last = match.getTokenEnd();
+            return true;
+         }
+      }
+      start = -1;
+      match = new TokenMatch(input, -1, -1, null);
+      return false;
    }
 
    /**

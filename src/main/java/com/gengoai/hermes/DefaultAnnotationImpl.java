@@ -85,17 +85,17 @@ class DefaultAnnotationImpl extends BaseHString implements Annotation {
    protected DefaultAnnotationImpl(@NonNull AnnotationType type, int start, int end) {
       super(start, end);
       this.owner = null;
-      this.annotationType = type == null ? AnnotationType.ROOT : type;
+      this.annotationType = type == null
+                            ? AnnotationType.ROOT
+                            : type;
    }
 
    @Override
    public void add(@NonNull Relation relation) {
       outgoingRelations.add(relation);
-      if (!isDetached()) {
-         relation.getTarget(this)
-                 .ifPresent(
-                    a -> Cast.<DefaultAnnotationImpl>as(a).incomingRelations.add(
-                       new Relation(relation.getType(), relation.getValue(), getId())));
+      if(!isDetached()) {
+         Cast.<DefaultAnnotationImpl>as(relation.getTarget(this)).incomingRelations
+               .add(new Relation(relation.getType(), relation.getValue(), getId()));
       }
    }
 
@@ -122,15 +122,13 @@ class DefaultAnnotationImpl extends BaseHString implements Annotation {
    @Override
    public Stream<Relation> incomingRelationStream(boolean includeSubAnnotations) {
       Stream<Relation> relationStream = incomingRelations.stream();
-      if (this.getType() != Types.TOKEN && includeSubAnnotations) {
+      if(this.getType() != Types.TOKEN && includeSubAnnotations) {
          relationStream = Stream.concat(relationStream,
                                         annotations().stream()
                                                      .filter(a -> a != this)
                                                      .flatMap(a -> a.incomingRelationStream(false))
-                                                     .filter(rel -> rel.getTarget(document())
-                                                                       .map(aa -> !aa.overlaps(this))
-                                                                       .orElse(false)))
-                                .distinct();
+                                                     .filter(rel -> !rel.getTarget(document()).overlaps(this))
+                                                     .distinct());
       }
       return relationStream;
    }
@@ -138,39 +136,38 @@ class DefaultAnnotationImpl extends BaseHString implements Annotation {
    @Override
    public Stream<Relation> outgoingRelationStream(boolean includeSubAnnotations) {
       Stream<Relation> relationStream = outgoingRelations.stream();
-      if (this.getType() != Types.TOKEN && includeSubAnnotations) {
+      if(this.getType() != Types.TOKEN && includeSubAnnotations) {
          relationStream = Stream.concat(relationStream,
                                         annotations().stream()
                                                      .filter(a -> a != this)
                                                      .flatMap(a -> a.outgoingRelationStream(false))
-                                                     .filter(rel -> rel.getTarget(document())
-                                                                       .map(aa -> !aa.overlaps(this))
-                                                                       .orElse(false)))
-                                .distinct();
+                                                     .filter(rel -> !rel.getTarget(document()).overlaps(this))
+                                                     .distinct());
       }
       return relationStream;
    }
 
    @Override
    public void removeRelation(@NonNull Relation relation) {
-      if (outgoingRelations.remove(relation)) {
-         relation.getTarget(this)
-                 .ifPresent(a -> a.removeRelation(new Relation(relation.getType(), relation.getValue(), getId())));
+      if(outgoingRelations.remove(relation)) {
+         relation.getTarget(this).removeRelation(new Relation(relation.getType(), relation.getValue(), getId()));
       }
    }
 
    @Override
    public List<Annotation> tokens() {
-      if (tokens == null) {
-         synchronized (this) {
-            if (tokens == null) {
+      if(tokens == null) {
+         synchronized(this) {
+            if(tokens == null) {
                List<Annotation> tokenList = super.tokens();
-               if (!tokenList.isEmpty()) {
+               if(!tokenList.isEmpty()) {
                   tokens = tokenList.toArray(new Annotation[0]);
                }
             }
          }
       }
-      return tokens == null ? Collections.emptyList() : Arrays.asList(tokens);
+      return tokens == null
+             ? Collections.emptyList()
+             : Arrays.asList(tokens);
    }
 }//END OF DefaultAnnotationImpl

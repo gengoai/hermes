@@ -20,6 +20,7 @@
 package com.gengoai.hermes.extraction.regex;
 
 import com.gengoai.Tag;
+import com.gengoai.collection.multimap.ListMultimap;
 import com.gengoai.hermes.HString;
 
 import java.io.Serializable;
@@ -67,15 +68,16 @@ final class AlternationTransition implements TransitionFunction, Serializable {
    }
 
    @Override
-   public int matches(HString token) {
-      return Math.max(c1.matches(token), c2.matches(token));
+   public int matches(HString token, ListMultimap<String, HString> namedGroups) {
+      return Math.max(c1.matches(token, namedGroups),
+                      c2.matches(token, namedGroups));
    }
 
    @Override
-   public int nonMatches(HString input) {
-      int m1 = c1.nonMatches(input);
-      int m2 = c2.nonMatches(input);
-      if (m1 > 0 && m2 > 0) {
+   public int nonMatches(HString input, ListMultimap<String, HString> namedGroups) {
+      int m1 = c1.nonMatches(input, namedGroups);
+      int m2 = c2.nonMatches(input, namedGroups);
+      if(m1 > 0 && m2 > 0) {
          return Math.max(m1, m2);
       }
       return 0;

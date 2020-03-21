@@ -34,7 +34,7 @@ import static com.gengoai.string.Re.*;
 import static com.gengoai.tuple.Tuples.$;
 
 enum CaduceusParser implements TokenDef {
-   COMMENT(re("##", oneOrMore(notChars("\r\n")))),
+   COMMENT(re("//", oneOrMore(notChars("\r\n")))),
    RULE_NAME(re(e('['), namedGroup("", oneOrMore("\\w")), e(']'))),
    TRIGGER(re("trigger",
               zeroOrMore(WHITESPACE),

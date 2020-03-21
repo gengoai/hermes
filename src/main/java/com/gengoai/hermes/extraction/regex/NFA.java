@@ -102,7 +102,7 @@ public final class NFA implements Serializable {
             }
 
             for (Transition t : s.node.transitions) {
-               int len = t.transitionFunction.matches(tokens.get(s.inputPosition));
+               int len = t.transitionFunction.matches(tokens.get(s.inputPosition),s.namedGroups);
                if (len > 0) {
                   State next = new State(s.inputPosition + len, t.destination, currentStack, s.namedGroups);
                   newStates.add(next);

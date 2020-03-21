@@ -53,6 +53,8 @@ public class AnnotationSet implements Iterable<Annotation>, Serializable {
       return !annotation.isDetached() && idAnnotationMap.get(annotation.getId()) == annotation;
    }
 
+
+
    /**
     * Gets the annotation for the given id
     *
@@ -60,7 +62,7 @@ public class AnnotationSet implements Iterable<Annotation>, Serializable {
     * @return The annotation associated with that id or null if one does not exist
     */
    public Annotation get(long id) {
-      return idAnnotationMap.get(id);
+      return idAnnotationMap.getOrDefault(id, Fragments.detachedEmptyAnnotation());
    }
 
    /**

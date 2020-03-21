@@ -22,9 +22,6 @@
 
 package com.gengoai.hermes.corpus.io;
 
-import com.gengoai.SystemInfo;
-import com.gengoai.concurrent.BrokerIterator;
-import com.gengoai.concurrent.StreamProducer;
 import com.gengoai.function.SerializableSupplier;
 import com.gengoai.hermes.Document;
 import com.gengoai.hermes.corpus.Corpus;
@@ -34,7 +31,6 @@ import com.gengoai.hermes.corpus.StreamingCorpus;
 import com.gengoai.io.resource.Resource;
 import com.gengoai.stream.MStream;
 import com.gengoai.stream.StreamingContext;
-import com.gengoai.stream.Streams;
 import com.gengoai.stream.local.LocalReusableMStream;
 
 import java.io.IOException;
@@ -65,6 +61,10 @@ public class OnePerLineReader extends CorpusReader {
       return subReader.getOptions();
    }
 
+   @Override
+   public Stream<Document> parse(String content) {
+      return subReader.parse(content);
+   }
 
    @Override
    public Corpus read(Resource resource) throws IOException {
@@ -82,19 +82,16 @@ public class OnePerLineReader extends CorpusReader {
          if(getOptions().getOrDefault(IS_PARALLEL, false)) {
             stream = stream.parallel();
          }
-         return Streams.asStream(new BrokerIterator<>(new StreamProducer<>(stream.javaStream()),
-                                                      subReader::parse,
-                                                      10_000,
-                                                      SystemInfo.NUMBER_OF_PROCESSORS));
+//         return Streams.asStream(new BrokerIterator<>(new StreamProducer<>(stream.javaStream()),
+//                                                      subReader::parse,
+//                                                      10_000,
+//                                                      SystemInfo.NUMBER_OF_PROCESSORS),
+//                                 getOptions().getOrDefault(IS_PARALLEL, false));
+         return stream.flatMap(subReader::parse).javaStream();
       };
       if(getOptions().getOrDefault(IN_MEMORY, false)) {
          return new InMemoryCorpus(streamSupplier.get());
       }
       return new StreamingCorpus(new LocalReusableMStream<>(streamSupplier));
-   }
-
-   @Override
-   public Stream<Document> parse(String content) {
-      return subReader.parse(content);
    }
 }//END OF OnePerLineReader

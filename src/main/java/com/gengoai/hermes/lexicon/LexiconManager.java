@@ -32,10 +32,9 @@ import com.gengoai.hermes.AttributeType;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Hermes;
 import com.gengoai.hermes.Types;
-import com.gengoai.logging.Loggable;
-import com.gengoai.logging.Logger;
 import com.gengoai.string.Strings;
 import lombok.NonNull;
+import lombok.extern.java.Log;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -44,12 +43,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import static com.gengoai.LogUtils.logWarning;
+
 /**
  * Manages the creation and access to Lexicons
  *
  * @author David B. Bracewell
  */
-public final class LexiconManager implements Serializable, Loggable {
+@Log
+public final class LexiconManager implements Serializable {
    private static final Lexicon EmptyLexicon = new Lexicon() {
 
       @Override
@@ -128,7 +130,6 @@ public final class LexiconManager implements Serializable, Loggable {
       }
    };
    private static final Cache<String, Lexicon> lexiconCache = new LRUCache<>(500);
-   private static final Logger log = Logger.getLogger(LexiconManager.class);
    private static final long serialVersionUID = 1L;
 
    private LexiconManager() {
@@ -173,14 +174,13 @@ public final class LexiconManager implements Serializable, Loggable {
                          .map(r -> "lexicon:mem:json::" + r.descriptor())
                          .map(Unchecked.function(s -> LexiconSpecification.parse(s).create()))
                          .orElseGet(() -> {
-                            Logger.getLogger(LexiconManager.class)
-                                  .warn("Unable to find lexicon: {0} in {1}", name, language);
+                            logWarning(log, "Unable to find lexicon: {0} in {1}", name, language);
                             return EmptyLexicon;
                          });
          }
          return specification.create();
       } catch(IOException e) {
-         log.warn(e);
+         logWarning(log, e);
          return EmptyLexicon;
       }
    }

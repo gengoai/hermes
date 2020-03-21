@@ -21,6 +21,7 @@ package com.gengoai.hermes.extraction.regex;
 
 import com.gengoai.Tag;
 import com.gengoai.Validation;
+import com.gengoai.collection.multimap.ListMultimap;
 import com.gengoai.hermes.HString;
 
 import java.io.Serializable;
@@ -58,11 +59,11 @@ final class AndTransition implements TransitionFunction, Serializable {
    }
 
    @Override
-   public int matches(HString input) {
-      int m = left.matches(input);
-      if (m > 0) {
-         int n = right.matches(input);
-         if (n > 0) {
+   public int matches(HString input, ListMultimap<String, HString> namedGroups) {
+      int m = left.matches(input, namedGroups);
+      if(m > 0) {
+         int n = right.matches(input, namedGroups);
+         if(n > 0) {
             return Math.max(m, n);
          }
       }
@@ -70,9 +71,9 @@ final class AndTransition implements TransitionFunction, Serializable {
    }
 
    @Override
-   public int nonMatches(HString input) {
-      int m = left.nonMatches(input);
-      int n = right.nonMatches(input);
+   public int nonMatches(HString input, ListMultimap<String, HString> namedGroups) {
+      int m = left.nonMatches(input, namedGroups);
+      int n = right.nonMatches(input, namedGroups);
       return Math.max(m, n);
    }
 }//END OF AndTransition

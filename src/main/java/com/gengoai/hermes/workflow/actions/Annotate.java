@@ -25,14 +25,18 @@ import com.gengoai.hermes.corpus.Corpus;
 import com.gengoai.hermes.workflow.Action;
 import com.gengoai.hermes.workflow.Context;
 import lombok.NonNull;
+import lombok.extern.java.Log;
 
 import java.util.Arrays;
+
+import static com.gengoai.LogUtils.logInfo;
 
 /**
  * The type Annotate processor.
  *
  * @author David B. Bracewell
  */
+@Log
 public class Annotate implements Action {
    private static final long serialVersionUID = 1L;
    private AnnotatableType[] types = {Types.SENTENCE, Types.LEMMA, Types.PHRASE_CHUNK, Types.DEPENDENCY, Types.ENTITY};
@@ -59,14 +63,14 @@ public class Annotate implements Action {
 
    @Override
    public Corpus process(@NonNull Corpus corpus, @NonNull Context context) throws Exception {
-      logInfo("Annotating corpus for {0}", Arrays.toString(types));
+      logInfo(log, "Annotating corpus for {0}", Arrays.toString(types));
       return corpus.annotate(types);
    }
 
    @Override
    public String toString() {
       return "AnnotateProcessor{" +
-         "types=" + Arrays.toString(types) +
-         '}';
+            "types=" + Arrays.toString(types) +
+            '}';
    }
 }//END OF AnnotateProcessor

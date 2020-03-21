@@ -29,6 +29,7 @@ import com.gengoai.specification.Specification;
 import com.gengoai.tuple.Tuple2;
 import lombok.NonNull;
 
+import java.util.Collection;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,8 +44,19 @@ import static com.gengoai.tuple.Tuples.$;
 public class CorpusIOService {
    private static final Map<String, CorpusFormat> formats = new ConcurrentHashMap<>();
 
+   static {
+      for(CorpusFormat df : ServiceLoader.load(CorpusFormat.class)) {
+         formats.put(df.getName().toUpperCase(), df);
+      }
+   }
+
+
    private CorpusIOService() {
       throw new IllegalAccessError();
+   }
+
+   public static Collection<CorpusFormat> getFormats() {
+      return formats.values();
    }
 
    /**
@@ -66,7 +78,7 @@ public class CorpusIOService {
    public static CorpusReader getReaderFor(@NonNull String format) {
       Tuple2<Boolean, CorpusFormat> ft = parseFormat(format);
       CorpusReader reader = ft.v2.getCorpusReader();
-      if (ft.v1) {
+      if(ft.v1) {
          return new OnePerLineReader(reader);
       }
       return reader;
@@ -82,12 +94,11 @@ public class CorpusIOService {
    public static CorpusWriter getWriterFor(@NonNull String format, @NonNull Corpus corpus) {
       Tuple2<Boolean, CorpusFormat> ft = parseFormat(format);
       CorpusWriter writer = ft.v2.getCorpusWriter(corpus);
-      if (ft.v1) {
+      if(ft.v1) {
          return new OnePerLineWriter(writer);
       }
       return writer;
    }
-
 
    /**
     * Parse corpus specification specification.
@@ -99,7 +110,7 @@ public class CorpusIOService {
       Validation.notNullOrBlank(specification, "Specification must not be null or blank");
       try {
          return Specification.parse(specification);
-      } catch (IllegalArgumentException iae) {
+      } catch(IllegalArgumentException iae) {
          return Specification.builder()
                              .schema(Hermes.defaultCorpusFormat())
                              .path(specification)
@@ -110,20 +121,14 @@ public class CorpusIOService {
    private static Tuple2<Boolean, CorpusFormat> parseFormat(String format) {
       boolean isOnePerLine = false;
       format = format.toUpperCase();
-      if (format.endsWith("_OPL")) {
+      if(format.endsWith("_OPL")) {
          isOnePerLine = true;
          format = format.substring(0, format.length() - "_OPL".length());
       }
-      if (formats.containsKey(format)) {
+      if(formats.containsKey(format)) {
          return $(isOnePerLine, formats.get(format));
       }
       throw new IllegalArgumentException("Unknown Format: " + format);
-   }
-
-   static {
-      for (CorpusFormat df : ServiceLoader.load(CorpusFormat.class)) {
-         formats.put(df.getName().toUpperCase(), df);
-      }
    }
 
 }//END OF CorpusReaderService

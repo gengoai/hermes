@@ -24,7 +24,6 @@ package com.gengoai.hermes.annotator;
 import com.gengoai.hermes.AnnotatableType;
 import com.gengoai.hermes.AnnotationType;
 import com.gengoai.hermes.Document;
-import com.gengoai.string.Strings;
 import lombok.NonNull;
 
 import java.io.Serializable;
@@ -52,7 +51,7 @@ public class RegexAnnotator implements Annotator, Serializable {
     * @param providedType the provided type
     */
    public RegexAnnotator(@NonNull String regex, @NonNull AnnotationType providedType) {
-      regex = Strings.trim(regex);
+      regex = regex.strip();
       if (!regex.startsWith("\\b")) {
          regex = "\\b" + regex;
       }

@@ -21,32 +21,16 @@ package com.gengoai.hermes.extraction.regex;
 
 import com.gengoai.Tag;
 import com.gengoai.collection.multimap.ListMultimap;
-import com.gengoai.function.SerializablePredicate;
 import com.gengoai.hermes.HString;
 
 import java.io.Serializable;
 
-/**
- * The type Predicate matcher.
- */
-final class PredicateTransition implements TransitionFunction, Serializable {
+public class BackreferenceTransition implements TransitionFunction, Serializable {
    private static final long serialVersionUID = 1L;
-   private final String pattern;
-   private final SerializablePredicate<? super HString> predicate;
-   private final Tag type;
+   private final String groupName;
 
-   /**
-    * Instantiates a new Predicate matcher.
-    *
-    * @param pattern   the pattern
-    * @param predicate the predicate
-    */
-   public PredicateTransition(String pattern,
-                              SerializablePredicate<? super HString> predicate,
-                              Tag type) {
-      this.pattern = pattern;
-      this.predicate = predicate;
-      this.type = type;
+   public BackreferenceTransition(String groupName) {
+      this.groupName = groupName;
    }
 
    @Override
@@ -58,25 +42,24 @@ final class PredicateTransition implements TransitionFunction, Serializable {
 
    @Override
    public Tag getType() {
-      return type;
+      return RegexTypes.BACKREFERNCE;
    }
 
    @Override
    public int matches(HString input, ListMultimap<String, HString> namedGroups) {
-      return predicate.test(input)
-             ? input.tokenLength()
+      return namedGroups.get(groupName)
+                        .stream()
+                        .anyMatch(h -> h.overlaps(input))
+             ? input.length()
              : 0;
    }
 
    @Override
    public int nonMatches(HString input, ListMultimap<String, HString> namedGroups) {
-      return predicate.test(input)
+      return namedGroups.get(groupName)
+                        .stream()
+                        .anyMatch(h -> h.overlaps(input))
              ? 0
-             : input.tokenLength();
+             : input.length();
    }
-
-   @Override
-   public String toString() {
-      return pattern;
-   }
-}
+}//END OF BackreferenceTransition

@@ -23,8 +23,8 @@ package com.gengoai.hermes;
 
 import com.gengoai.Language;
 import com.gengoai.Validation;
-import com.gengoai.stream.Streams;
 import com.gengoai.collection.tree.Span;
+import com.gengoai.stream.Streams;
 import com.gengoai.string.Strings;
 import lombok.NonNull;
 
@@ -78,8 +78,8 @@ class DefaultDocumentImpl extends BaseHString implements Document {
    }
 
    @Override
-   public Optional<Annotation> annotation(long id) {
-      return Optional.ofNullable(annotationSet.get(id));
+   public Annotation annotation(long id) {
+      return annotationSet.get(id);
    }
 
    @Override
@@ -112,15 +112,15 @@ class DefaultDocumentImpl extends BaseHString implements Document {
    public void attach(@NonNull Annotation annotation) {
       Validation.checkArgument(annotation.document() == this,
                                "Error: Attempting to attach an annotation to a different document.");
-      if (annotation.isDetached()) {
+      if(annotation.isDetached()) {
          annotation.setId(idGenerator.getAndIncrement());
          annotationSet.add(annotation);
          annotation.outgoingRelationStream()
                    .forEach(relation -> relation.getTarget(this)
-                                                .ifPresent(
-                                                   a -> a.incomingRelations().add(new Relation(relation.getType(),
-                                                                                               relation.getValue(),
-                                                                                               annotation.getId()))));
+                                                .incomingRelations()
+                                                .add(new Relation(relation.getType(),
+                                                                  relation.getValue(),
+                                                                  annotation.getId())));
       }
    }
 
@@ -176,7 +176,7 @@ class DefaultDocumentImpl extends BaseHString implements Document {
 
    @Override
    public void setId(String id) {
-      if (Strings.isNullOrBlank(id)) {
+      if(Strings.isNullOrBlank(id)) {
          this.id = UUID.randomUUID().toString();
       } else {
          this.id = id;
@@ -230,9 +230,9 @@ class DefaultDocumentImpl extends BaseHString implements Document {
 
    @Override
    public List<Annotation> tokens() {
-      if (tokens == null) {
-         synchronized (this) {
-            if (tokens == null) {
+      if(tokens == null) {
+         synchronized(this) {
+            if(tokens == null) {
                tokens = annotations(Types.TOKEN);
             }
          }

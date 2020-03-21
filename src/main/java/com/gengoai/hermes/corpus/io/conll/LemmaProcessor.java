@@ -48,7 +48,7 @@ public class LemmaProcessor implements CoNLLColumnProcessor {
          .stream()
          .filter(row -> row.hasOther("LEMMA"))
          .forEach(row -> document.annotation(row.getAnnotationID())
-                                 .ifPresent(a -> a.put(Types.LEMMA, row.getOther("LEMMA"))));
+                                 .ifNotEmpty(a -> a.put(Types.LEMMA, row.getOther("LEMMA"))));
    }
 
    @Override

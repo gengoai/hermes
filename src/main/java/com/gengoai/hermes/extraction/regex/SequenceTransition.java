@@ -20,6 +20,7 @@
 package com.gengoai.hermes.extraction.regex;
 
 import com.gengoai.Tag;
+import com.gengoai.collection.multimap.ListMultimap;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.HString;
 
@@ -67,42 +68,42 @@ final class SequenceTransition implements TransitionFunction, Serializable {
    }
 
    @Override
-   public int matches(HString token) {
-      int i = c1.matches(token);
-      if (i == 0) {
+   public int matches(HString token, ListMultimap<String, HString> namedGroups) {
+      int i = c1.matches(token, namedGroups);
+      if(i == 0) {
          return 0;
       }
       Annotation next = token.lastToken();
-      for (int j = 0; j < i; j++) {
+      for(int j = 0; j < i; j++) {
          next = next.next();
       }
-      int j = c2.matches(next);
-      if (j == 0) {
+      int j = c2.matches(next, namedGroups);
+      if(j == 0) {
          return 0;
       }
       return i + j;
    }
 
    @Override
-   public int nonMatches(HString input) {
-      int i = c1.matches(input);
-      if (i > 0) {
+   public int nonMatches(HString input, ListMultimap<String, HString> namedGroups) {
+      int i = c1.matches(input, namedGroups);
+      if(i > 0) {
          Annotation next = input.lastToken().next();
-         for (int j = 1; j < i; j++) {
+         for(int j = 1; j < i; j++) {
             next = next.next();
          }
-         if (next.isEmpty()) {
+         if(next.isEmpty()) {
             return i;
          }
-         return c2.nonMatches(next);
+         return c2.nonMatches(next, namedGroups);
       }
 
-      i = c1.nonMatches(input);
+      i = c1.nonMatches(input, namedGroups);
       Annotation next = input.lastToken().next();
-      for (int j = 1; j < i; j++) {
+      for(int j = 1; j < i; j++) {
          next = next.next();
       }
-      return i + Math.max(c2.matches(next), c2.nonMatches(next));
+      return i + Math.max(c2.matches(next, namedGroups), c2.nonMatches(next, namedGroups));
    }
 
    @Override

@@ -23,7 +23,6 @@ package com.gengoai.hermes.preprocessing;
 
 import com.gengoai.Language;
 import com.gengoai.string.Re;
-import com.gengoai.string.Strings;
 
 /**
  * The type Whitespace normalizer.
@@ -39,7 +38,7 @@ public class WhitespaceNormalizer extends TextNormalizer {
       normSpaces = normSpaces.replaceAll("\r(?!\n)", "\n");
       normSpaces = normSpaces.replaceAll("(?<!(\\p{P}\\p{Z}?))\n", " ");
       normSpaces = normSpaces.replaceAll("\r?\n(" + Re.MULTIPLE_WHITESPACE + "\r?\n)+", "\n");
-      return Strings.trim(normSpaces);
+      return normSpaces.strip();
    }
 
 }//END OF WhitespacePreprocessor

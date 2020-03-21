@@ -21,24 +21,28 @@
 
 package com.gengoai.hermes.annotator;
 
+import com.gengoai.MultithreadedStopwatch;
 import com.gengoai.hermes.*;
-import com.gengoai.logging.Logger;
 import lombok.NonNull;
+import lombok.extern.java.Log;
 
 import java.io.Serializable;
 import java.util.*;
+
+import static com.gengoai.LogUtils.logSevere;
 
 /**
  * The type Sub type annotator.
  *
  * @author David B. Bracewell
  */
+@Log
 public class SubTypeAnnotator implements Annotator, Serializable {
-   private static final Logger log = Logger.getLogger(SubTypeAnnotator.class);
    private static final long serialVersionUID = 1L;
    private final AnnotationType annotationType;
    private final boolean nonOverlapping;
    private final Set<AnnotationType> subTypes;
+   private final MultithreadedStopwatch stopwatch = new MultithreadedStopwatch("Annotator." + getClass().getSimpleName());
 
    /**
     * Instantiates a new Sub type annotator.
@@ -49,9 +53,9 @@ public class SubTypeAnnotator implements Annotator, Serializable {
     * @throws IllegalArgumentException - If one or more of the sub types is not an instance of annotationType
     */
    public SubTypeAnnotator(AnnotationType annotationType, boolean nonOverlapping, Collection<AnnotationType> subTypes) {
-      for (AnnotationType subType : subTypes) {
-         if (!subType.isInstance(annotationType)) {
-            log.severe("{0} is not an instance of {1}", subType.label(), annotationType.name());
+      for(AnnotationType subType : subTypes) {
+         if(!subType.isInstance(annotationType)) {
+            logSevere(log, "{0} is not an instance of {1}", subType.label(), annotationType.name());
             throw new IllegalArgumentException(subType.label() + " is not a sub type of " + annotationType.name());
          }
       }
@@ -72,24 +76,25 @@ public class SubTypeAnnotator implements Annotator, Serializable {
 
    @Override
    public final void annotate(Document document) {
+      stopwatch.start();
       subTypes.forEach(document::annotate);
-      if (nonOverlapping) {
+      if(nonOverlapping) {
          List<Annotation> annotations = getAnnotations(document);
-         for (Annotation a : annotations) {
+         for(Annotation a : annotations) {
             //Make sure the annotation is still on the document
-            if (!document.contains(a)) {
+            if(!document.contains(a)) {
                continue;
             }
 
             //Go through all overlapping annotations
-            for (Annotation a2 : getAnnotations(a)) {
+            for(Annotation a2 : getAnnotations(a)) {
                //Ignore itself
-               if (a == a2) {
+               if(a == a2) {
                   continue;
                }
 
                //Remove one
-               if (a == compare(a, a2)) {
+               if(a == compare(a, a2)) {
                   document.remove(a2);
                } else {
                   //Removed itself so stop processing it
@@ -99,26 +104,27 @@ public class SubTypeAnnotator implements Annotator, Serializable {
             }
          }
       }
+      stopwatch.stop();
    }
 
    private Annotation compare(Annotation a1, Annotation a2) {
-      if (a1 == null) {
+      if(a1 == null) {
          return a2;
       }
-      if (a2 == null) {
+      if(a2 == null) {
          return a1;
       }
 
       double a1Confidence = a1.attribute(Types.CONFIDENCE, 1.0);
       double a2Confidence = a2.attribute(Types.CONFIDENCE, 1.0);
 
-      if (a1Confidence > a2Confidence) {
+      if(a1Confidence > a2Confidence) {
          return a1;
-      } else if (a2Confidence > a1Confidence) {
+      } else if(a2Confidence > a1Confidence) {
          return a2;
-      } else if (a1.tokenLength() > a2.tokenLength()) {
+      } else if(a1.tokenLength() > a2.tokenLength()) {
          return a1;
-      } else if (a2.tokenLength() > a1.tokenLength()) {
+      } else if(a2.tokenLength() > a1.tokenLength()) {
          return a2;
       }
 
@@ -127,7 +133,7 @@ public class SubTypeAnnotator implements Annotator, Serializable {
 
    private List<Annotation> getAnnotations(HString fragment) {
       List<Annotation> annotations = new ArrayList<>();
-      for (AnnotationType subType : subTypes) {
+      for(AnnotationType subType : subTypes) {
          annotations.addAll(fragment.annotations(subType));
       }
       return annotations;

@@ -24,7 +24,6 @@ package com.gengoai.hermes.workflow;
 
 import com.gengoai.config.Config;
 import com.gengoai.hermes.corpus.Corpus;
-import com.gengoai.logging.Loggable;
 
 import java.io.Serializable;
 
@@ -33,7 +32,7 @@ import java.io.Serializable;
  *
  * @author David B. Bracewell
  */
-public interface Action extends Serializable, Loggable {
+public interface Action extends Serializable {
 
    /**
     * Gets the override status for this processing module, which can be defined using configuration in the form

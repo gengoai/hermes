@@ -32,20 +32,20 @@ import java.util.Set;
 
 @Value
 @Builder
-final class RelationProvider implements Serializable {
-   private static final long serialVersionUID = 1L;
-   private final boolean bidirectional;
+class RelationProvider implements Serializable {
+   static long serialVersionUID = 1L;
+   boolean bidirectional;
    @NonNull
-   private final String name;
+   String name;
    @Singular("requires")
-   private final Set<String> required;
+   Set<String> required;
    @NonNull
-   private final Tuple2<String, LyreExpression> source;
+   Tuple2<String, LyreExpression> source;
    @NonNull
-   private final Tuple2<String, LyreExpression> target;
+   Tuple2<String, LyreExpression> target;
    @NonNull
-   private final RelationType type;
+   RelationType type;
    @NonNull
-   private final String value;
+   String value;
 
 }//END OF RelationProvider

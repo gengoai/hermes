@@ -25,15 +25,41 @@ import lombok.NonNull;
 
 import java.io.Serializable;
 
+/**
+ * The interface Workflow.
+ */
 @JsonHandler(WorkflowMarshaller.class)
 public interface Workflow extends Serializable {
 
+   /**
+    * Gets starting context.
+    *
+    * @return the starting context
+    */
    Context getStartingContext();
 
+   /**
+    * Sets starting context.
+    *
+    * @param context the context
+    */
    void setStartingContext(Context context);
 
+   /**
+    * Gets type.
+    *
+    * @return the type
+    */
    String getType();
 
+   /**
+    * Process corpus.
+    *
+    * @param input   the input
+    * @param context the context
+    * @return the corpus
+    * @throws Exception the exception
+    */
    Corpus process(@NonNull Corpus input, @NonNull Context context) throws Exception;
 
 }//END OF Workflow

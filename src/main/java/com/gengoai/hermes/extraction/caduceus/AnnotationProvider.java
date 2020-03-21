@@ -31,13 +31,13 @@ import java.util.Set;
 
 @Value
 @Builder
-final class AnnotationProvider implements Serializable {
-   private final AttributeMap attributeMap;
+class AnnotationProvider implements Serializable {
+   AttributeMap attributeMap;
    @NonNull
-   private final String capture;
+   String capture;
    @Singular("requires")
    @NonNull
-   private final Set<String> required;
+   Set<String> required;
    @NonNull
-   private final AnnotationType type;
+   AnnotationType type;
 }//END OF AnnotationProvider

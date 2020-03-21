@@ -2,7 +2,6 @@ package com.gengoai.hermes;
 
 import java.io.Serializable;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * The type Relation.
@@ -34,9 +33,9 @@ public final class Relation implements Serializable {
     * @param hString the h string
     * @return the target
     */
-   public Optional<Annotation> getTarget(HString hString) {
+   public Annotation getTarget(HString hString) {
       if (hString == null || hString.document() == null) {
-         return Optional.empty();
+         return Fragments.detachedEmptyAnnotation();
       }
       return hString.document().annotation(target);
    }

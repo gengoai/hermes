@@ -20,6 +20,7 @@
 package com.gengoai.hermes.extraction.regex;
 
 import com.gengoai.Tag;
+import com.gengoai.collection.multimap.ListMultimap;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.AnnotationType;
 import com.gengoai.hermes.HString;
@@ -58,17 +59,19 @@ final class AnnotationTransition implements TransitionFunction, Serializable {
    }
 
    @Override
-   public int matches(HString input) {
+   public int matches(HString input, ListMultimap<String, HString> namedGroups) {
       int max = 0;
-      for (Annotation a : input.startingHere(type)) {
-         max = Math.max(child.matches(a), max);
+      for(Annotation a : input.startingHere(type)) {
+         max = Math.max(child.matches(a, namedGroups), max);
       }
       return max;
    }
 
    @Override
-   public int nonMatches(HString input) {
-      return matches(input) > 0 ? 0 : input.tokenLength();
+   public int nonMatches(HString input, ListMultimap<String, HString> namedGroups) {
+      return matches(input, namedGroups) > 0
+             ? 0
+             : input.tokenLength();
    }
 
    @Override

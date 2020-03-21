@@ -47,9 +47,10 @@ public class HCFWriter extends CorpusWriter {
       super(corpus);
    }
 
+   @Override
    public void write(Resource location) throws IOException {
       final SaveMode saveMode = getOptions().get(SAVE_MODE);
-      if (saveMode.validate(location)) {
+      if(saveMode.validate(location)) {
          LuceneCorpus luceneCorpus = new LuceneCorpus(location.asFile().orElseThrow(IllegalArgumentException::new));
          luceneCorpus.addAll(this.corpus);
          luceneCorpus.close();

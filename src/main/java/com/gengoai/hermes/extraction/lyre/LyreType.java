@@ -365,7 +365,7 @@ enum LyreType implements TokenDef {
          grammar.prefix(this, (parser, token) -> LyreDSL.lexicon(token.getVariable(0)));
       }
    },
-   OUTGOING_DEPENDENCY(re(e('@'), e('>'), "dep",
+   OUTGOING_DEPENDENCY(re(e('@'), e('>'),
                           zeroOrOne(e('{'), LITERAL.pattern, e('}')))) {
       @Override
       public void register(Grammar grammar) {
@@ -387,7 +387,7 @@ enum LyreType implements TokenDef {
          });
       }
    },
-   INCOMING_DEPENDENCY(re(e('@'), e('<'), "dep",
+   INCOMING_DEPENDENCY(re(e('@'), e('<'),
                           zeroOrOne(e('{'), LITERAL.pattern, e('}')))) {
       @Override
       public void register(Grammar grammar) {
@@ -1026,16 +1026,24 @@ enum LyreType implements TokenDef {
          });
       }
    },
-   ANNOTATION(re(e('@'), namedGroup("", IDENTIFIER))) {
+   ANNOTATION(re(e('@'),
+                 namedGroup("", IDENTIFIER),
+                 zeroOrOne(e('{'), namedGroup("", IDENTIFIER), e('}')))) {
       @Override
       public void register(Grammar grammar) {
          method(grammar, (parser, token, arguments) -> {
             AnnotationType annotationType = Types.annotation(token.getVariable(0));
             switch(arguments.size()) {
                case 0:
-                  return LyreDSL.annotation(annotationType);
+                  if(token.getVariableCount() == 1) {
+                     return LyreDSL.annotation(annotationType);
+                  }
+                  return LyreDSL.annotation(annotationType, token.getVariable(1));
                case 1:
-                  return LyreDSL.annotation(annotationType, arguments.get(0));
+                  if(token.getVariableCount() == 1) {
+                     return LyreDSL.annotation(annotationType, arguments.get(0));
+                  }
+                  return LyreDSL.annotation(annotationType, arguments.get(0), token.getVariable(1));
                default:
                   throw new ParseException("Illegal number of arguments for " + token.getText());
             }

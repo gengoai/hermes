@@ -35,6 +35,9 @@ import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * The type Context.
+ */
 @EqualsAndHashCode(callSuper = false)
 @JsonHandler(Context.JsonMarshaller.class)
 public class Context implements Serializable, Copyable<Context> {
@@ -48,6 +51,12 @@ public class Context implements Serializable, Copyable<Context> {
 
    }
 
+   /**
+    * Get object.
+    *
+    * @param name the name
+    * @return the object
+    */
    public Object get(String name){
       return properties.get(name);
    }
@@ -178,6 +187,11 @@ public class Context implements Serializable, Copyable<Context> {
       return getAs(name, String.class, defaultValue);
    }
 
+   /**
+    * Merge.
+    *
+    * @param other the other
+    */
    public void merge(@NonNull Context other) {
       this.properties.putAll(other.properties);
    }
@@ -197,6 +211,9 @@ public class Context implements Serializable, Copyable<Context> {
       return "Context" + properties.toString() + "";
    }
 
+   /**
+    * The type Json marshaller.
+    */
    public static class JsonMarshaller extends com.gengoai.json.JsonMarshaller<Context> {
 
       @Override

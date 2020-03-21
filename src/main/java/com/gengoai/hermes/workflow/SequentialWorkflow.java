@@ -22,6 +22,7 @@
 
 package com.gengoai.hermes.workflow;
 
+import com.gengoai.LogUtils;
 import com.gengoai.Stopwatch;
 import com.gengoai.annotation.JsonHandler;
 import com.gengoai.application.Option;
@@ -30,12 +31,13 @@ import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.corpus.Corpus;
 import com.gengoai.json.Json;
 import com.gengoai.json.JsonEntry;
-import com.gengoai.logging.Loggable;
 import lombok.NonNull;
 import lombok.ToString;
 
 import java.lang.reflect.Type;
 import java.util.*;
+
+import static com.gengoai.LogUtils.logInfo;
 
 /**
  * <p>Entry point to sequentially processing a corpus via one ore more {@link Action}s. The list of
@@ -50,9 +52,9 @@ import java.util.*;
  */
 @JsonHandler(SequentialWorkflow.SequentialWorkflowMarshaller.class)
 @ToString
-public final class SequentialWorkflow implements Workflow, Loggable {
-   public static final String TYPE = "Sequential";
+public final class SequentialWorkflow implements Workflow {
    private static final long serialVersionUID = 1L;
+   public static final String TYPE = "Sequential";
    @Option(description = "List of actions to perform run")
    private List<Action> actions = new ArrayList<>();
    private Context startingContext = new Context();
@@ -100,24 +102,34 @@ public final class SequentialWorkflow implements Workflow, Loggable {
       Corpus corpus = input;
       context.merge(startingContext);
       Stopwatch sw = Stopwatch.createStarted();
-      for (Action processor : actions) {
+      for(Action processor : actions) {
          Stopwatch actionTime = Stopwatch.createStarted();
-         logInfo("Running {0}...", processor.getClass().getSimpleName());
-         if (processor.getOverrideStatus()) {
+         logInfo(LogUtils.getLogger(getClass()),
+                 "Running {0}...", processor.getClass().getSimpleName());
+         if(processor.getOverrideStatus()) {
             corpus = processor.process(corpus, context);
-            logInfo("Completed {0} [Recomputed] ({1})", processor.getClass().getSimpleName(), actionTime);
+            logInfo(LogUtils.getLogger(getClass()),
+                    "Completed {0} [Recomputed] ({1})",
+                    processor.getClass().getSimpleName(),
+                    actionTime);
          } else {
             State temp = processor.loadPreviousState(corpus, context);
-            if (temp.isLoaded()) {
-               logInfo("Completed {0} [Loaded] ({1})", processor.getClass().getSimpleName(), actionTime);
+            if(temp.isLoaded()) {
+               logInfo(LogUtils.getLogger(getClass()),
+                       "Completed {0} [Loaded] ({1})",
+                       processor.getClass().getSimpleName(),
+                       actionTime);
                corpus = temp.getCorpus();
             } else {
                corpus = processor.process(corpus, context);
-               logInfo("Completed {0} [Computed] ({1})", processor.getClass().getSimpleName(), actionTime);
+               logInfo(LogUtils.getLogger(getClass()),
+                       "Completed {0} [Computed] ({1})",
+                       processor.getClass().getSimpleName(),
+                       actionTime);
             }
          }
       }
-      logInfo("Completed Workflow in " + sw);
+      logInfo(LogUtils.getLogger(getClass()), "Completed Workflow in " + sw);
       return corpus;
    }
 
@@ -132,9 +144,9 @@ public final class SequentialWorkflow implements Workflow, Loggable {
          Iterator<JsonEntry> itr = entry.getProperty("actions").elementIterator();
          try {
             int idx = 0;
-            while (itr.hasNext()) {
+            while(itr.hasNext()) {
                JsonEntry a = itr.next();
-               if (a.isString()) {
+               if(a.isString()) {
                   String name = a.getAsString();
                   Action action = createBean(name, beans.get(name), singletons);
                   workflow.actions.add(action);
@@ -143,7 +155,7 @@ public final class SequentialWorkflow implements Workflow, Loggable {
                }
                idx++;
             }
-         } catch (Exception e) {
+         } catch(Exception e) {
             throw new RuntimeException(e);
          }
          return workflow;
@@ -154,7 +166,7 @@ public final class SequentialWorkflow implements Workflow, Loggable {
          JsonEntry obj = super.serialize(workflow, type);
          SequentialWorkflow sw = Cast.as(workflow);
          JsonEntry actionArray = JsonEntry.array();
-         for (Action action : sw.actions) {
+         for(Action action : sw.actions) {
             JsonEntry ao = JsonEntry.object(action.getClass());
             ao.mergeObject(Json.asJsonEntry(action));
             actionArray.addValue(ao);

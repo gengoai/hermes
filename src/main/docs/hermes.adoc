@@ -1702,16 +1702,17 @@ trim( $_, isStopWord || len < 3 )
 *Annotation Accessors*: Lyre provides the following methods for accessing the annotations on an HString:
 
 * `@ANNOTATION_TYPE`: Return a list of the annotation for the given `ANNOTATION_TYPE` overlapping the HString in focus.
+* `@ANNOTATION_TYPE{TAG}`: Return a list of the annotation for the given `ANNOTATION_TYPE` overlapping the HString in focus filtered to only those whose tag is an instance of the given tag value.
 * `interleave('ANNOTATION_TYPE', ..., 'ANNOTATION_TYPE')`: Return a list of the annotation for the given `ANNOTATION_TYPE` overlapping the HString in focus using the `HString.interleave(AnnotationType...)` method.
 Note that the AnnotationType names are given as string literals.
 * `@>RELATION_TYPE`: Retrieves a list of the annotations that are reachable via an outgoing relation for the given `RELATION_TYPE`.
 * `@>RELATION_TYPE{'RELATION VALUE'}`: Retrieves a list of the annotations that are reachable via an outgoing relation for the given `RELATION_TYPE` and having the given `RELATION_VALUE`.
-* `@>dep`: Retrieves a list of the annotations that are reachable via an outgoing dependency relation.
-* `@>dep{'DEPENDENCY_TYPE'}`: Retrieves a list of the annotations that are reachable via an outgoing dependency relation of given `DEPENDENCY_TYPE`.
+* `@>`: Retrieves a list of the annotations that are reachable via an outgoing dependency relation.
+* `@>{'DEPENDENCY_TYPE'}`: Retrieves a list of the annotations that are reachable via an outgoing dependency relation of given `DEPENDENCY_TYPE`.
 * `@<RELATION_TYPE`: Retrieves a list of the annotations that are reachable via an incoming relation for the given `RELATION_TYPE`.
 * `@<RELATION_TYPE{'RELATION VALUE'}`: Retrieves a list of the annotations that are reachable via an incoming relation for the given `RELATION_TYPE` and having the given `RELATION_VALUE`.
-* `@<dep`: Retrieves a list of the annotations that are reachable via an incoming dependency relation.
-* `@<dep{'DEPENDENCY_TYPE'}`: Retrieves a list of the annotations that are reachable via an incoming dependency relation of given `DEPENDENCY_TYPE`.
+* `@<`: Retrieves a list of the annotations that are reachable via an incoming dependency relation.
+* `@<{'DEPENDENCY_TYPE'}`: Retrieves a list of the annotations that are reachable via an incoming dependency relation of given `DEPENDENCY_TYPE`.
 
 Note that in call cases if the returned list has a single annotation, the single annotation will be returned instead.
 
@@ -1723,11 +1724,13 @@ The following code snippet shows examples of extracting annotations in Lyre.
 @TOKEN( @ENTITY ) <2>
 @>COREFERNCE{'pronominal'} <3>
 @<dep{'nsubj'} <4>
+@ENTITY{PERSON} <5>
 ....
 <1> Returns a list of annotations (or single annotation if only one) of the entities overlapping the object in focus, `$_`, realized as an HString using `HString.toHString(Object)`.
 <2> For each Entity annotation overlapping the object in focus, extract the tokens as a list, which results in a list of object where the object is a single annotation or list of annotations.
 <3> Get all annotations reachable via an outgoing COREFERENCE relation from the object in focus where the COREFERENCE relation has the value "pronominal".
 <4> Get all annotations reachable via an incoming dependency relation from the object in focus where the dependecy relation has the type "nsubj".
+<5> Returns a list of annotations of the PERSON entities overlapping the object in focus.
 
 *Attributes*: Lyre provides the following methods for accessing the attributes on an HString:
 
@@ -1797,9 +1800,11 @@ There are a number of methods defined for extracting keywords in the NLP literat
 In general, the various keyword extraction methodologies have a combination of the follow characteristics:
 
 * *Unsupervised* or *Supervised*: Much like machine learning keyword extraction be done in an supervised fashion, often learning a mapping between documents and a controlled vocabulary, or an unsupervised fashion, often in which phrase and corpus statistics are used to determine the importance of phrases.
-* *Single Document* or *Corpus*: Many of the early approaches to keyword extraction relied on corpus level statistics and thus keywords could only be generated given a corpus. Newer approaches allow for keyword extraction from a single document where corpus level statistics are not required.
+* *Single Document* or *Corpus*: Many of the early approaches to keyword extraction relied on corpus level statistics and thus keywords could only be generated given a corpus.
+Newer approaches allow for keyword extraction from a single document where corpus level statistics are not required.
 
-In Hermes all keyword extraction methods implement the _KeywordExtactor_ interface which is an _Extractor_ with the addition of a `fit(corpus)` method. The `fit` method is used when corpus level statistics are needed in order to perform keyword extraction or when keyword extraction is performed in a supervised manner.
+In Hermes all keyword extraction methods implement the _KeywordExtactor_ interface which is an _Extractor_ with the addition of a `fit(corpus)` method.
+The `fit` method is used when corpus level statistics are needed in order to perform keyword extraction or when keyword extraction is performed in a supervised manner.
 
 Hermes provides the following keyword extractor implementations:
 
@@ -1820,14 +1825,14 @@ An implementation of the RAKE algorithm _Rose, S., Engel, D., Cramer, N., & Cowl
 An implementation of the keyword extractor defined in _Bracewell, David B., Yan, Jiajun, and Ren, Fuji, (2008), Single Document Keyword Extraction For Internet News Articles, International Journal of Innovative Computing, Information and Control, 4, 905—913_. The algorithm extracts noun phrases as candidate keywords and then clusters the noun phrases into semantically coherent groups. These groups are scored and the central noun phrase of the group is then used as a keyword with the group's score as its own.
 |===
 
-
 [#tokenre]
 === Token-Based Regular Expressions
 
 Hermes provides a token-based regular expression engine that allows for matches on arbitrary annotation types, relation types, and attributes, while providing many of the operators that are possible using standard Java regular expressions.
-As with Java regular expressions, the token regular expression is specified as a string and is compiled into an instance of of TokenRegex.
-The resulting TokenRegex object can be used to create a TokenMatcher object that can match HString objects against the regular expression.
-State information is stored within the TokenMatcher allowing reuse of the TokenRegex object.
+As with Java regular expressions, the token regular expression is specified as a string and is compiled into an instance of of _TokenRegex_.
+The _TokenRegex_ class has many of the same methods as Java's regular expression, but returns a _TokenMatcher_ instead of Matcher.
+The _TokenMatcher_ class allows for iterating of the matches, extracting the match or named-groups within the match, the starting and ending offset of the match, and conversion into a _TokenMatch_ object which records the current state of the match.
+Token regular expressions can act as extractors where the extraction generates the HStrings matched for the default group.
 An example of compiling a regular expression, creating a match, and iterating over the matches is as follows:
 
 [source,java]
@@ -1839,10 +1844,180 @@ while (matcher.find()) {
 }
 ....
 
-=== Syntax
+==== Regular Expression Syntax
 
-* *Literals*
+The syntax for token-based regular expressions borrows from the <<#lyre>> where possible.
+Token-based regular expressions differ from Lyre in that they work over sequences of HStrings whereas Lyre is working on single HString units.
+As such, there are differences in the syntax between Lyre.
 
+===== Content Matching
+
+Content can be matched in the following manner:
+
+* *Any*: The `.` operator can be used to match any HString.
+* *Case-Sensitive String Match*: Matches based on a case-sensitive match to the string form of the HString, expressed using double quotes, e.g. `"ABC"`.
+* *Case-Insensitive String Match*: Matches based on a case-insensitive match to the string form of the HString, expressed using single quotes, e.g. `'ABC'`.
+* *Lemmatized String Match*: Matches based on a case-insensitive match to the lemmatized form of the HString, expressed using the less than and greater signs, e.g. `<ABC>`.
+* *Lexicon Match*: Matches against a lexicon can be made by expressing the name of the lexicon to match against using `%LEXICON_NAME`.
+
+[source]
+....
+"Orlando" <1>
+'orlando' <2>
+<fly> <3>
+....
+<1> Case-sensitive match in which only HStrings containing only the word "Orlando" are matched.
+<2> Case-insensitive match in which all capitalization variations of the word "orlando" are matched.
+<3> Case-insensitive match in which all HString whose lemmatized is "fly" will be matched (e.g., "flies", "flew", and "flown").
+
+===== Word Classes
+
+The following word classes are defined:
+
+* `AlphaNumeric`: Matches HStrings whose string form contains only alphanumeric characters.
+* `ContentWord`: Matches HStrings which are content words, i.e. non-stopwords.
+* `HasStopWord`: Matches HStrings which contain on or more stopwords.
+* `StopWord`: Matches HStrings which are stopwords.
+* `Upper`: Matches HStrings whose string form contains only uppercase letters.
+* `UpperInitial`: Matches HStrings whose first character is an uppercase letter.
+* `Lower`: Matches HStrings whose string form contains only lower letters.
+* `LowerInitial`: Matches HStrings whose first character is a lowercase letter.
+* `Letter`: Matches HStrings whose string form contains only letters.
+* `Digit`: Matches HStrings whose string form contains only digits.
+* `Number`: Matches HStrings which represents numbers as ascertained by their `TOKEN_TYPE` or `PART_OF_SPEECH` attribute or whose string form contains only digits.
+* `Punctuation`: Matches HStrings whose string form contains only punctuation.
+* `/PATTERN/[ig]*`: Matches HStrings whose string form matches the given regular expression where the regex can have the options `i` for case-insensitive and `g` for matching the full span.
+
+===== Attributes
+
+Token-based regular expressions allow for matching of attribute values including numeric comparisons for number-valued attributes.
+The first set of attribute-based matching will match non-numeric attributes, such as strings and tags.
+
+[source]
+....
+$PART_OF_SPEECH = 'NOUN' <1>
+$PART_OF_SPEECH != 'NOUN' <2>
+$COLLECTION ~ 'VALUE' <3>
+....
+<1> Equality check where tag-valued attributes are match if the value of the attribute is an instance of the tag defined on the right-hand side and non-tag valued attributes are match if the value of the left-hand side is equal to the value on the right-hand side.
+<2> Inequality check where tag-valued attributes are match if the value of the attribute is *not* an instance of the tag defined on the right-hand side and non-tag valued attributes are match if the value of the left-hand side is *not* equal to the value on the right-hand side.
+<3> Containment check where a match is made when the value on the right-hand side is in the collection of values associated with the attribute or is a substring of the string value of the left-hand side.
+
+Additionally, the full range of numeric comparisons are available:
+
+[source]
+....
+$CONFIDENCE = 0.0
+$CONFIDENCE != 0.0
+$CONFIDENCE >= 0.50
+$CONFIDENCE > 0.50
+$CONFIDENCE <= 0.50
+$CONFIDENCE < 0.50
+....
+
+*Tags*: Tag attributes can be easily matched using `#TAG_VALUE`, e.g. `#NOUN` for tokens would match all tokens whose part-of-speech is a noun.
+
+*Categories*: Whether or not an HString or one of its sub-spans contains a given category value can be expressed using `$CATEGORY ~ 'VALUE'` or `$CAT ~ 'VALUE'` where the VALUE must be predefined _BasicCategory_.
+
+===== Annotations
+
+Matches can include the existence of annotations including optional constraints on the match.
+Annotations are declared using `@ANNOTATION_TYPE` and constraints can be specified using parenthesis, i.e. `@ANNOTATION_TYPE(...)`.
+The following code snippet gives examples:
+
+[source]
+....
+@ENTITY( $CONFIDENCE >= 0.90 ) <1>
+@PHRASE_CHUNK( #NP ) @PHRASE_CHUNK( #VP ) @PHRASE_CHUNK( #NP ) <2>
+....
+<1> Match all entities with a confidence value of 0.90 or more.
+<2> Match sequences of phrase chunks in the form NP VP NP
+
+
+NOTE: That the syntax of matching with annotations is backwards compared to Lyre.
+In Lyre, the first example in the snippet above would be expressed as `$CONFIDENCE(@ENTITY) >= 0.90`.
+
+===== Relations
+
+* `@<RELATION_TYPE`: Retrieves a the annotations that are reachable via an incoming relation of the given type.
+* `@<RELATION_TYPE{'RELATION_VALUE'}`: Retrieves a the annotations that are reachable via an incoming relation of the given type and having the given relation value.
+* `@>RELATION_TYPE`: Retrieves a the annotations that are reachable via an outgoing relation of the given type.
+* `@>RELATION_TYPE{'RELATION_VALUE'}`: Retrieves a the annotations that are reachable via an outgoing relation of the given type and having the given relation value.
+* `@<`: Retrieves a the annotations that are reachable via an incoming dependency relation.
+* `@<{'DEPENDENCY_TYPE'}`: Retrieves a the annotations that are reachable via an incoming dependency relation and having the given `DEPENDENCY_TYPE`.
+* `@>`: Retrieves a the annotations that are reachable via an outgoing dependency relation.
+* `@>{'DEPENDENCY_TYPE'}`: Retrieves a the annotations that are reachable via an outgoing dependency relation and having the given `DEPENDENCY_TYPE`.
+
+[source]
+....
+@PHRASE_CHUNK & @>{'nsubj'} <1>
+@<ROLE{'AGENT'}( @ENTITY( #PERSON ) ) <2>
+....
+<1> Match all phrase chunks that have the 'nsubj' dependency relation.
+<2> Match all HString which have an incoming "ROLE" relation with value "AGENT" and whose "AGENT" is an entity of type PERSON
+
+===== Greedy Qualifiers
+
+The following set of greedy qualifiers are supported:
+
+* *Kleene Star*: The `\*` unary operator will match zero or more of the previously defined expression, e.g. `'abc'*` will match zero or more HString whose string form is a case-insensitive match to "abc".
+* *Kleene Plus*: The `+` unary operator will match one or more of the previously defined expression, e.g. `'abc'+` will match one or more HString whose string form is a case-insensitive match to "abc".
+* *Optional Marker*: The `?` unary operator denotes that previous expression is optional, i.e. matches zero or one, , e.g. `'abc'?` will match if the previous HString is empty or whose string form is a case-insensitive match to "abc".
+* *Range Operator*: A variable number of matches can be expressed using the range operator, denoted using `{minimum,maximum}`, where the maximum can be omitted to denote matching an exact number of times, have the value "*" denoting any number of maximum matches, or given numeric value expression the maximum number of matches.
+
+=====  Logical Operators
+
+Hermes's token-based regular expressions also supports the following logical operators:
+
+* *Negation*: The `^` operator denotes negation matching only when the next expression evaluates to true.
+* *Alternations*: Alternations can be expressed using `|` and act as an *or* on the matching, e.g. `('cat'|'dog')` would match either "cat" or "dog".
+* *And*: Ands can be expressed using `&` and require both the left-hand and right-hand sides to evaluate to true for the current HString in order for it to match, e.g. `@ENTITY(#PERSON & $CONFIDENCE >0.6)` would match entities which are only of type PERSON and have a confidence greater than 0.6.
+* *Non-Capturing Groups*: Non-capturing groups are used to force the order of operation and are denoted using parenthesis, e.g. `^('man' 'of')` matches any two HStrings which whose sequence is not equal to "man of".
+
+===== Special Constructs
+
+The following special constructs are supported:
+
+*Look Behind*: The positive, `(?< ...)`, and negative, `(?!< ... )`, look behind predicates determine if the previous annotation sequences matches (positive) or does not match (negative) the given expression.
+
+[source]
+....
+(?< 'manager' 'of' ) @PHRASE_CHUNK(#NOUN)
+(?!< #DT | #ADJECTIVE ) <bank>
+....
+
+The first expression, from the snippet above, matches noun phrases which are preceded by the phrase "manager of".
+The second example, matches all HStrings whose lemmatized form is "bank" and are not preceded by a determiner or adjective.
+
+*Look Ahead*: The positive, `(?> ...)`, and negative, `(?!> ... )`, look ahead predicates determine if the next annotation sequence matches (positive) or does not match (negative) the given expression.
+
+[source]
+....
+PHRASE_CHUNK( #NOUN ) (?> PHRASE_CHUNK(#VERB) )
+Digit (?!> Punctuation )
+....
+
+The first expression, from the snippet above, matches noun phrases which are followed by verb phrases.
+The second example, matches all HStrings which represent Digits and are not followed by punctuation.
+
+*Named Groups*: Named groups can specified using `(?<NAME> ...)`.
+The groups captured HString is accessed using `TokenMatcher.group(String)` where the String is the group name.
+The following example illustrates a named group:
+
+[source]
+....
+(?<PERSON> @ENTITY(#PERSON))
+....
+
+*Backreference*: Backreference to named groups is possible using `\GROUP_NAME`.
+
+[source]
+....
+(?<PERSON> @ENTITY(#PERSON)) .* PHRASE_CHUNK(#VERB & @<{'nsubj'}(\PERSON))
+....
+
+The example snippet above matches all sequences in which a person entity is followed by a distant verb phrase for which the the nsubj is the matched person entity.
+Note that the backreference will match when there is overlap of between the HString in the named group and the HString being examined for the backreference.
 
 
 TIP: Take a look at *TokenRegexExample.java* in the Hermes examples project to see example patterns.
@@ -1850,41 +2025,155 @@ TIP: Take a look at *TokenRegexExample.java* in the Hermes examples project to s
 [#caduceus]
 === Caduceus
 
-Caduceus, pronounced ca·du·ceus, is a rule-based information extraction system.
-Caduceus programs (a list of rules) are defined in YAML format with each file containing a list of rules.
-Rules define a name, a pattern, and optionally a set of annotation and/or relation rules.
-The name should be unique within a given Caduceus program (single YAML file) and is combined with the program file name and stored as CADUCEUS_RULE attribute on created annotations.
-Caduceus finds matches for the rule’s pattern, which is defined using the token-based regular expression syntax, against an HString object.
-The matches are then used to construct annotations and relations.
-
-The annotations section of a Caduceus rule contains zero or more annotation rules, which define the capture group, “*” if capturing the entire pattern, the type of annotation to create, and a list of attributes to add to the annotation.
-An annotation may also provide a list of relations that must be added by the rule for the annotation to be added to the document.
-An example of a rule to create ENTITY annotations of type BODY_PART is as follows:
+Caduceus, pronounced *ca·du·ceus*, is a rule-based information extraction system.
+Caduceus programs consist of a list of rules for extracting arbitrary spans of text to define annotations (e.g. entities and events) and relations (e.g. event roles).
+Each rule starts with a unique name declared in square brackets, e.g. `[my_rule]`.
+Following the rule name is the *trigger*, which is a <<#tokenre>> that captures the text causing the rule to fire.
+Example triggers are as follows:
 
 [source]
 ....
+trigger: (<man> | <woman> | <child> | <baby>) <1>
+trigger: (?<PERSON> @ENTITY(#PERSON)) (?<ACTION> @PHRASE_CHUNK(#VERB)) (?<OBJECT> @PHRASE_CHUNK(#NOUN)) <2>
+....
+<1> A simple trigger that fires for HStrings whose lemmatized form match one of the given lemmas.
+<2> A trigger that requires a PERSON entity followed by verb phrase followed by a noun phrase, which each item being a named group.
+
+Rules construct annotations and/or relations based on the matched trigger.
+A rule may have define zero or more annotations to be constructed.
+Each annotation is defined using `annotation:` and requires the following options to be specified:
+
+* `capture=(\*|GROUP_NAME)`: The text span which will make up the annotation, where `\*` represents the full trigger match and `GROUP_NAME` represents a named group from the trigger match.
+* `type=ANNOTATION_TYPE`: The name of the annotation type to construct.
+
+Additionally, attributes can be defined using as follows:
+
+[source]
+....
+$ATTRIBUTE_NAME = VALUE
+....
+
+An example of a rule to create ENTITY annotations of type PERSON and BODY_PART is as follows:
+
+[source]
+....
+//###################################################################################
+// Entity: PERSON - Identifies PERSON entities from Alice in Wonderland
+//###################################################################################
 [person]
-trigger: ('alice'|'rabbit'|('white' 'rabbit'))
+trigger: ('alice' | 'rabbit' | ('white' 'rabbit') | ('mad' 'hatter') )
 annotation: capture=*
-             type=ENTITY
-             $ENTITY_TYPE=PERSON
-             $CONFIDENCE=1.0
+            type=ENTITY
+            $ENTITY_TYPE=PERSON
+            $CONFIDENCE=1.0
+....
 
+[source]
+....
+//###################################################################################
+// Entity: BODY_PART - Identifies body part entities.
+//###################################################################################
 [body_parts]
-trigger: ( <eyes> | <ears> )
+trigger: ( (<eye> | <ear> | <arm> | <leg> | <head>) && #NOUN )
 annotation: capture=*
-             type=ENTITY
-             $ENTITY_TYPE=BODY_PART
-             $CONFIDENCE=1.0
+            type=ENTITY
+            $ENTITY_TYPE=BODY_PART
+            $CONFIDENCE=1.0
+....
 
+NOTE: Comments are specified using `//`.
+
+A rule may have define zero or more relations to be constructed.
+Each relation is defined using `relation: NAME`, where NAME is unqiue in the rule.
+Relations require the following options to be specified:
+
+* `type=RELATION_TYPE`: The name of the relation type to construct.
+* `value=STRING`: The value of the relation type.
+* `@>`: The source of the relation specified using a <<#lyre>> with an optional named matching group defined like `@>{GROUP_NAME}`
+* `@<`: The target of the relation specified using a <<#lyre>> with an optional named matching group defined like `@>{GROUP_NAME}`
+
+Additionally, a relation can be defined as _bidirectional_ by specifying `bidirectional=true`.
+An example of a rule to create a HAS_A relation between a PERSON and BODY_PART is as follows:
+
+[source]
+....
+//###################################################################################
+// Relation: HAS_A - Relates a BODY_PART to a PERSON
+//###################################################################################
 [body_part_attributes]
 trigger: (?<PERSON> @ENTITY(#PERSON)) "with" .{1,3} (?<BODY_PART> @ENTITY( #BODY_PART ))
-relation: has_a
+relation:  has_a
            type=ATTRIBUTE
            value= HAS_A
            @>{PERSON}=@ENTITY
            @<{BODY_PART}=@ENTITY
 ....
+
+In the example rule listed above, we define a trigger that matches a PERSON entity followed by the word "with" followed by between one to three tokens, and finally followed by a BODY_PART entity.
+The relation definition for HAS_A is named `has_a` and defines an ATTRIBUTE relation with value HAS_A where the source of the relation is the PERSON entity and the target of the relation is the BODY_PART entity.
+
+In order to prevent superfluous matches, annotations and relations can have requirements on each other specified using a `requires` statement.
+The use of requires can be seen in the following example rule:
+
+[source]
+....
+//###################################################################################
+// Murder - The killing of one person by another
+// Roles:
+//    KILLER - The PERSON performing the murder
+//    VICTIM - The PERSON being murdered
+//    MANNER - The way in which the murder was performed
+//###################################################################################
+[murder]
+trigger: (?<EVENT> <murder> | <kill> | <shoot> | <stab> | <poison> )
+annotation: capture=*
+				type=EVENT
+				$TAG=MURDER
+				$CONFIDENCE=1.0
+				requires=VICTIM
+                requires=KILLER
+relation: KILLER
+			 type=ROLE
+			 value=KILLER
+			 @>=@ENTITY{PERSON}(@<dep{'nsubj'})
+			 @<=$_
+relation: VICTIM
+			 type=ROLE
+			 value=VICTIM
+			 @>=@ENTITY{PERSON}(@<dep{'dobj'})
+			 @<=$_
+relation: MANNER
+			 type=ROLE
+			 value=MANNER
+			 @>=@<dep{'advmod'}
+			 @<=$_
+....
+
+As can be seen in the rule listed above, the MURDER event will only be created when a KILLER role and VICTIM role can be specified.
+
+==== Rule Processing and Execution
+
+Rules are processed sequentially starting at the first defined rule in a Caduceus program file.
+This allows rules to be split apart with each being as simple as possible.
+Please note that Caduceus is not designed for blazing performance, but for ease of use.
+
+Caduceus programs can be executed over corpora or single documents as the following code snippet illustrates.
+
+[source,java]
+....
+CaduceusProgram events = CaduceusProgram.read(Resources.from("/data/caduceus/events.cg"));
+
+Corpus corpus = ...;
+corpus.update(events); <1>
+
+Document document = ...;
+events.execute(document); <2>
+....
+<1> Caduceus programs can be executed over a corpus using the corpus `update(CaduceusProgram)` method.
+<2> Individual documents can be processed by calling the `execute(Document)` method on the CaduceusProgram.
+
+
+TIP: Take a look at *CaduceusExample.java* in the Hermes examples project to see a complete example.
 
 == Machine Learning
 
@@ -1898,9 +2187,14 @@ TIP: Take a look at *GettingStarted.java*, *CorpusExample.java*, *MLExample.java
 [#workflows]
 == Workflows
 
+Workflows in Hermes represent a set of _actions_ to perform on an input corpus.
+A workflow is made up of:
+* *Actions*: A process to perform on a corpus.
+* *Context*: A key-value pair containing context either required or generated by an action.
+
+
 [#hermes_applications]
 == Hermes Applications
-
 
 === annotate
 
@@ -1916,7 +2210,10 @@ An example command line is as follows:
 
 [source,bash]
 ....
+
 csv2Lexicon --csv lexicon:mem:adhoc:csv::/data/test/import.csv;probability=-1;constraint=2;caseSensitive=true;tagAttribute=ENTITY_TYPE;defaultTag=PERSON --lexicon lexicon:disk:adhoc::/data/test/adhoc.lexicon
+
 ....
+
 
 

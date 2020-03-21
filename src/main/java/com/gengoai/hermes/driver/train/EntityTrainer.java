@@ -33,9 +33,11 @@ import com.gengoai.hermes.annotator.BaseWordCategorization;
 import com.gengoai.hermes.corpus.Corpus;
 import com.gengoai.hermes.ml.BIOLabelMaker;
 import com.gengoai.hermes.ml.BIOTrainer;
+import lombok.extern.java.Log;
 
 import java.io.IOException;
 
+import static com.gengoai.LogUtils.logInfo;
 import static com.gengoai.hermes.ml.feature.Features.*;
 import static com.gengoai.hermes.ml.feature.PredefinedFeatures.lenientContext;
 import static com.gengoai.hermes.ml.feature.PredefinedFeatures.strictContext;
@@ -45,6 +47,7 @@ import static com.gengoai.hermes.ml.feature.PredefinedFeatures.strictContext;
  *
  * @author David B. Bracewell
  */
+@Log
 public class EntityTrainer extends BIOTrainer {
    private static final long serialVersionUID = 1L;
 
@@ -63,7 +66,7 @@ public class EntityTrainer extends BIOTrainer {
       Corpus c = Corpus.read(corpusSpecification)
                        .update(BaseWordCategorization.INSTANCE::categorize);
       read.stop();
-      logInfo("Completed reading corpus in: {0}", read);
+      logInfo(log, "Completed reading corpus in: {0}", read);
       if(required().length > 0) {
          c.annotate(required());
       }
@@ -71,14 +74,6 @@ public class EntityTrainer extends BIOTrainer {
          s.featureExtractor(getFeaturizer());
          s.labelGenerator(new BIOLabelMaker(trainingAnnotation, validTags()));
       });
-   }
-
-   @Override
-   protected FitParameters<?> getFitParameters() {
-      return new Crf.Parameters()
-            .verbose.set(true)
-            .maxIterations.set(500)
-            .minFeatureFreq.set(5);
    }
 
    @Override
@@ -122,6 +117,13 @@ public class EntityTrainer extends BIOTrainer {
                                     strictContext(IsTime, -1, IsPunctuation, 0, IsTime, +1));
    }
 
+   @Override
+   protected FitParameters<?> getFitParameters() {
+      return new Crf.Parameters()
+            .verbose.set(true)
+            .maxIterations.set(500)
+            .minFeatureFreq.set(5);
+   }
 
    @Override
    protected SequenceLabeler getLearner() {

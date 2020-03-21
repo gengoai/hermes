@@ -20,6 +20,7 @@
 package com.gengoai.hermes.extraction.regex;
 
 import com.gengoai.Tag;
+import com.gengoai.collection.multimap.ListMultimap;
 import com.gengoai.hermes.HString;
 
 import java.io.Serializable;
@@ -61,13 +62,13 @@ final class ZeroOrMoreTransition implements TransitionFunction, Serializable {
    }
 
    @Override
-   public int matches(HString input) {
-      return child.matches(input);
+   public int matches(HString input, ListMultimap<String, HString> namedGroups) {
+      return child.matches(input, namedGroups);
    }
 
    @Override
-   public int nonMatches(HString input) {
-      return child.nonMatches(input);
+   public int nonMatches(HString input, ListMultimap<String, HString> namedGroups) {
+      return child.nonMatches(input, namedGroups);
    }
 
    @Override

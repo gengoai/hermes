@@ -20,6 +20,7 @@
 package com.gengoai.hermes.extraction.regex;
 
 import com.gengoai.Tag;
+import com.gengoai.collection.multimap.ListMultimap;
 import com.gengoai.hermes.HString;
 import lombok.NonNull;
 
@@ -53,14 +54,14 @@ final class GroupTransition implements TransitionFunction, Serializable {
       NFA nfa = new NFA();
       NFA childNFA = child.construct();
 
-      if (name != null) {
+      if(name != null) {
          nfa.start.emits = true;
          nfa.start.name = name;
       }
 
       nfa.end.isAccept = true;
 
-      if (name != null) {
+      if(name != null) {
          nfa.end.consumes = true;
          nfa.end.name = name;
       }
@@ -78,18 +79,18 @@ final class GroupTransition implements TransitionFunction, Serializable {
    }
 
    @Override
-   public int matches(HString input) {
-      return child.matches(input);
+   public int matches(HString input, ListMultimap<String, HString> namedGroups) {
+      return child.matches(input, namedGroups);
    }
 
    @Override
-   public int nonMatches(HString input) {
-      return child.nonMatches(input);
+   public int nonMatches(HString input, ListMultimap<String, HString> namedGroups) {
+      return child.nonMatches(input, namedGroups);
    }
 
    @Override
    public String toString() {
-      if (name == null) {
+      if(name == null) {
          return String.format("(%s)", child);
       }
       return String.format("(?<%s> %s)", name, child);
