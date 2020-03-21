@@ -197,6 +197,7 @@
                         <configuration>
                             <doctype>article</doctype>
                             <sourceDirectory>src/main/docs/</sourceDirectory>
+                            <outputDirectory>docs/</outputDirectory>
                             <gemPath>${project.build.directory}/gems-provided</gemPath>
                             <requires>
                                 <require>asciidoctor-diagram</require>
@@ -212,7 +213,6 @@
                                 <configuration>
                                     <backend>html5</backend>
                                     <sourceHighlighter>coderay</sourceHighlighter>
-                                    <outputDirectory>docs/</outputDirectory>
                                     <outputFile>index.htm</outputFile>
                                 </configuration>
                             </execution>
@@ -223,10 +223,11 @@
                                     <goal>process-asciidoc</goal>
                                 </goals>
                                 <configuration>
+                                    <imagesDir>${project.basedir}/docs/images/</imagesDir>
                                     <backend>pdf</backend>
                                     <sourceHighlighter>coderay</sourceHighlighter>
                                     <attributes>
-                                        <pdf-stylesdir>styles/</pdf-stylesdir>
+                                        <pdf-stylesdir>${project.basedir}/docs/styles/</pdf-stylesdir>
                                         <pdf-style>custom</pdf-style>
                                     </attributes>
                                 </configuration>
