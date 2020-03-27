@@ -22,7 +22,6 @@ package com.gengoai.hermes.annotator;
 import com.gengoai.Language;
 import com.gengoai.cache.AutoCalculatingLRUCache;
 import com.gengoai.cache.Cache;
-import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.BasicCategories;
 import com.gengoai.hermes.Document;
@@ -50,7 +49,7 @@ public class BaseWordCategorization {
                 for(Annotation token : h.tokens()) {
                    token.putAdd(Types.CATEGORY, lexicon.getEntries(h).stream()
                                                        .map(LexiconEntry::getTag)
-                                                       .map(Cast::<BasicCategories>as)
+                                                       .map(t -> BasicCategories.valueOf(t.name()))
                                                        .collect(Collectors.toList()));
                 }
              });

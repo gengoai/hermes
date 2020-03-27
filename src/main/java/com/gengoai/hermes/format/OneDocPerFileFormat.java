@@ -1,6 +1,4 @@
 /*
- * (c) 2005 David B. Bracewell
- *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
@@ -17,34 +15,33 @@
  * KIND, either express or implied.  See the License for the
  * specific language governing permissions and limitations
  * under the License.
- *
  */
 
-package com.gengoai.hermes.corpus.io;
+package com.gengoai.hermes.format;
 
+import com.gengoai.hermes.Document;
 import com.gengoai.hermes.corpus.Corpus;
-import org.kohsuke.MetaInfServices;
+import com.gengoai.io.resource.Resource;
+import com.gengoai.string.Strings;
 
-/**
- * Twitter Search Format
- *
- * @author David B. Bracewell
- */
-@MetaInfServices
-public class TwiterSearchFormat implements CorpusFormat {
+import java.io.IOException;
+import java.io.Serializable;
 
-   @Override
-   public CorpusReader getCorpusReader() {
-      return new TwitterSearchReader();
-   }
+public abstract class OneDocPerFileFormat implements DocFormat, Serializable {
+   private static final long serialVersionUID = 1L;
+
 
    @Override
-   public CorpusWriter getCorpusWriter(Corpus corpus) {
-      throw new UnsupportedOperationException();
+   public final void write(Corpus corpus, Resource outputResource) throws IOException {
+      if(!outputResource.isDirectory()) {
+         throw new IOException(outputResource.descriptor() + " must be a directory");
+      }
+      outputResource.mkdirs();
+      int nw = Long.toString(corpus.size()).length();
+      long i = 0;
+      for(Document document : corpus) {
+         write(document, outputResource.getChild("part-" + Strings.padStart(Long.toString(i), nw, '0')));
+         i++;
+      }
    }
-
-   @Override
-   public String getName() {
-      return "TWITTER_SEARCH";
-   }
-}//END OF TwiterSearchFormat
+}//END OF OneDocPerFileFormat

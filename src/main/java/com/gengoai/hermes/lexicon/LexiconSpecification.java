@@ -57,7 +57,7 @@ public class LexiconSpecification implements Specifiable, Serializable {
    @QueryParameter
    private boolean caseSensitive = false;
    @QueryParameter
-   private int constraint = 3;
+   private int constraint = -1;
    @QueryParameter
    private String defaultTag = null;
    @SubProtocol(1)
@@ -67,7 +67,7 @@ public class LexiconSpecification implements Specifiable, Serializable {
    @SubProtocol(0)
    private String name;
    @QueryParameter
-   private int probability = 2;
+   private int probability = -1;
    @Protocol
    private String protocol;
    @Path
@@ -119,9 +119,9 @@ public class LexiconSpecification implements Specifiable, Serializable {
                               : Cast.as(tagAttribute.decode(defaultTag));
                c.lemma = lemma;
                c.tag = tag;
-               c.isCaseSensitive = caseSensitive;
                c.probability = probability;
                c.constraint = constraint;
+               c.isCaseSensitive = caseSensitive;
             });
          }
          throw new IllegalStateException("Invalid lexicon format: " + format);

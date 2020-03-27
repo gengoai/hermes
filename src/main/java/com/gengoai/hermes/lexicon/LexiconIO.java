@@ -236,5 +236,4 @@ public final class LexiconIO {
       public AttributeType<? extends Tag> tagAttribute = Types.TAG;
    }
 
-
 }//END OF LexiconIO

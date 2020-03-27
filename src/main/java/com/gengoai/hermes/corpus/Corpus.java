@@ -28,6 +28,7 @@ import com.gengoai.apollo.ml.data.ExampleDataset;
 import com.gengoai.apollo.statistics.measure.Association;
 import com.gengoai.apollo.statistics.measure.ContingencyTable;
 import com.gengoai.apollo.statistics.measure.ContingencyTableCalculator;
+import com.gengoai.collection.Iterables;
 import com.gengoai.collection.Sets;
 import com.gengoai.collection.counter.Counter;
 import com.gengoai.collection.counter.Counters;
@@ -49,9 +50,12 @@ import com.gengoai.hermes.extraction.caduceus.CaduceusProgram;
 import com.gengoai.hermes.extraction.regex.TokenMatch;
 import com.gengoai.hermes.extraction.regex.TokenMatcher;
 import com.gengoai.hermes.extraction.regex.TokenRegex;
+import com.gengoai.hermes.format.DocFormat;
+import com.gengoai.hermes.format.DocFormatService;
 import com.gengoai.hermes.lexicon.Lexicon;
 import com.gengoai.hermes.workflow.Context;
 import com.gengoai.hermes.workflow.SequentialWorkflow;
+import com.gengoai.io.Resources;
 import com.gengoai.io.resource.Resource;
 import com.gengoai.parsing.ParseException;
 import com.gengoai.specification.Specification;
@@ -138,6 +142,14 @@ public interface Corpus extends Iterable<Document>, AutoCloseable {
     */
    static Corpus create(@NonNull Stream<Document> documents) {
       return new StreamingCorpus(StreamingContext.local().stream(documents));
+   }
+
+   static Corpus importDocuments(@NonNull String inputSpecification, @NonNull String corpusSpec) throws IOException {
+      Corpus corpus = Corpus.read(corpusSpec);
+      Specification inSpec = Specification.parse(inputSpecification);
+      DocFormat format = DocFormatService.create(inSpec);
+      corpus.addAll(Iterables.asIterable(format.read(Resources.from(inSpec.getPath()))));
+      return corpus;
    }
 
    /**

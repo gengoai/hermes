@@ -61,16 +61,14 @@ public class DefaultDependencyAnnotator extends SentenceLevelAnnotator {
       String[] input = new String[tokens.size()];
       for(int i = 0; i < tokens.size(); i++) {
          Annotation token = tokens.get(i);
-         input[i] = i + "\t" + token.toString() + "\t" + token.getLemma() + "\t" + token.pos()
-                                                                                        .asString() + "\t" + token.pos()
-                                                                                                                  .asString() + "\t-";
+         input[i] = (i + 1) + "\t" + token.toString() + "\t" + token.getLemma() + "\t" + token.pos().asString() + "\t" +
+               token.pos().asString() + "\t_";
       }
       try {
          ConcurrentDependencyGraph graph = model.parse(input);
          for(int i = 1; i <= graph.nTokenNodes(); i++) {
             ConcurrentDependencyNode node = graph.getTokenNode(i);
             ConcurrentDependencyEdge edge = node.getHeadEdge();
-
             Annotation child = tokens.get(node.getIndex() - 1);
             if(edge.getSource().getIndex() != 0) {
                Annotation parent = tokens.get(edge.getSource().getIndex() - 1);
@@ -80,6 +78,7 @@ public class DefaultDependencyAnnotator extends SentenceLevelAnnotator {
       } catch(MaltChainedException e) {
          throw new RuntimeException(e);
       }
+      System.out.println();
    }
 
    @Override
@@ -99,7 +98,7 @@ public class DefaultDependencyAnnotator extends SentenceLevelAnnotator {
                      Resource tmpLocation = Resources.temporaryFile();
                      tmpLocation.deleteOnExit();
                      try {
-                        logFine(log,"Writing dependency model to temporary file [{0}].", tmpLocation);
+                        logFine(log, "Writing dependency model to temporary file [{0}].", tmpLocation);
                         tmpLocation.write(r.readBytes());
                         r = tmpLocation;
                      } catch(IOException e) {

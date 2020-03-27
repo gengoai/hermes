@@ -22,16 +22,20 @@
 
 package com.gengoai.hermes.corpus.io;
 
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * A Row (token) in a CoNLL formatted file
  *
  * @author David B. Bracewell
  */
+@EqualsAndHashCode(callSuper = false)
+@ToString
 public final class CoNLLRow implements Serializable {
    private static final long serialVersionUID = 1L;
    private long annotationID = -1L;
@@ -45,7 +49,6 @@ public final class CoNLLRow implements Serializable {
    private int start = -1;
    private String word;
 
-
    /**
     * Adds a field not specifically tracked.
     *
@@ -54,23 +57,6 @@ public final class CoNLLRow implements Serializable {
     */
    public void addOther(String name, String value) {
       otherProperties.put(name.toUpperCase(), value);
-   }
-
-   @Override
-   public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof CoNLLRow)) return false;
-      CoNLLRow coNLLRow = (CoNLLRow) o;
-      return annotationID == coNLLRow.annotationID &&
-                end == coNLLRow.end &&
-                index == coNLLRow.index &&
-                parent == coNLLRow.parent &&
-                sentence == coNLLRow.sentence &&
-                start == coNLLRow.start &&
-                Objects.equals(depRelation, coNLLRow.depRelation) &&
-                Objects.equals(otherProperties, coNLLRow.otherProperties) &&
-                Objects.equals(pos, coNLLRow.pos) &&
-                Objects.equals(word, coNLLRow.word);
    }
 
    /**
@@ -83,30 +69,12 @@ public final class CoNLLRow implements Serializable {
    }
 
    /**
-    * Sets the annotation id.
-    *
-    * @param annotationID the annotation id
-    */
-   public void setAnnotationID(long annotationID) {
-      this.annotationID = annotationID;
-   }
-
-   /**
     * Gets the dependency relation.
     *
     * @return the dep relation
     */
    public String getDepRelation() {
       return this.depRelation;
-   }
-
-   /**
-    * Sets dep relation.
-    *
-    * @param depRelation the dep relation
-    */
-   public void setDepRelation(String depRelation) {
-      this.depRelation = depRelation;
    }
 
    /**
@@ -119,30 +87,12 @@ public final class CoNLLRow implements Serializable {
    }
 
    /**
-    * Sets the end offset.
-    *
-    * @param end the end
-    */
-   public void setEnd(int end) {
-      this.end = end;
-   }
-
-   /**
     * Gets the index of the token.
     *
     * @return the index
     */
    public int getIndex() {
       return this.index;
-   }
-
-   /**
-    * Sets the index.
-    *
-    * @param index the index
-    */
-   public void setIndex(int index) {
-      this.index = index;
    }
 
    /**
@@ -165,30 +115,12 @@ public final class CoNLLRow implements Serializable {
    }
 
    /**
-    * Sets the parent index.
-    *
-    * @param parent the parent
-    */
-   public void setParent(int parent) {
-      this.parent = parent;
-   }
-
-   /**
     * Gets that part-of-speech.
     *
     * @return the part-of-speech
     */
    public String getPos() {
       return this.pos;
-   }
-
-   /**
-    * Sets the part-of-speech.
-    *
-    * @param pos the part-of-speech
-    */
-   public void setPos(String pos) {
-      this.pos = pos;
    }
 
    /**
@@ -201,30 +133,12 @@ public final class CoNLLRow implements Serializable {
    }
 
    /**
-    * Sets  sentence index.
-    *
-    * @param sentence the  sentence index
-    */
-   public void setSentence(int sentence) {
-      this.sentence = sentence;
-   }
-
-   /**
     * Gets start offset.
     *
     * @return the start offset
     */
    public int getStart() {
       return this.start;
-   }
-
-   /**
-    * Sets the start offset.
-    *
-    * @param start the start offset
-    */
-   public void setStart(int start) {
-      this.start = start;
    }
 
    /**
@@ -237,15 +151,6 @@ public final class CoNLLRow implements Serializable {
    }
 
    /**
-    * Sets word (token).
-    *
-    * @param word the word (token).
-    */
-   public void setWord(String word) {
-      this.word = word;
-   }
-
-   /**
     * Checks if a value for the given non-specified property name exists
     *
     * @param name the name
@@ -255,24 +160,85 @@ public final class CoNLLRow implements Serializable {
       return otherProperties.containsKey(name.toUpperCase());
    }
 
-   @Override
-   public int hashCode() {
-      return Objects.hash(annotationID, depRelation, end, index, otherProperties, parent, pos, sentence, start, word);
+   /**
+    * Sets the annotation id.
+    *
+    * @param annotationID the annotation id
+    */
+   public void setAnnotationID(long annotationID) {
+      this.annotationID = annotationID;
    }
 
-   @Override
-   public String toString() {
-      return "CoNLLRow{" +
-                "annotationID=" + annotationID +
-                ", depRelation='" + depRelation + '\'' +
-                ", end=" + end +
-                ", index=" + index +
-                ", otherProperties=" + otherProperties +
-                ", parent=" + parent +
-                ", pos='" + pos + '\'' +
-                ", sentence=" + sentence +
-                ", start=" + start +
-                ", word='" + word + '\'' +
-                '}';
+   /**
+    * Sets dep relation.
+    *
+    * @param depRelation the dep relation
+    */
+   public void setDepRelation(String depRelation) {
+      this.depRelation = depRelation;
    }
+
+   /**
+    * Sets the end offset.
+    *
+    * @param end the end
+    */
+   public void setEnd(int end) {
+      this.end = end;
+   }
+
+   /**
+    * Sets the index.
+    *
+    * @param index the index
+    */
+   public void setIndex(int index) {
+      this.index = index;
+   }
+
+   /**
+    * Sets the parent index.
+    *
+    * @param parent the parent
+    */
+   public void setParent(int parent) {
+      this.parent = parent;
+   }
+
+   /**
+    * Sets the part-of-speech.
+    *
+    * @param pos the part-of-speech
+    */
+   public void setPos(String pos) {
+      this.pos = pos;
+   }
+
+   /**
+    * Sets  sentence index.
+    *
+    * @param sentence the  sentence index
+    */
+   public void setSentence(int sentence) {
+      this.sentence = sentence;
+   }
+
+   /**
+    * Sets the start offset.
+    *
+    * @param start the start offset
+    */
+   public void setStart(int start) {
+      this.start = start;
+   }
+
+   /**
+    * Sets word (token).
+    *
+    * @param word the word (token).
+    */
+   public void setWord(String word) {
+      this.word = word;
+   }
+
 }//END OF CoNLLRow

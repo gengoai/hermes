@@ -21,7 +21,6 @@
 
 package com.gengoai.hermes.lexicon;
 
-
 import com.gengoai.Tag;
 import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.*;
@@ -45,7 +44,7 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
       HString tmp = match.getSpan().document().substring(match.getSpan().start(), match.getSpan().end());
       tmp.put(Types.CONFIDENCE, match.getScore());
       tmp.put(Types.MATCHED_STRING, match.getMatchedString());
-      if (getTagAttributeType() != null) {
+      if(getTagAttributeType() != null) {
          tmp.put(getTagAttributeType(), match.getTag());
       }
       return tmp;
@@ -62,7 +61,7 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
 
    @Override
    public Extraction extract(@NonNull HString source) {
-      if (isProbabilistic()) {
+      if(isProbabilistic()) {
          return Extraction.fromHStringList(viterbi(source));
       }
       return Extraction.fromHStringList(longestMatchFirst(source));
@@ -76,7 +75,6 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
     */
    public abstract List<LexiconEntry<?>> getEntries(HString hString);
 
-
    /**
     * Gets the matched entries for a given {@link HString}
     *
@@ -84,7 +82,6 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
     * @return the entries matching the {@link HString}
     */
    public abstract List<LexiconEntry<?>> getEntries(String hString);
-
 
    /**
     * Gets the first matched lemma, if one, for the given {@link HString}
@@ -94,9 +91,9 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
     */
    public final Optional<String> getMatch(HString hString) {
       return getEntries(hString)
-         .stream()
-         .map(LexiconEntry::getLemma)
-         .findFirst();
+            .stream()
+            .map(LexiconEntry::getLemma)
+            .findFirst();
    }
 
    public abstract int getMaxLemmaLength();
@@ -116,10 +113,10 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
     */
    public final double getProbability(HString hString) {
       return getEntries(hString)
-         .stream()
-         .mapToDouble(LexiconEntry::getProbability)
-         .max()
-         .orElse(0d);
+            .stream()
+            .mapToDouble(LexiconEntry::getProbability)
+            .max()
+            .orElse(0d);
    }
 
    /**
@@ -207,32 +204,32 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
       List<HString> results = new LinkedList<>();
       List<Annotation> tokens = source.tokens();
 
-      for (int i = 0; i < tokens.size(); ) {
+      for(int i = 0; i < tokens.size(); ) {
          Annotation token = tokens.get(i);
-         if (this.isPrefixMatch(token)) {
+         if(this.isPrefixMatch(token)) {
             LexiconMatch bestMatch = null;
-            for (int j = i + 1; j <= tokens.size(); j++) {
+            for(int j = i + 1; j <= tokens.size(); j++) {
                HString temp = HString.union(tokens.subList(i, j));
-               if (temp.length() > getMaxLemmaLength()) {
+               if(temp.length() > getMaxLemmaLength()) {
                   break;
                }
                List<LexiconEntry<?>> entries = getEntries(temp);
-               if (entries.size() > 0) {
+               if(entries.size() > 0) {
                   bestMatch = new LexiconMatch(temp, entries.get(0));
                }
-               if (!this.isPrefixMatch(temp)) {
+               if(!this.isPrefixMatch(temp)) {
                   break;
                }
             }
 
-            if (bestMatch != null) {
+            if(bestMatch != null) {
                results.add(createFragment(bestMatch));
                i += bestMatch.getSpan().tokenLength();
             } else {
                i++;
             }
 
-         } else if (test(token)) {
+         } else if(test(token)) {
             results.add(createFragment(new LexiconMatch(token, getEntries(token).get(0))));
             i++;
          } else {
@@ -250,7 +247,7 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
     * @return the string
     */
    protected String normalize(CharSequence sequence) {
-      if (isCaseSensitive()) {
+      if(isCaseSensitive()) {
          return sequence.toString();
       }
       return sequence.toString().toLowerCase();
@@ -275,17 +272,17 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
       LexiconMatch[] matches = new LexiconMatch[n + 1];
       double[] best = new double[n + 1];
       best[0] = 0;
-      for (int end = 1; end <= n; end++) {
+      for(int end = 1; end <= n; end++) {
          matches[end] = new LexiconMatch(tokens.get(end - 1), 0d, "", null);
-         for (int start = end - 1; start >= 0; start--) {
+         for(int start = end - 1; start >= 0; start--) {
             HString span = HString.union(tokens.subList(start, end));
-            if (span.length() > maxLen) {
+            if(span.length() > maxLen) {
                break;
             }
             LexiconEntry<?> entry = getEntries(span).stream().findFirst().orElse(new LexiconEntry<>("", 0, null, null));
             LexiconMatch score = new LexiconMatch(span, entry.getProbability(), entry.getLemma(), entry.getTag());
             double segmentScore = score.getScore() + best[start];
-            if (segmentScore >= best[end]) {
+            if(segmentScore >= best[end]) {
                best[end] = segmentScore;
                matches[end] = score;
             }
@@ -293,9 +290,9 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
       }
       int i = n;
       List<HString> results = new LinkedList<>();
-      while (i > 0) {
+      while(i > 0) {
          LexiconMatch match = matches[i];
-         if (match.getScore() > 0) {
+         if(match.getScore() > 0) {
             results.add(createFragment(match));
          }
          i = i - matches[i].getSpan().tokenLength();

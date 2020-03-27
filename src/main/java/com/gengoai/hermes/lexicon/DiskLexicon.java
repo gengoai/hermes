@@ -40,7 +40,6 @@ public class DiskLexicon extends Lexicon implements PrefixSearchable {
    private final NavigableKeyValueStore<String, List<LexiconEntry<?>>> lexiconEntries;
    private final NavigableKeyValueStore<String, Object> metadata;
 
-
    protected DiskLexicon(KeyValueStoreConnection connection) {
       connection.setReadOnly(true);
       this.lexiconEntries = connection.connect();
@@ -132,13 +131,12 @@ public class DiskLexicon extends Lexicon implements PrefixSearchable {
 
    @Override
    public boolean isPrefixMatch(String hString) {
-      Iterator<String> itr = lexiconEntries.keyIterator(normalize(Validation.notNullOrBlank(hString)));
+      String normed = normalize(Validation.notNullOrBlank(hString));
+      Iterator<String> itr = lexiconEntries.keyIterator(normed);
       while(true) {
          if(itr.hasNext()) {
             String n = itr.next();
-            if(!hString.equals(n)) {
-               return hString.startsWith(n);
-            }
+            return normed.equals(n) || n.startsWith(normed);
          } else {
             return false;
          }
