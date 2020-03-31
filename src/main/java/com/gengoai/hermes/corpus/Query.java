@@ -37,7 +37,6 @@ import java.io.Serializable;
 import static com.gengoai.hermes.corpus.LuceneCorpus.CONTENT_FIELD;
 import static com.gengoai.hermes.corpus.LuceneCorpus.ID_FIELD;
 
-
 /**
  * Defines the methodology for matching documents based on simple boolean logic over term and document level
  * attributes.
@@ -73,11 +72,6 @@ public abstract class Query implements Serializable {
       }
 
       @Override
-      public String toString() {
-         return String.format("(%s AND %s)", q1, q2);
-      }
-
-      @Override
       public boolean matches(Document document) {
          return q1.matches(document) && q2.matches(document);
       }
@@ -85,17 +79,22 @@ public abstract class Query implements Serializable {
       @Override
       public org.apache.lucene.search.Query toLucene() {
          BooleanQuery.Builder builder = new BooleanQuery.Builder();
-         if (q1 instanceof Not) {
+         if(q1 instanceof Not) {
             builder.add(((Not) q1).query.toLucene(), BooleanClause.Occur.MUST_NOT);
          } else {
             builder.add(q1.toLucene(), BooleanClause.Occur.MUST);
          }
-         if (q2 instanceof Not) {
+         if(q2 instanceof Not) {
             builder.add(((Not) q2).query.toLucene(), BooleanClause.Occur.MUST_NOT);
          } else {
             builder.add(q2.toLucene(), BooleanClause.Occur.MUST);
          }
          return builder.build();
+      }
+
+      @Override
+      public String toString() {
+         return String.format("(%s AND %s)", q1, q2);
       }
    }
 
@@ -107,12 +106,6 @@ public abstract class Query implements Serializable {
          this.query = query;
       }
 
-
-      @Override
-      public String toString() {
-         return String.format("-(%s)", query);
-      }
-
       @Override
       public boolean matches(Document document) {
          return !query.matches(document);
@@ -121,9 +114,14 @@ public abstract class Query implements Serializable {
       @Override
       public org.apache.lucene.search.Query toLucene() {
          return new BooleanQuery.Builder()
-            .add(query.toLucene(), BooleanClause.Occur.MUST_NOT)
-            .add(new WildcardQuery(new Term(ID_FIELD, "*")), BooleanClause.Occur.SHOULD)
-            .build();
+               .add(query.toLucene(), BooleanClause.Occur.MUST_NOT)
+               .add(new WildcardQuery(new Term(ID_FIELD, "*")), BooleanClause.Occur.SHOULD)
+               .build();
+      }
+
+      @Override
+      public String toString() {
+         return String.format("-(%s)", query);
       }
    }
 
@@ -144,11 +142,6 @@ public abstract class Query implements Serializable {
       }
 
       @Override
-      public String toString() {
-         return String.format("(%s OR %s)", q1, q2);
-      }
-
-      @Override
       public boolean matches(Document document) {
          return q1.matches(document) || q2.matches(document);
       }
@@ -159,6 +152,11 @@ public abstract class Query implements Serializable {
          builder.add(q1.toLucene(), BooleanClause.Occur.SHOULD);
          builder.add(q2.toLucene(), BooleanClause.Occur.SHOULD);
          return builder.build();
+      }
+
+      @Override
+      public String toString() {
+         return String.format("(%s OR %s)", q1, q2);
       }
    }
 
@@ -171,11 +169,6 @@ public abstract class Query implements Serializable {
       }
 
       @Override
-      public String toString() {
-         return String.format("'%s'", phrase);
-      }
-
-      @Override
       public boolean matches(Document document) {
          return document.contains(phrase);
       }
@@ -183,6 +176,11 @@ public abstract class Query implements Serializable {
       @Override
       public org.apache.lucene.search.Query toLucene() {
          return new QueryBuilder(new StandardAnalyzer()).createPhraseQuery(CONTENT_FIELD, phrase);
+      }
+
+      @Override
+      public String toString() {
+         return String.format("'%s'", phrase);
       }
    }
 
@@ -197,19 +195,8 @@ public abstract class Query implements Serializable {
       }
 
       @Override
-      public String toString() {
-         switch (field) {
-            case CONTENT_FIELD:
-               return targetValue.toString();
-            default:
-               return String.format("$%s(%s)", field, targetValue);
-
-         }
-      }
-
-      @Override
       public boolean matches(Document document) {
-         switch (field) {
+         switch(field) {
             case ID_FIELD:
                return document.getId().equals(targetValue);
             case CONTENT_FIELD:
@@ -221,9 +208,19 @@ public abstract class Query implements Serializable {
          }
       }
 
-
       public org.apache.lucene.search.Query toLucene() {
          return new org.apache.lucene.search.TermQuery(new Term(field, targetValue.toString()));
+      }
+
+      @Override
+      public String toString() {
+         switch(field) {
+            case CONTENT_FIELD:
+               return targetValue.toString();
+            default:
+               return String.format("$%s(%s)", field, targetValue);
+
+         }
       }
 
    }

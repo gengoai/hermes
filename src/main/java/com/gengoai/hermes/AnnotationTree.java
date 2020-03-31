@@ -23,6 +23,7 @@ package com.gengoai.hermes;
 
 import com.gengoai.collection.Iterators;
 import com.gengoai.collection.tree.IntervalTree;
+import lombok.NonNull;
 
 /**
  * <p>Annotation tree using a Red-Black backed Interval tree.</p>
@@ -39,21 +40,10 @@ class AnnotationTree extends IntervalTree<Annotation> {
     * @param type       the type
     * @return the annotation
     */
-   public Annotation ceiling(Annotation annotation, AnnotationType type) {
-      if(annotation == null || type == null) {
-         return Fragments.detachedEmptyAnnotation();
-      }
+   public Annotation ceiling(@NonNull Annotation annotation, @NonNull AnnotationType type) {
       return Iterators.first(Iterators.filter(ceilingIterator(annotation),
                                               ann -> ann.getType().isInstance(type) && ann != annotation))
-                      .orElse(Fragments.detachedEmptyAnnotation());
-//      Iterator<Annotation> itr = Iterators.filter(new NodeIterator<>(root, annotation.end(), Integer.MAX_VALUE, true),
-//                                                  ann -> ann.getType().isInstance(type));
-//      for (Annotation a : Iterables.asIterable(itr)) {
-//         if (a.isInstance(type) && a != annotation) {
-//            return a;
-//         }
-//      }
-//      return Fragments.detachedEmptyAnnotation();
+                      .orElse(Fragments.orphanedAnnotation(type));
    }
 
    /**
@@ -63,15 +53,12 @@ class AnnotationTree extends IntervalTree<Annotation> {
     * @param type       the type
     * @return the annotation
     */
-   public Annotation floor(Annotation annotation, AnnotationType type) {
-      if(annotation == null || type == null) {
-         return Fragments.detachedEmptyAnnotation();
-      }
+   public Annotation floor(@NonNull Annotation annotation, @NonNull AnnotationType type) {
       return Iterators.first(Iterators.filter(floorIterator(annotation),
                                               ann -> ann.getType().isInstance(type) &&
                                                     ann != annotation &&
                                                     !ann.overlaps(annotation)))
-                      .orElse(Fragments.detachedEmptyAnnotation());
+                      .orElse(Fragments.orphanedAnnotation(type));
    }
 
 }//END OF AnnotationTree

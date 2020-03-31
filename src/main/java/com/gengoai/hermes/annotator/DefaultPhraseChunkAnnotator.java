@@ -25,14 +25,13 @@ import com.gengoai.Language;
 import com.gengoai.cache.Cache;
 import com.gengoai.hermes.AnnotatableType;
 import com.gengoai.hermes.Annotation;
+import com.gengoai.hermes.ResourceType;
 import com.gengoai.hermes.Types;
 import com.gengoai.hermes.ml.BIOTagger;
 
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Set;
-
-import static com.gengoai.hermes.Hermes.modelCache;
 
 /**
  * The type Default phrase chunk annotator.
@@ -41,7 +40,8 @@ import static com.gengoai.hermes.Hermes.modelCache;
  */
 public class DefaultPhraseChunkAnnotator extends SentenceLevelAnnotator implements Serializable {
    private static final long serialVersionUID = 1L;
-   private static final Cache<Language, BIOTagger> cache = modelCache("Annotation.PHRASE_CHUNK", "phrase_chunk");
+   private static final Cache<Language, BIOTagger> cache = ResourceType.MODEL.createCache("Annotation.PHRASE_CHUNK",
+                                                                                          "phrase_chunk");
 
    @Override
    public void annotate(Annotation sentence) {
@@ -49,13 +49,13 @@ public class DefaultPhraseChunkAnnotator extends SentenceLevelAnnotator implemen
    }
 
    @Override
-   public Set<AnnotatableType> satisfies() {
-      return Collections.singleton(Types.PHRASE_CHUNK);
+   protected Set<AnnotatableType> furtherRequires() {
+      return Collections.singleton(Types.PART_OF_SPEECH);
    }
 
    @Override
-   protected Set<AnnotatableType> furtherRequires() {
-      return Collections.singleton(Types.PART_OF_SPEECH);
+   public Set<AnnotatableType> satisfies() {
+      return Collections.singleton(Types.PHRASE_CHUNK);
    }
 
 }//END OF DefaultPhraseChunkAnnotator

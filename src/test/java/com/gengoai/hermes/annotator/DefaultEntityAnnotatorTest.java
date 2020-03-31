@@ -25,7 +25,7 @@ import com.gengoai.config.Config;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.Document;
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.ner.Entities;
+import com.gengoai.hermes.Entities;
 import org.junit.Test;
 
 import java.util.List;

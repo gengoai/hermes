@@ -35,6 +35,6 @@ public class UnicodeNormalizer extends TextNormalizer {
 
   @Override
   public String performNormalization(String input, Language inputLanguage) {
-    return Strings.toCanonicalForm(input);
+    return Strings.toCanonicalForm(input).replaceAll("[“”]", "\"");
   }
 }//END OF UnicodeNormalizer

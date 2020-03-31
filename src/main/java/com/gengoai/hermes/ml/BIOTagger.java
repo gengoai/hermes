@@ -36,20 +36,12 @@ import lombok.NonNull;
  *
  * @author David B. Bracewell
  */
-public class BIOTagger extends AnnotationTagger {
+public class BIOTagger extends SequenceTagger {
    private static final long serialVersionUID = 1L;
-   /**
-    * The Featurizer.
-    */
-   final FeatureExtractor<HString> featurizer;
    /**
     * The Annotation type.
     */
    final AnnotationType annotationType;
-   /**
-    * The Labeler.
-    */
-   final SequenceLabeler labeler;
 
    /**
     * Instantiates a new Bio tagger.
@@ -61,11 +53,9 @@ public class BIOTagger extends AnnotationTagger {
    public BIOTagger(@NonNull FeatureExtractor<HString> featurizer,
                     AnnotationType annotationType,
                     @NonNull SequenceLabeler labeler) {
-      this.featurizer = featurizer;
+      super(featurizer, labeler);
       this.annotationType = annotationType;
-      this.labeler = labeler;
    }
-
 
    /**
     * Tag labeling result.
@@ -79,8 +69,7 @@ public class BIOTagger extends AnnotationTagger {
       for(int i = 0; i < sentence.tokenLength(); ) {
          if(result.getLabel(i).equals("O")) {
             i++;
-         }
-         else {
+         } else {
             Annotation start = sentence.tokenAt(i);
             String type = result.getLabel(i).substring(2);
             double p = result.getScore(i);
@@ -93,9 +82,9 @@ public class BIOTagger extends AnnotationTagger {
             Annotation end = sentence.tokenAt(i - 1);
             HString span = start.union(end);
             Annotation entity = sentence.document()
-                  .annotationBuilder(annotationType)
-                  .bounds(span)
-                  .createAttached();
+                                        .annotationBuilder(annotationType)
+                                        .bounds(span)
+                                        .createAttached();
             entity.put(annotationType.getTagAttribute(),
                        annotationType.getTagAttribute().decode(type));
             entity.put(Types.CONFIDENCE, p);

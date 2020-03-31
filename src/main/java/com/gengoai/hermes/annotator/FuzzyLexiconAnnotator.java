@@ -198,7 +198,7 @@ public class FuzzyLexiconAnnotator extends ViterbiAnnotator {
 
          if (minDist <= maxDistance && bestCandidate != null) {
             String matchedString = Strings.join(bestCandidate, " ");
-            double score = lexicon.getProbability(Fragments.string(matchedString)) / (0.1 + minDist);
+            double score = lexicon.getProbability(Fragments.stringWrapper(matchedString)) / (0.1 + minDist);
             return new LexiconEntry(matchedString, score, lexicon.getTag(matchedString).orElse(null), null);
          }
 

@@ -22,10 +22,7 @@ package com.gengoai.hermes.format;
 import com.gengoai.specification.Specification;
 import lombok.NonNull;
 
-import java.util.Map;
-import java.util.ServiceLoader;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class DocFormatService {
@@ -61,16 +58,9 @@ public final class DocFormatService {
       return create(Specification.parse(specification));
    }
 
-   public static DocFormatParameters getDefaultDocFormatParameters(@NonNull String name) {
-      name = name.toUpperCase();
-      if(providerMap.containsKey(name)) {
-         return providerMap.get(name).getDefaultFormatParameters();
-      }
-      throw new IllegalArgumentException("Invalid DocFormat: '" + name + "'");
-   }
 
-   public static Set<String> getDocFormatNames() {
-      return new TreeSet<>(providerMap.keySet());
+   public static Collection<DocFormatProvider> getProviders(){
+      return Collections.unmodifiableCollection(providerMap.values());
    }
 
    public static DocFormatProvider getProvider(@NonNull String name) {

@@ -78,7 +78,6 @@ public class DefaultDependencyAnnotator extends SentenceLevelAnnotator {
       } catch(MaltChainedException e) {
          throw new RuntimeException(e);
       }
-      System.out.println();
    }
 
    @Override
@@ -90,8 +89,8 @@ public class DefaultDependencyAnnotator extends SentenceLevelAnnotator {
       if(!models.containsKey(language)) {
          synchronized(this) {
             if(!models.containsKey(language)) {
-               Resource r = Hermes.findModelResource("dependency", "Relation.DEPENDENCY", language)
-                                  .orElse(null);
+               Resource r = ResourceType.MODEL.locate("Relation.DEPENDENCY", "dependency", language)
+                                              .orElse(null);
                Exception thrownException = null;
                if(r != null && r.exists()) {
                   if(!(r instanceof FileResource)) {

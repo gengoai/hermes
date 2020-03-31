@@ -1,13 +1,23 @@
 package com.gengoai.hermes;
 
+import lombok.Data;
+import lombok.NonNull;
+
 import java.io.Serializable;
-import java.util.Objects;
 
 /**
- * The type Relation.
+ * <p>
+ * Relations provide a mechanism to link two Annotations.  Relations are directional, i.e. they have a source and a
+ * target, and form a directed graph between annotations on the document.  Relations can represent any type of link,
+ * but often represent syntactic (e.g. dependency relations), semantic (e.g. semantic roles), or pragmatic (e.g. dialog
+ * acts) information. Relations, like attributes, are stored as key value pairs with the key being the {@link
+ * RelationType}  and the value being a String representing the label. Relations are associated with individual
+ * annotations (i.e. tokens for dependency relations, entities for  co-reference).
+ * </p>
  *
  * @author David B. Bracewell
  */
+@Data
 public final class Relation implements Serializable {
    private static final long serialVersionUID = 1L;
    private final long target;
@@ -17,88 +27,27 @@ public final class Relation implements Serializable {
    /**
     * Instantiates a new Relation.
     *
-    * @param type   the type
-    * @param value  the value
-    * @param target the target
+    * @param type   the relation type
+    * @param value  the relation value
+    * @param target the id of the target relation
     */
-   public Relation(RelationType type, String value, long target) {
+   public Relation(@NonNull RelationType type, @NonNull String value, long target) {
       this.type = type;
       this.value = value;
       this.target = target;
    }
 
    /**
-    * Gets target.
+    * Gets the target of the relation.
     *
-    * @param hString the h string
-    * @return the target
+    * @param hString the HString to use identify the target annotation.
+    * @return the target annotation.
     */
-   public Annotation getTarget(HString hString) {
-      if (hString == null || hString.document() == null) {
-         return Fragments.detachedEmptyAnnotation();
+   public Annotation getTarget(@NonNull HString hString) {
+      if(hString == null || hString.document() == null) {
+         return Fragments.orphanedAnnotation(AnnotationType.ROOT);
       }
       return hString.document().annotation(target);
-   }
-
-   /**
-    * Gets target.
-    *
-    * @return the target
-    */
-   public long getTarget() {
-      return target;
-   }
-
-   /**
-    * Gets type.
-    *
-    * @return the type
-    */
-   public RelationType getType() {
-      return type;
-   }
-
-   /**
-    * Gets value.
-    *
-    * @return the value
-    */
-   public String getValue() {
-      return value;
-   }
-
-   /**
-    * Sets value.
-    *
-    * @param value the value
-    */
-   public void setValue(String value) {
-      this.value = value;
-   }
-
-
-   @Override
-   public String toString() {
-      return "Relation{" +
-                "target=" + target +
-                ", type=" + type +
-                ", value='" + value + '\'' +
-                '}';
-   }
-
-   @Override
-   public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof Relation)) return false;
-      Relation relation = (Relation) o;
-      return target == relation.target &&
-                Objects.equals(type, relation.type) &&
-                Objects.equals(value, relation.value);
-   }
-
-   @Override
-   public int hashCode() {
-      return Objects.hash(target, type, value);
    }
 
 }// END OF Relation

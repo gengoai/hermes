@@ -22,14 +22,19 @@
 package com.gengoai.hermes;
 
 import com.gengoai.graph.Edge;
-
-import java.util.Objects;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.Setter;
 
 /**
  * A specialized annotation graph edge that stores relation type and value.
  *
  * @author David B. Bracewell
  */
+@Getter
+@Setter
+@EqualsAndHashCode(callSuper = true)
 public class RelationEdge extends Edge<Annotation> {
    private static final long serialVersionUID = 1L;
    private String relation;
@@ -41,60 +46,8 @@ public class RelationEdge extends Edge<Annotation> {
     * @param source the source vertex
     * @param target the target vertex
     */
-   public RelationEdge(Annotation source, Annotation target) {
+   public RelationEdge(@NonNull Annotation source, @NonNull Annotation target) {
       super(source, target);
-   }
-
-   @Override
-   public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof RelationEdge)) return false;
-      RelationEdge that = (RelationEdge) o;
-      return Objects.equals(relation, that.relation) &&
-                Objects.equals(relationType, that.relationType) &&
-                Objects.equals(getFirstVertex(), that.getFirstVertex()) &&
-                Objects.equals(getSecondVertex(), that.getSecondVertex());
-   }
-
-   /**
-    * Gets relation.
-    *
-    * @return the relation
-    */
-   public String getRelation() {
-      return relation;
-   }
-
-   /**
-    * Sets relation.
-    *
-    * @param relation the relation
-    */
-   public void setRelation(String relation) {
-      this.relation = relation;
-   }
-
-   /**
-    * Gets relation type.
-    *
-    * @return the relation type
-    */
-   public RelationType getRelationType() {
-      return relationType;
-   }
-
-   /**
-    * Sets relation type.
-    *
-    * @param relationType the relation type
-    */
-   public void setRelationType(RelationType relationType) {
-      this.relationType = relationType;
-   }
-
-   @Override
-   public int hashCode() {
-      return Objects.hash(relation, relationType, getFirstVertex(), getSecondVertex());
    }
 
    @Override
@@ -105,10 +58,10 @@ public class RelationEdge extends Edge<Annotation> {
    @Override
    public String toString() {
       return "RelationEdge{" +
-                "vertex1=" + vertex1 +
-                ", vertex2=" + vertex2 +
-                ", relation='" + relation + '\'' +
-                ", relationType=" + relationType +
-                '}';
+            "vertex1=" + vertex1 +
+            ", vertex2=" + vertex2 +
+            ", relation='" + relation + '\'' +
+            ", relationType=" + relationType +
+            '}';
    }
 }//END OF RelationEdge

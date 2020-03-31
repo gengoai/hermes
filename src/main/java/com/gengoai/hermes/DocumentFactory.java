@@ -26,61 +26,59 @@ import com.gengoai.collection.tree.Span;
 import com.gengoai.hermes.preprocessing.TextNormalization;
 import com.gengoai.hermes.preprocessing.TextNormalizer;
 import com.gengoai.string.Strings;
-import lombok.Builder;
+import lombok.Getter;
+import lombok.NonNull;
 
 import java.io.Serializable;
 import java.util.*;
 
 /**
- * <p>A document factory facilitates the creation of  document objects. It handles performing any predefined
- * preprocessing and helps in determining the type of document being read. A default factory can be obtained by calling
- * {@link #getInstance()} or a factory can be built using a {@link Builder} constructed using {@link #builder()}.
+ * <p>A document factory facilitates the creation of  document objects performing any predefined preprocessing, e.g.
+ * whitespace normalization, on the document content. A default factory can be obtained by calling
+ * {@link #getInstance()} or a factory can be built using a {@link DocumentFactoryBuilder} constructed using {@link
+ * #builder()}.
  * </p>
  * <p>
  * The default factory uses configuration settings to determine the default language and preprocessing normalizers. The
- * default language is defined using the <code>com.gengoai.hermes.DefaultLanguage</code> configuration property and the normalizers
- * are defined using the <code>com.gengoai.hermes.preprocessing.normalizers</code> configuration property.
+ * default language is defined using the <code>com.gengoai.hermes.DefaultLanguage</code> configuration property and the
+ * normalizers are defined using the <code>com.gengoai.hermes.preprocessing.normalizers</code> configuration property.
  * </p>
  *
  * @author David B. Bracewell
  */
 public final class DocumentFactory implements Serializable {
    private static final long serialVersionUID = 1L;
-
    private static volatile DocumentFactory CONFIGURED_INSTANCE;
+   @Getter
    private final Language defaultLanguage;
    private final TextNormalization normalizer;
-
 
    private DocumentFactory() {
       this.normalizer = TextNormalization.configuredInstance();
       this.defaultLanguage = Hermes.defaultLanguage();
    }
 
-
    private DocumentFactory(Set<? extends TextNormalizer> normalizers, Language defaultLanguage) {
       this.normalizer = TextNormalization.createInstance(normalizers);
-      this.defaultLanguage = (defaultLanguage == null) ? Hermes.defaultLanguage() : defaultLanguage;
+      this.defaultLanguage = (defaultLanguage == null)
+                             ? Hermes.defaultLanguage()
+                             : defaultLanguage;
    }
 
    /**
-    * Builder document factory builder.
-    *
-    * @return the document factory builder
+    * @return a document factory builder
     */
    public static DocumentFactoryBuilder builder() {
       return new DocumentFactoryBuilder();
    }
 
    /**
-    * Gets instance of the document factory configured using configuration settings.
-    *
-    * @return A document factory whose preprocessors are set via configuration options
+    * @return A document factory whose preprocessors and default language are set via configuration options
     */
    public static DocumentFactory getInstance() {
-      if (CONFIGURED_INSTANCE == null) {
-         synchronized (DocumentFactory.class) {
-            if (CONFIGURED_INSTANCE == null) {
+      if(CONFIGURED_INSTANCE == null) {
+         synchronized(DocumentFactory.class) {
+            if(CONFIGURED_INSTANCE == null) {
                CONFIGURED_INSTANCE = new DocumentFactory();
             }
          }
@@ -89,34 +87,36 @@ public final class DocumentFactory implements Serializable {
    }
 
    /**
-    * Creates a document with the given content.
+    * Creates a document with the given content assigning the new document an auto-generated id and setting its language
+    * to the default language.
     *
-    * @param content the content
+    * @param content the document content
     * @return the document
     */
-   public Document create(String content) {
+   public Document create(@NonNull String content) {
       return create(Strings.EMPTY, content, defaultLanguage, Collections.emptyMap());
    }
 
    /**
-    * Creates a document with the given id and content
+    * Creates a document with the given id and content setting its language to the default language.
     *
     * @param id      the id
     * @param content the content
     * @return the document
     */
-   public Document create(String id, String content) {
+   public Document create(@NonNull String id, @NonNull String content) {
       return create(id, content, defaultLanguage, Collections.emptyMap());
    }
 
    /**
-    * Creates a document with the given content written in the given language.
+    * Creates a document with the given content written in the given language assigning the new document an
+    * auto-generated id .
     *
     * @param content  the content
     * @param language the language
     * @return the document
     */
-   public Document create(String content, Language language) {
+   public Document create(@NonNull String content, @NonNull Language language) {
       return create(Strings.EMPTY, content, language, Collections.emptyMap());
    }
 
@@ -128,7 +128,7 @@ public final class DocumentFactory implements Serializable {
     * @param language the language
     * @return the document
     */
-   public Document create(String id, String content, Language language) {
+   public Document create(@NonNull String id, @NonNull String content, @NonNull Language language) {
       return create(id, content, language, Collections.emptyMap());
    }
 
@@ -140,8 +140,10 @@ public final class DocumentFactory implements Serializable {
     * @param attributeMap the attribute map
     * @return the document
     */
-   public Document create(String content, Language language, Map<AttributeType<?>, ?> attributeMap) {
-      return create("", content, language, attributeMap);
+   public Document create(@NonNull String content,
+                          @NonNull Language language,
+                          @NonNull Map<AttributeType<?>, ?> attributeMap) {
+      return create(Strings.EMPTY, content, language, attributeMap);
    }
 
    /**
@@ -154,7 +156,10 @@ public final class DocumentFactory implements Serializable {
     * @param attributeMap the attribute map
     * @return the document
     */
-   public Document create(String id, String content, Language language, Map<AttributeType<?>, ?> attributeMap) {
+   public Document create(@NonNull String id,
+                          @NonNull String content,
+                          @NonNull Language language,
+                          @NonNull Map<AttributeType<?>, ?> attributeMap) {
       Document document = new DefaultDocumentImpl(id, normalizer.normalize(content, language), language);
       document.putAll(attributeMap);
       document.setLanguage(language);
@@ -171,7 +176,10 @@ public final class DocumentFactory implements Serializable {
     * @param attributeMap the attribute map
     * @return the document
     */
-   public Document createRaw(String id, String content, Language language, Map<AttributeType<?>, ?> attributeMap) {
+   public Document createRaw(@NonNull String id,
+                             @NonNull String content,
+                             @NonNull Language language,
+                             @NonNull Map<AttributeType<?>, ?> attributeMap) {
       Document document = new DefaultDocumentImpl(id, content, language);
       document.putAll(attributeMap);
       document.setLanguage(language);
@@ -185,7 +193,7 @@ public final class DocumentFactory implements Serializable {
     * @param content the content
     * @return the document
     */
-   public Document createRaw(String content) {
+   public Document createRaw(@NonNull String content) {
       return createRaw(Strings.EMPTY, content, defaultLanguage, Collections.emptyMap());
    }
 
@@ -197,7 +205,7 @@ public final class DocumentFactory implements Serializable {
     * @param content the content
     * @return the document
     */
-   public Document createRaw(String id, String content) {
+   public Document createRaw(@NonNull String id, @NonNull String content) {
       return createRaw(id, content, defaultLanguage, Collections.emptyMap());
    }
 
@@ -209,8 +217,8 @@ public final class DocumentFactory implements Serializable {
     * @param language the language
     * @return the document
     */
-   public Document createRaw(String content, Language language) {
-      return createRaw("", content, language, Collections.emptyMap());
+   public Document createRaw(@NonNull String content, @NonNull Language language) {
+      return createRaw(Strings.EMPTY, content, language, Collections.emptyMap());
    }
 
    /**
@@ -222,7 +230,7 @@ public final class DocumentFactory implements Serializable {
     * @param language the language
     * @return the document
     */
-   public Document createRaw(String id, String content, Language language) {
+   public Document createRaw(@NonNull String id, @NonNull String content, @NonNull Language language) {
       return createRaw(id, content, language, Collections.emptyMap());
    }
 
@@ -235,8 +243,10 @@ public final class DocumentFactory implements Serializable {
     * @param attributeMap the attribute map
     * @return the document
     */
-   public Document createRaw(String content, Language language, Map<AttributeType<?>, ?> attributeMap) {
-      return createRaw("", content, language, attributeMap);
+   public Document createRaw(@NonNull String content,
+                             @NonNull Language language,
+                             @NonNull Map<AttributeType<?>, ?> attributeMap) {
+      return createRaw(Strings.EMPTY, content, language, attributeMap);
    }
 
    /**
@@ -248,7 +258,7 @@ public final class DocumentFactory implements Serializable {
     * @param tokens   the tokens making up the document
     * @return the document with tokens provided.
     */
-   public Document fromTokens(Language language, String... tokens) {
+   public Document fromTokens(@NonNull Language language, @NonNull String... tokens) {
       return fromTokens(Arrays.asList(tokens), language);
    }
 
@@ -258,7 +268,7 @@ public final class DocumentFactory implements Serializable {
     * @param tokens the tokens
     * @return the document
     */
-   public Document fromTokens(String... tokens) {
+   public Document fromTokens(@NonNull String... tokens) {
       return fromTokens(Arrays.asList(tokens), getDefaultLanguage());
    }
 
@@ -268,7 +278,7 @@ public final class DocumentFactory implements Serializable {
     * @param tokens the tokens
     * @return the document
     */
-   public Document fromTokens(Iterable<String> tokens) {
+   public Document fromTokens(@NonNull Iterable<String> tokens) {
       return fromTokens(tokens, getDefaultLanguage());
    }
 
@@ -281,33 +291,24 @@ public final class DocumentFactory implements Serializable {
     * @param language the language
     * @return the document
     */
-   public Document fromTokens(Iterable<String> tokens, Language language) {
+   public Document fromTokens(@NonNull Iterable<String> tokens, @NonNull Language language) {
       StringBuilder content = new StringBuilder();
       List<Span> tokenSpans = new ArrayList<>();
-      for (String token : tokens) {
+      for(String token : tokens) {
          tokenSpans.add(Span.of(content.length(), content.length() + token.length()));
          content.append(token);
-         if (language.usesWhitespace()) {
+         if(language.usesWhitespace()) {
             content.append(" ");
          }
       }
       Document doc = new DefaultDocumentImpl(null, content.toString().trim(), defaultLanguage);
-      for (int idx = 0; idx < tokenSpans.size(); idx++) {
+      for(int idx = 0; idx < tokenSpans.size(); idx++) {
          doc.annotationBuilder(Types.TOKEN)
             .bounds(tokenSpans.get(idx))
             .attribute(Types.INDEX, idx).createAttached();
       }
       doc.setCompleted(Types.TOKEN, "PROVIDED");
       return doc;
-   }
-
-   /**
-    * Gets the default language of the document factory.
-    *
-    * @return the default language
-    */
-   public Language getDefaultLanguage() {
-      return defaultLanguage;
    }
 
    /**

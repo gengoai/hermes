@@ -25,7 +25,7 @@ import com.gengoai.apollo.ml.sequence.Labeling;
 import com.gengoai.apollo.ml.sequence.SequenceLabeler;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.HString;
-import com.gengoai.hermes.POS;
+import com.gengoai.hermes.morphology.POS;
 import com.gengoai.hermes.Types;
 import lombok.NonNull;
 
@@ -36,11 +36,9 @@ import java.util.regex.Pattern;
  *
  * @author David B. Bracewell
  */
-public class POSTagger extends AnnotationTagger {
+public class POSTagger extends SequenceTagger {
    private static final long serialVersionUID = 1L;
    private static final Pattern ORDINAL = Pattern.compile("^\\d+(rd|th|st|nd)$", Pattern.CASE_INSENSITIVE);
-   final FeatureExtractor<HString> featurizer;
-   final SequenceLabeler labeler;
 
    /**
     * Instantiates a new Pos tagger.
@@ -49,12 +47,7 @@ public class POSTagger extends AnnotationTagger {
     * @param labeler    the labeler
     */
    public POSTagger(@NonNull FeatureExtractor<HString> featurizer, @NonNull SequenceLabeler labeler) {
-      this.featurizer = featurizer;
-      this.labeler = labeler;
-   }
-
-   public SequenceLabeler getSequenceLabeler() {
-      return labeler;
+      super(featurizer, labeler);
    }
 
    @Override

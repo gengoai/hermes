@@ -39,6 +39,7 @@ import com.gengoai.hermes.lexicon.LexiconManager;
 import com.gengoai.hermes.lexicon.SimpleWordList;
 import com.gengoai.hermes.lexicon.WordList;
 import com.gengoai.hermes.ml.feature.ValueCalculator;
+import com.gengoai.hermes.morphology.POS;
 import com.gengoai.hermes.morphology.StopWords;
 import com.gengoai.math.NumericComparison;
 import com.gengoai.reflection.TypeUtils;
@@ -352,24 +353,6 @@ public final class LyreDSL {
                                 o -> list.applyAsList(o).stream().allMatch(predicate::testObject));
    }
 
-
-   /**
-    * Returns <b>true</b> if none of the items in the given list evaluates to *true* for the given predicate expression.
-    * <pre>
-    *    usage: none( list_expression, predicate_expression )
-    *    e.g.: none( @TOKEN, #VERB ) -- returns true if none of the tokens on the current HString is a verb
-    * </pre>
-    *
-    * @param list      the list of items to apply the predicate to
-    * @param predicate the predicate to use for testing
-    * @return the LyreExpression
-    */
-   public static LyreExpression none(@NonNull LyreExpression list, @NonNull LyreExpression predicate) {
-      return new LyreExpression(formatMethod("none", list, predicate),
-                                PREDICATE,
-                                o -> list.applyAsList(o).stream().noneMatch(predicate::testObject));
-   }
-
    /**
     * Returns true when the left-hand and right-hand expressions evaluate to true
     * <pre>
@@ -385,6 +368,31 @@ public final class LyreDSL {
       return new LyreExpression(String.format("%s && %s", left, right),
                                 PREDICATE,
                                 o -> left.testObject(o) && right.testObject(o));
+   }
+
+   /**
+    * Sequentially processes each expression with the output of the previous expression or the input object for the
+    * first expression.
+    * <pre>
+    *    Usage: expression1 &> expression2 &> ... &> expression
+    * </pre>
+    *
+    * @param expressions The expressions to chain together.
+    * @return the lyre expression
+    */
+   public static LyreExpression andPipe(@NonNull LyreExpression... expressions) {
+      Validation.checkArgument(expressions.length > 1);
+      return new LyreExpression(Stream.of(expressions)
+                                      .map(Object::toString)
+                                      .collect(Collectors.joining(" &> ")),
+                                LyreExpressionType.determineCommonType(Arrays.asList(expressions)),
+                                o -> {
+                                   Object out = o;
+                                   for(LyreExpression expression : expressions) {
+                                      out = expression.applyAsObject(out);
+                                   }
+                                   return out;
+                                });
    }
 
    /**
@@ -485,7 +493,6 @@ public final class LyreDSL {
                                 PREDICATE,
                                 o -> list.applyAsList(o).stream().anyMatch(predicate::testObject));
    }
-
 
    /**
     * Applies the right-hand expression on the object resulting from the left-hand expression.
@@ -690,62 +697,6 @@ public final class LyreDSL {
       }
 
       return false;
-   }
-
-   /**
-    * The plus operator can be used to concatenate strings, perform addition on numeric values, or append to a list.
-    *
-    * @param expressions the expressions to concatenate
-    * @return the LyreExpression
-    */
-   public static LyreExpression plus(@NonNull LyreExpression... expressions) {
-      Validation.checkArgument(expressions.length > 1, "Must concatenate two or more expressions");
-      LyreExpression toReturn = plus(expressions[0], expressions[1]);
-      for(int i = 2; i < expressions.length; i++) {
-         toReturn = plus(toReturn, expressions[i]);
-      }
-      return toReturn;
-   }
-
-   /**
-    * The plus operator can be used to concatenate strings, perform addition on numeric values, or append to a list.
-    *
-    * @param left  the left expression to concatenate
-    * @param right the right  expression to concatenate
-    * @return the LyreExpression
-    */
-   public static LyreExpression plus(@NonNull LyreExpression left, @NonNull LyreExpression right) {
-      return new LyreExpression(String.format("(%s + %s)", left, right),
-                                LyreExpressionType.determineCommonType(Arrays.asList(left, right)),
-                                o -> {
-                                   Object l = left.applyAsObject(o);
-                                   Object r = right.applyAsObject(o);
-                                   if(l instanceof Collection<?>) {
-                                      List<?> list = new ArrayList<>(Cast.as(l));
-                                      if(r instanceof Collection<?>) {
-                                         list.addAll(Cast.as(r));
-                                      } else if(r != null) {
-                                         list.add(Cast.as(r));
-                                      }
-                                      return list;
-                                   }
-                                   if(r instanceof Collection && l == null) {
-                                      return r;
-                                   }
-                                   if(l instanceof HString && r instanceof HString) {
-                                      return toHString(l).union(toHString(r));
-                                   }
-                                   if(l instanceof Number && r instanceof Number) {
-                                      return Cast.<Number>as(l).doubleValue() + Cast.<Number>as(r).doubleValue();
-                                   } else if(l == null && r == null) {
-                                      return Collections.emptyList();
-                                   } else if(l == null) {
-                                      return r;
-                                   } else if(r == null) {
-                                      return l;
-                                   }
-                                   return l.toString() + r.toString();
-                                });
    }
 
    /**
@@ -1667,6 +1618,22 @@ public final class LyreDSL {
                                                               .orElse(false)));
    }
 
+   private static boolean isNullOrEmpty(Object o) {
+      if(o == null) {
+         return true;
+      }
+      if(o instanceof Collection) {
+         return Cast.<Collection<?>>as(o).isEmpty();
+      }
+      if(o instanceof CharSequence) {
+         return Strings.isNullOrBlank(o.toString());
+      }
+      if(o instanceof Number) {
+         return Double.isFinite(Cast.<Number>as(o).doubleValue());
+      }
+      return false;
+   }
+
    /**
     * Predicate checking if the HString returned from the given expression is all punctuation
     * <pre>
@@ -1735,7 +1702,6 @@ public final class LyreDSL {
                                                               .map(Strings::isUpperCase)
                                                               .orElse(false)));
    }
-
 
    /**
     * Predicate checking if the HString returned from the given expression is all whitespace
@@ -1934,7 +1900,6 @@ public final class LyreDSL {
    public static LyreExpression literal(@NonNull String value) {
       return new LyreExpression(String.format("'%s'", value), STRING, o -> value);
    }
-
 
    /**
     * Convenience method for constructing an array (list) of literal values.
@@ -2300,12 +2265,30 @@ public final class LyreDSL {
       return new LyreExpression(String.format("(?!< %s) %s", condition, expression),
                                 PREDICATE,
                                 o -> {
-                                   HString hString = toHString(o).previous(Types.TOKEN);
+                                   HString $ = expression.applyAsHString(toHString(o));
+                                   HString hString = $.previous(Types.TOKEN);
                                    if(!condition.test(hString)) {
-                                      return expression.applyAsObject(o);
+                                      return $;
                                    }
                                    return null;
                                 });
+   }
+
+   /**
+    * Returns <b>true</b> if none of the items in the given list evaluates to *true* for the given predicate expression.
+    * <pre>
+    *    usage: none( list_expression, predicate_expression )
+    *    e.g.: none( @TOKEN, #VERB ) -- returns true if none of the tokens on the current HString is a verb
+    * </pre>
+    *
+    * @param list      the list of items to apply the predicate to
+    * @param predicate the predicate to use for testing
+    * @return the LyreExpression
+    */
+   public static LyreExpression none(@NonNull LyreExpression list, @NonNull LyreExpression predicate) {
+      return new LyreExpression(formatMethod("none", list, predicate),
+                                PREDICATE,
+                                o -> list.applyAsList(o).stream().noneMatch(predicate::testObject));
    }
 
    /**
@@ -2381,22 +2364,6 @@ public final class LyreDSL {
                                 o -> left.testObject(o) || right.testObject(o));
    }
 
-   private static boolean isNullOrEmpty(Object o) {
-      if(o == null) {
-         return true;
-      }
-      if(o instanceof Collection) {
-         return Cast.<Collection<?>>as(o).isEmpty();
-      }
-      if(o instanceof CharSequence) {
-         return Strings.isNullOrBlank(o.toString());
-      }
-      if(o instanceof Number) {
-         return Double.isFinite(Cast.<Number>as(o).doubleValue());
-      }
-      return false;
-   }
-
    /**
     * Sequentially processes each expression with the input object, returning the result of the first expression that
     * evaluates to a non-null, non-empty list, or finite numeric value.
@@ -2425,27 +2392,58 @@ public final class LyreDSL {
    }
 
    /**
-    * Sequentially processes each expression with the output of the previous expression or the input object for the
-    * first expression.
-    * <pre>
-    *    Usage: expression1 &> expression2 &> ... &> expression
-    * </pre>
+    * The plus operator can be used to concatenate strings, perform addition on numeric values, or append to a list.
     *
-    * @param expressions The expressions to chain together.
-    * @return the lyre expression
+    * @param expressions the expressions to concatenate
+    * @return the LyreExpression
     */
-   public static LyreExpression andPipe(@NonNull LyreExpression... expressions) {
-      Validation.checkArgument(expressions.length > 1);
-      return new LyreExpression(Stream.of(expressions)
-                                      .map(Object::toString)
-                                      .collect(Collectors.joining(" &> ")),
-                                LyreExpressionType.determineCommonType(Arrays.asList(expressions)),
+   public static LyreExpression plus(@NonNull LyreExpression... expressions) {
+      Validation.checkArgument(expressions.length > 1, "Must concatenate two or more expressions");
+      LyreExpression toReturn = plus(expressions[0], expressions[1]);
+      for(int i = 2; i < expressions.length; i++) {
+         toReturn = plus(toReturn, expressions[i]);
+      }
+      return toReturn;
+   }
+
+   /**
+    * The plus operator can be used to concatenate strings, perform addition on numeric values, or append to a list.
+    *
+    * @param left  the left expression to concatenate
+    * @param right the right  expression to concatenate
+    * @return the LyreExpression
+    */
+   public static LyreExpression plus(@NonNull LyreExpression left, @NonNull LyreExpression right) {
+      return new LyreExpression(String.format("(%s + %s)", left, right),
+                                LyreExpressionType.determineCommonType(Arrays.asList(left, right)),
                                 o -> {
-                                   Object out = o;
-                                   for(LyreExpression expression : expressions) {
-                                      out = expression.applyAsObject(out);
+                                   Object l = left.applyAsObject(o);
+                                   Object r = right.applyAsObject(o);
+                                   if(l instanceof Collection<?>) {
+                                      List<?> list = new ArrayList<>(Cast.as(l));
+                                      if(r instanceof Collection<?>) {
+                                         list.addAll(Cast.as(r));
+                                      } else if(r != null) {
+                                         list.add(Cast.as(r));
+                                      }
+                                      return list;
                                    }
-                                   return out;
+                                   if(r instanceof Collection && l == null) {
+                                      return r;
+                                   }
+                                   if(l instanceof HString && r instanceof HString) {
+                                      return toHString(l).union(toHString(r));
+                                   }
+                                   if(l instanceof Number && r instanceof Number) {
+                                      return Cast.<Number>as(l).doubleValue() + Cast.<Number>as(r).doubleValue();
+                                   } else if(l == null && r == null) {
+                                      return Collections.emptyList();
+                                   } else if(l == null) {
+                                      return r;
+                                   } else if(r == null) {
+                                      return l;
+                                   }
+                                   return l.toString() + r.toString();
                                 });
    }
 

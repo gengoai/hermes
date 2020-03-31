@@ -26,10 +26,7 @@ import com.gengoai.hermes.Document;
 import com.gengoai.hermes.DocumentFactory;
 import com.gengoai.hermes.Types;
 import com.gengoai.hermes.annotator.BaseWordCategorization;
-import com.gengoai.hermes.corpus.io.CoNLLColumnProcessor;
-import com.gengoai.hermes.corpus.io.CoNLLRow;
 import com.gengoai.io.resource.Resource;
-import com.gengoai.stream.StreamingContext;
 import com.gengoai.string.Strings;
 import com.gengoai.tuple.Tuple2;
 import lombok.NonNull;
@@ -37,6 +34,7 @@ import org.kohsuke.MetaInfServices;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -44,7 +42,7 @@ import static com.gengoai.collection.Maps.hashMapOf;
 import static com.gengoai.reflection.TypeUtils.parameterizedType;
 import static com.gengoai.tuple.Tuples.$;
 
-public class CoNLLFormat extends OneDocPerFileFormat {
+public class CoNLLFormat extends WholeFileTextFormat implements OneDocPerFileFormat, Serializable {
    private static final long serialVersionUID = 1L;
    /**
     * True create a document per sentence, False multiple sentences per document
@@ -112,7 +110,13 @@ public class CoNLLFormat extends OneDocPerFileFormat {
       return document;
    }
 
-   private Stream<Document> processFile(String file) {
+   @Override
+   public DocFormatParameters getParameters() {
+      return parameters;
+   }
+
+   @Override
+   protected Stream<Document> readSingleFile(String file) {
       List<Document> documents = new LinkedList<>();
       List<CoNLLRow> list = new ArrayList<>();
       int sentenceIndex = 0;
@@ -122,7 +126,7 @@ public class CoNLLFormat extends OneDocPerFileFormat {
       final List<CoNLLColumnProcessor> processors = CoNLLProcessors.get(parameters.fields.value());
       final String FS = parameters.fieldSeparator.value();
       final boolean oneDocumentPerSentence = parameters.docPerSentence.value();
-      final DocumentFactory documentFactory = parameters.documentFactory.value();
+      final DocumentFactory documentFactory = parameters.getDocumentFactory();
 
       final String resource = file.strip();
       for(String line : resource.split("\\r?\\n")) {
@@ -157,15 +161,6 @@ public class CoNLLFormat extends OneDocPerFileFormat {
          documents.add(createDocument(content.toString(), list, documentFactory));
       }
       return documents.stream();
-   }
-
-   @Override
-   public Iterator<Document> read(Resource inputResource) {
-      return StreamingContext.local()
-                             .textFile(inputResource, true)
-                             .flatMap(this::processFile)
-                             .iterator();
-
    }
 
    @Override

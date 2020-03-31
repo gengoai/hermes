@@ -22,7 +22,7 @@ package com.gengoai.hermes.en;
 import com.gengoai.apollo.ml.Example;
 import com.gengoai.apollo.ml.Feature;
 import com.gengoai.apollo.ml.sequence.SequenceValidator;
-import com.gengoai.hermes.POS;
+import com.gengoai.hermes.morphology.POS;
 import com.gengoai.string.StringMatcher;
 import com.gengoai.string.Strings;
 

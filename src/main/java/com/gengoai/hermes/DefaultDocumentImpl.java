@@ -175,15 +175,6 @@ class DefaultDocumentImpl extends BaseHString implements Document {
    }
 
    @Override
-   public void setId(String id) {
-      if(Strings.isNullOrBlank(id)) {
-         this.id = UUID.randomUUID().toString();
-      } else {
-         this.id = id;
-      }
-   }
-
-   @Override
    public boolean isCompleted(AnnotatableType type) {
       return annotationSet.isCompleted(type);
    }
@@ -214,8 +205,17 @@ class DefaultDocumentImpl extends BaseHString implements Document {
    }
 
    @Override
-   public void setCompleted(@NonNull AnnotatableType type, @NonNull String annotatorInformation) {
-      annotationSet.setIsCompleted(type, true, annotatorInformation);
+   public void setCompleted(@NonNull AnnotatableType type, @NonNull String provider) {
+      annotationSet.setIsCompleted(type, true, provider);
+   }
+
+   @Override
+   public void setId(String id) {
+      if(Strings.isNullOrBlank(id)) {
+         this.id = UUID.randomUUID().toString();
+      } else {
+         this.id = id;
+      }
    }
 
    @Override
@@ -239,6 +239,5 @@ class DefaultDocumentImpl extends BaseHString implements Document {
       }
       return tokens;
    }
-
 
 }//END OF InMemoryDocument

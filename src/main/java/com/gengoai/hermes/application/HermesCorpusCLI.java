@@ -24,7 +24,6 @@ package com.gengoai.hermes.application;
 
 import com.gengoai.application.Option;
 import com.gengoai.hermes.corpus.Corpus;
-import com.gengoai.hermes.corpus.CorpusIOService;
 import com.gengoai.specification.Specification;
 import lombok.NonNull;
 
@@ -71,7 +70,6 @@ public abstract class HermesCorpusCLI extends HermesCLI {
       super(applicationName);
    }
 
-
    /**
     * Creates a corpus based on the command line parameters.
     *
@@ -79,11 +77,11 @@ public abstract class HermesCorpusCLI extends HermesCLI {
     * @throws IOException the io exception
     */
    public Corpus getCorpus() throws IOException {
-      return Corpus.read(input);
+      return null;//Corpus.read(input);
    }
 
    public Specification getInputSpecification() {
-      return CorpusIOService.parseCorpusSpecification(input);
+      return null; //CorpusIOService.parseCorpusSpecification(input);
    }
 
    /**
@@ -92,10 +90,11 @@ public abstract class HermesCorpusCLI extends HermesCLI {
     * @return the output location
     */
    public Specification getOutputSpecification() {
-      if (output == null) {
+      if(output == null) {
          return null;
       }
-      return CorpusIOService.parseCorpusSpecification(output);
+      return null;
+//      return CorpusIOService.parseCorpusSpecification(output);
    }
 
    /**
@@ -105,7 +104,7 @@ public abstract class HermesCorpusCLI extends HermesCLI {
     * @throws IOException Something went wrong writing the corpus
     */
    public void writeCorpus(@NonNull Corpus corpus) throws IOException {
-      corpus.write(output);
+      //corpus.write(output);
    }
 
 }//END OF HermesCommandLineApp

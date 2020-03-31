@@ -35,15 +35,25 @@ import java.util.Collection;
  */
 @JsonHandler(value = AnnotatableType.Marshaller.class, isHierarchical = false)
 public final class RelationType extends EnumValue implements AnnotatableType {
+   private static final Registry<RelationType> registry = new Registry<>(RelationType::new, RelationType.class);
+   private static final long serialVersionUID = 1L;
    /**
     * The constant TYPE.
     */
    public static final String TYPE = "Relation";
-   private static final Registry<RelationType> registry = new Registry<>(RelationType::new, RelationType.class);
-   private static final long serialVersionUID = 1L;
 
    private RelationType(String name) {
       super(name);
+   }
+
+   /**
+    * Is defined boolean.
+    *
+    * @param name the name
+    * @return the boolean
+    */
+   public static boolean isDefined(String name) {
+      return registry.contains(name);
    }
 
    /**
@@ -57,13 +67,13 @@ public final class RelationType extends EnumValue implements AnnotatableType {
    }
 
    /**
-    * Is defined boolean.
+    * Value of relation type.
     *
     * @param name the name
-    * @return the boolean
+    * @return the relation type
     */
-   public static boolean isDefined(String name) {
-      return registry.contains(name);
+   public static RelationType valueOf(String name) {
+      return registry.valueOf(name);
    }
 
    /**
@@ -83,16 +93,6 @@ public final class RelationType extends EnumValue implements AnnotatableType {
    @Override
    public String type() {
       return TYPE;
-   }
-
-   /**
-    * Value of relation type.
-    *
-    * @param name the name
-    * @return the relation type
-    */
-   public static RelationType valueOf(String name) {
-      return registry.valueOf(name);
    }
 
 }//END OF RelationType

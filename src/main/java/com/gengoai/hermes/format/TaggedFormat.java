@@ -25,21 +25,22 @@ import com.gengoai.conversion.Val;
 import com.gengoai.hermes.*;
 import com.gengoai.hermes.annotator.BaseWordCategorization;
 import com.gengoai.io.resource.Resource;
-import com.gengoai.stream.StreamingContext;
 import lombok.NonNull;
 import org.kohsuke.MetaInfServices;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static com.gengoai.collection.Maps.hashMapOf;
 import static com.gengoai.tuple.Tuples.$;
 
-public class TaggedFormat extends OneDocPerFileFormat {
+public class TaggedFormat extends WholeFileTextFormat implements OneDocPerFileFormat, Serializable {
+   private static final long serialVersionUID = 1L;
    private static final Pattern TAG_PATTERN = Pattern.compile("<([a-z_]+)>([^<>]+)</\\1>", Pattern.CASE_INSENSITIVE);
    /**
     * The constant ANNOTATION_TYPE.
@@ -52,8 +53,13 @@ public class TaggedFormat extends OneDocPerFileFormat {
       this.parameters = parameters;
    }
 
-   private Document processFile(String content) {
-      DocumentFactory documentFactory = parameters.documentFactory.value();
+   @Override
+   public DocFormatParameters getParameters() {
+      return parameters;
+   }
+
+   protected Stream<Document> readSingleFile(String content) {
+      DocumentFactory documentFactory = parameters.getDocumentFactory();
       final AnnotationType annotationType = parameters.annotationType.value();
       int last = 0;
       List<Integer> startPositions = new ArrayList<>();
@@ -85,15 +91,7 @@ public class TaggedFormat extends OneDocPerFileFormat {
                                   );
       }
       BaseWordCategorization.INSTANCE.categorize(document);
-      return document;
-   }
-
-   @Override
-   public Iterator<Document> read(Resource inputResource) {
-      return StreamingContext.local()
-                             .textFile(inputResource, true)
-                             .map(this::processFile)
-                             .iterator();
+      return Stream.of(document);
    }
 
    @Override

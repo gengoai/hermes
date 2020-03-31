@@ -28,6 +28,7 @@ import com.gengoai.conversion.TypeConversionException;
 import com.gengoai.function.SerializableBiFunction;
 import com.gengoai.hermes.*;
 import com.gengoai.hermes.lexicon.LexiconManager;
+import com.gengoai.hermes.morphology.POS;
 import com.gengoai.hermes.morphology.StopWords;
 import com.gengoai.hermes.morphology.TokenType;
 import com.gengoai.math.NumericComparison;

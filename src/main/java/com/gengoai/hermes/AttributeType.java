@@ -34,10 +34,24 @@ import java.lang.reflect.Type;
 import java.util.Collection;
 
 /**
- * <p> An <code>Attribute</code> represents a name and value type. Attributes are crated via the {@link
- * #make(String)} or the {@link #make(String, Type)} static methods. The value type of an attribute is
- * either defined via the create method or via a config parameter (<pre>{@code Attribute.AttributeName =
- * VALUE_TYPE}***</pre>). Attributes that do not have a defined type default to being Object types.</p>
+ * <p>
+ * An AttributeType defines a named Attribute that can be added to an HString. Each AttributeType has an associated
+ * value type which defines the class of value that the attribute accepts and is specified using Java Generics as
+ * follows:
+ * </p>
+ * <pre>
+ * {@code
+ *    AttributeType<String> AUTHOR = AttributeType.make("AUTHOR", String.class);
+ *    AttributeType<Set<BasicCategories>> CATEGORIES = AttributeType.make("CATEGORIES",
+ *    parameterizedType(Set.class,BasicCategories.class))
+ * }
+ * </pre>
+ * <p>
+ * Annotating for AttributeType adds the attribute and value to an annotation or document. For example, when annotating
+ * for the AttributeType PART_OF_SPEECH, each token annotation has a POS value set for its PART_OF_SPEECH attribute of.
+ * Many AnnotationType will include attributes when being annotated, e.g. token annotations provide TOKEN_TYPE and
+ * CATEGORY attributes.
+ * </p>
  *
  * <p> Attribute names are normalized, so that an Attribute created with the name <code>partofspeech</code> and one
  * created with the name <code>PartOfSpeech</code> are equal (see {@link EnumValue} for normalization information).</p>
@@ -50,7 +64,7 @@ public final class AttributeType<T> extends EnumValue<AttributeType> implements 
    private static final Registry<AttributeType> registry = new Registry<>(AttributeType::new, AttributeType.class);
    private static final long serialVersionUID = 1L;
    /**
-    * Type information for AnnotatableType
+    * Type information for AttributeType
     */
    public static final String TYPE = "Attribute";
    private volatile Type valueType;
@@ -126,9 +140,7 @@ public final class AttributeType<T> extends EnumValue<AttributeType> implements 
    }
 
    /**
-    * Returns a collection of all known AttributeType in the enumeration.
-    *
-    * @return the collection of known AttributeType
+    * @return the collection of all known AttributeType in the enumeration.
     */
    public static Collection<AttributeType> values() {
       return registry.values();

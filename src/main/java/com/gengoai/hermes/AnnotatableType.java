@@ -57,40 +57,60 @@ public interface AnnotatableType {
    String ANNOTATOR_PACKAGE = HERMES_PACKAGE + ".annotator";
 
    /**
-    * Determines the correct AnnotatableType from the given name. The name should be prepended with either the class
-    * name or shorthand name of the AnnotatableType.
+    * <p>Determines the correct AnnotatableType from the given name. Checks are made in the following order:</p>
+    * <ol>
+    *    <li>ShorthandTypeName.VALUE<br/>
+    *    e.g. Annotation.ENTITY
+    *    </li>
+    *    <li>FullyQualifiedClassName.VALUE<br/>
+    *    e.g. com.gengoai.hermes.morphology.POS.NOUN
+    *    </li>
+    *    <li>Already defined name in the order:<br/>
+    *       (1) Annotation (2) Attribute (3) Relation
+    *    </li>
+    * </ol>
     *
     * @param name the name
     * @return the AnnotatableType
     */
    static AnnotatableType valueOf(String name) {
+      Validation.notNullOrBlank(name);
+
+      //Find the last period for names given in the form of (ClassName|ShortHand).NAME
       int index = name.lastIndexOf('.');
       if(index > 0) {
+         //Split the name into the typeName (e.g. Annotation) and the valueName (e.g. ENTITY)
          String typeName = name.substring(0, index);
-         name = name.substring(index + 1);
+         String valueName = name.substring(index + 1);
+
+         //Check for Shorthand notation
          switch(typeName) {
             case "AnnotationType":
             case "Annotation":
-               return AnnotationType.make(name);
+               return AnnotationType.make(valueName);
             case "RelationType":
             case "Relation":
-               return RelationType.make(name);
+               return RelationType.make(valueName);
             case "AttributeType":
             case "Attribute":
-               return AttributeType.make(name);
+               return AttributeType.make(valueName);
          }
-         //Backward support for fully qualified names
+
+         //Check for a fully qualified class name
          Class<?> c = Reflect.getClassForNameQuietly(typeName);
          if(AnnotationType.class == c) {
-            return AnnotationType.make(name);
+            return AnnotationType.make(valueName);
          }
          if(RelationType.class == c) {
-            return RelationType.make(name);
+            return RelationType.make(valueName);
          }
          if(AttributeType.class == c) {
-            return AttributeType.make(name);
+            return AttributeType.make(valueName);
          }
       }
+
+      //Finally checked if given name is already defined and return it in the order
+      // (1) Annotation (2) Attribute (3) Relation
       if(AnnotationType.isDefined(name)) {
          return AnnotationType.make(name);
       }
@@ -100,6 +120,7 @@ public interface AnnotatableType {
       if(RelationType.isDefined(name)) {
          return RelationType.make(name);
       }
+
       throw new IllegalStateException("Unable to determine type of " + name);
    }
 
@@ -112,11 +133,20 @@ public interface AnnotatableType {
 
    /**
     * Gets the annotator associated with this type for a given language. First, an annotator is checked for in the
-    * config using <code>Type.Language.Name.Annotator</code> where the language is optional. If not found, it will then
-    * check for classes that meet common conventions with class names of <code>Default[Language][Type]Annotator</code>
-    * or <code>Default[Type]Annotator</code>, where type is is camel-cased and non-alphabetic characters removed (e.g.
-    * <code>MY_ENTITY</code> would become MyEntity) and the class is expected be in the package
-    * <code>com.gengoai.com.gengoai.hermes.annotator</code>
+    * config using <code>Type.Language.Name.Annotator</code> (e.g. <code>Annotation.ENGLISH.ENTITY.Annotator</code>
+    * where the language is optional. If not found, it will then check for classes that meet common conventions in the
+    * following order:
+    * <ol>
+    *    <li>com.gengoai.hermes.[LANG_CODE_LOWER].[LANG_CODE_UPPER][TYPE_NAME_TITLE_CASE][ANNOTATOR], e.g.
+    *    com.gengoai.hermes.en.ENEntityAnnotator
+    *    </li>
+    *    <li>com.gengoai.hermes.annotator.Default[LANG_NAME_TITLE_CASE][TYPE_NAME_TITLE_CASE][ANNOTATOR], e.g.
+    *    com.gengoai.hermes.annotator.DefaultEnglishEntityAnnotator
+    *    </li>
+    *    <li>com.gengoai.hermes.annotator.Default[TYPE_NAME_TITLE_CASE][ANNOTATOR], e.g.
+    *    com.gengoai.hermes.annotator.DefaultEntityAnnotator
+    *    </li>
+    * </ol>
     *
     * @param language the language for which the annotator is needed.
     * @return the annotator for this type and the given language
@@ -124,12 +154,11 @@ public interface AnnotatableType {
     */
    default Annotator getAnnotator(@NonNull Language language) {
       String leaf = (this instanceof HierarchicalEnumValue)
-                    ? Cast.<HierarchicalEnumValue>as(this).label()
+                    ? Cast.<HierarchicalEnumValue<?>>as(this).label()
                     : name();
       //Step 1: Check for a config override
       String key = Config.findKey(type(), language, leaf, "annotator");
       Annotator annotator = null;
-
 
       if(Strings.isNotNullOrBlank(key)) {
          //Annotator is defined via configuration (this will override defaults)
@@ -174,22 +203,15 @@ public interface AnnotatableType {
    }
 
    /**
-    * The annotatable type's name (e.g. TOKEN, PART_OF_SPEECH)
-    *
-    * @return the name
+    * @return The annotatable type's name (e.g. TOKEN, PART_OF_SPEECH)
     */
    String name();
 
    /**
-    * The type (Annotation, Attribute, Relation)
-    *
-    * @return the type
+    * @return The type (Annotation, Attribute, Relation)
     */
    String type();
 
-   /**
-    * Json Marshaller
-    */
    class Marshaller extends com.gengoai.json.JsonMarshaller<AnnotatableType> {
 
       @Override

@@ -24,6 +24,7 @@ package com.gengoai.hermes;
 import com.gengoai.graph.Edge;
 import com.gengoai.graph.EdgeFactory;
 import com.gengoai.json.JsonEntry;
+import lombok.NonNull;
 
 /**
  * Factory class for constructing {@link RelationEdge}s
@@ -35,12 +36,11 @@ public class RelationEdgeFactory implements EdgeFactory<Annotation> {
 
    @Override
    public Edge<Annotation> createEdge(Annotation from, Annotation to, double weight) {
-      RelationEdge edge = new RelationEdge(from, to);
-      return edge;
+      return new RelationEdge(from, to);
    }
 
    @Override
-   public Edge<Annotation> createEdge(Annotation from, Annotation to, JsonEntry entry) {
+   public Edge<Annotation> createEdge(@NonNull Annotation from, @NonNull Annotation to, @NonNull JsonEntry entry) {
       RelationEdge edge = new RelationEdge(from, to);
       edge.setRelation(entry.getStringProperty("relation"));
       edge.setRelationType(entry.getValProperty("type").as(RelationType.class));

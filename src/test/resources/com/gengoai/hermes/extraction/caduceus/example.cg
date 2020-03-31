@@ -6,7 +6,7 @@ annotation: capture=*
              $CONFIDENCE=1.0
 
 [body_parts]
-trigger: ( <eyes> | <ears> )
+trigger: ( <eye> | <ear> )
 annotation: capture=*
              type=ENTITY
              $ENTITY_TYPE=BODY_PART

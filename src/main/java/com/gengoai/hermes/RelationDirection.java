@@ -23,6 +23,8 @@
 package com.gengoai.hermes;
 
 /**
+ * Directionality of a relation.
+ *
  * @author David B. Bracewell
  */
 public enum RelationDirection {

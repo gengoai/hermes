@@ -21,7 +21,7 @@
 
 package com.gengoai.hermes;
 
-import com.gengoai.string.Strings;
+import lombok.NonNull;
 
 import java.util.Collections;
 import java.util.List;
@@ -42,64 +42,33 @@ public final class Fragments {
    }
 
    /**
-    * Creates a detached annotation, i.e. no document associated with it.
+    * Creates an empty HString associated with the given document.
     *
-    * @param type  the type of annotation
-    * @param start the start of the span
-    * @param end   the end of the span
-    * @return the annotation
-    */
-   public static Annotation detachedAnnotation(AnnotationType type, int start, int end) {
-      return new DefaultAnnotationImpl(type, start, end);
-   }
-
-   /**
-    * Creates a detached empty annotation, i.e. an empty span and no document associated with it.
-    *
-    * @return the annotation
-    */
-   public static Annotation detachedEmptyAnnotation() {
-      return new DefaultAnnotationImpl();
-   }
-
-   /**
-    * Creates a new HString that does not has no content or document associated with it.
-    *
-    * @return the new HString
-    */
-   public static HString detachedEmptyHString() {
-      return string(Strings.EMPTY);
-   }
-
-   /**
-    * Creates an empty HString
-    *
-    * @param document the document
+    * @param document the document the HString is span on
     * @return the new HString (associated with the given document if it is not null)
     */
-   public static HString empty(Document document) {
+   public static HString emptyHString(Document document) {
       return new Fragment(document, 0, 0);
    }
 
    /**
-    * Creates an empty annotation associated with the given document.
+    * Creates an orphaned empty annotation, i.e. an empty span and no document associated with it.
     *
-    * @param document The document the annotation is associated with
-    * @return The empty annotation
+    * @return the annotation
     */
-   public static Annotation emptyAnnotation(Document document) {
-      return new DefaultAnnotationImpl(document, AnnotationType.ROOT, -1, -1);
+   public static Annotation orphanedAnnotation(AnnotationType annotationType) {
+      return new DefaultAnnotationImpl(annotationType, 0, 0);
    }
 
    /**
-    * Fragment h string.
+    * Creates an HString which is a span, i.e. fragment, of text on the given document.
     *
     * @param document the document
     * @param start    the start
     * @param end      the end
     * @return the h string
     */
-   public static HString fragment(Document document, int start, int end) {
+   public static HString span(Document document, int start, int end) {
       return new Fragment(document, start, end);
    }
 
@@ -109,10 +78,9 @@ public final class Fragments {
     * @param content the content of the string
     * @return the new HString
     */
-   public static HString string(String content) {
+   public static HString stringWrapper(@NonNull String content) {
       return new SingleToken(content);
    }
-
 
    private static class Fragment extends BaseHString {
       private static final long serialVersionUID = 1L;
@@ -151,7 +119,7 @@ public final class Fragments {
 
       @Override
       public List<Annotation> annotations(AnnotationType type) {
-         if (type == Types.TOKEN) {
+         if(type == Types.TOKEN) {
             return Collections.singletonList(this);
          }
          return Collections.emptyList();
@@ -203,6 +171,5 @@ public final class Fragments {
       }
 
    }
-
 
 }//END OF Fragments

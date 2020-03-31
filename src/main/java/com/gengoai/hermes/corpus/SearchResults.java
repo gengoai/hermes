@@ -24,8 +24,6 @@ package com.gengoai.hermes.corpus;
 
 import com.gengoai.hermes.Document;
 
-import java.io.Serializable;
-
 /**
  * <p>A collection of {@link Document} obtained via querying a {@link Corpus}. Search results can be converted
  * to a limited use {@link Corpus} using the <code>asCorpus</code> method, but not all corpus functionality is
@@ -33,16 +31,7 @@ import java.io.Serializable;
  *
  * @author David B. Bracewell
  */
-public interface SearchResults extends Iterable<Document>, Serializable {
-
-   /**
-    * Converts the search results into limited functionality {@link Corpus} for analytic purposes.
-    *
-    * @return the constructed corpus
-    */
-   default Corpus asCorpus() {
-      return new SearchCorpus(this);
-   }
+public interface SearchResults extends DocumentCollection {
 
    /**
     * Gets the query generating this search results.
@@ -51,11 +40,4 @@ public interface SearchResults extends Iterable<Document>, Serializable {
     */
    Query getQuery();
 
-   /**
-    * Gets the total number of hits, i.e. results.
-    *
-    * @return the total number of hits, i.e. results.
-    */
-   long getTotalHits();
-
-}//END OF SearchResult
+}//END OF SearchResults

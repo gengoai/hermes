@@ -25,13 +25,13 @@ import com.gengoai.hermes.corpus.Corpus;
 import com.gengoai.io.MultiFileWriter;
 import com.gengoai.io.resource.Resource;
 import com.gengoai.io.resource.StringResource;
+import com.gengoai.stream.MStream;
 import com.gengoai.stream.StreamingContext;
 import com.gengoai.stream.Streams;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Iterator;
 
 public class OPLFormat implements DocFormat, Serializable {
    private static final long serialVersionUID = 1L;
@@ -42,16 +42,20 @@ public class OPLFormat implements DocFormat, Serializable {
    }
 
    @Override
-   public Iterator<Document> read(Resource inputResource) {
-      return StreamingContext.local().textFile(inputResource)
-                             .flatMap(line -> Streams.asStream(subFormat.read(new StringResource(line)))).iterator();
+   public DocFormatParameters getParameters() {
+      return subFormat.getParameters();
    }
 
    @Override
-   public void write(Document document, Resource outputResource) throws IOException {
-      Resource strResource = new StringResource();
-      subFormat.write(document, strResource);
-      outputResource.write(strResource.readToString().replaceAll("\n", "\\\\n"));
+   public MStream<Document> read(Resource inputResource) {
+      MStream<Document> stream = StreamingContext.get(getParameters().distributed.value())
+                                                 .textFile(inputResource)
+                                                 .flatMap(line -> Streams.asStream(subFormat.read(new StringResource(
+                                                       line))));
+      if(getParameters().distributed.value()) {
+         stream = stream.cache();
+      }
+      return stream;
    }
 
    @Override
@@ -79,6 +83,13 @@ public class OPLFormat implements DocFormat, Serializable {
             }
          }
       }
+   }
+
+   @Override
+   public void write(Document document, Resource outputResource) throws IOException {
+      Resource strResource = new StringResource();
+      subFormat.write(document, strResource);
+      outputResource.write(strResource.readToString().replaceAll("\n", "\\\\n"));
    }
 
 }//END OF OPLFormat

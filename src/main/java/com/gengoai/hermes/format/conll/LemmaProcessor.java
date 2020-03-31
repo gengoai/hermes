@@ -26,8 +26,8 @@ import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.Document;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.corpus.io.CoNLLColumnProcessor;
-import com.gengoai.hermes.corpus.io.CoNLLRow;
+import com.gengoai.hermes.format.CoNLLColumnProcessor;
+import com.gengoai.hermes.format.CoNLLRow;
 import com.gengoai.tuple.Tuple2;
 import org.kohsuke.MetaInfServices;
 
@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *  Processes lemma information in CoNLL Files
+ * Processes lemma information in CoNLL Files
  *
  * @author David B. Bracewell
  */
@@ -43,21 +43,23 @@ import java.util.Map;
 public class LemmaProcessor implements CoNLLColumnProcessor {
 
    @Override
-   public void processInput(Document document, List<CoNLLRow> documentRows, Map<Tuple2<Integer, Integer>, Long> sentenceIndexToAnnotationId) {
+   public String getFieldName() {
+      return "LEMMA";
+   }
+
+   @Override
+   public void processInput(Document document,
+                            List<CoNLLRow> documentRows,
+                            Map<Tuple2<Integer, Integer>, Long> sentenceIndexToAnnotationId) {
       documentRows
-         .stream()
-         .filter(row -> row.hasOther("LEMMA"))
-         .forEach(row -> document.annotation(row.getAnnotationID())
-                                 .ifNotEmpty(a -> a.put(Types.LEMMA, row.getOther("LEMMA"))));
+            .stream()
+            .filter(row -> row.hasOther("LEMMA"))
+            .forEach(row -> document.annotation(row.getAnnotationID())
+                                    .ifNotEmpty(a -> a.put(Types.LEMMA, row.getOther("LEMMA"))));
    }
 
    @Override
    public String processOutput(HString document, Annotation token, int index) {
       return token.getLemma();
-   }
-
-   @Override
-   public String getFieldName() {
-      return "LEMMA";
    }
 }//END OF LemmaProcessor

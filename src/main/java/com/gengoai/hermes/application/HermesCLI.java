@@ -56,5 +56,4 @@ public abstract class HermesCLI extends CommandLineApplication {
       return Collections.singleton(Hermes.HERMES_PACKAGE);
    }
 
-
 }//END OF HermesApplication

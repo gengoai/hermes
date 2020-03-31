@@ -40,7 +40,6 @@ import java.util.stream.Collectors;
 import static com.gengoai.collection.Maps.hashMapOf;
 import static com.gengoai.tuple.Tuples.$;
 
-
 /**
  * A graph where vertices are annotations and edges represent relations. This allows for the implicit graph relation of
  * {@link HString} to be visualized and manipulated in a traditional graph framework.
@@ -50,14 +49,14 @@ import static com.gengoai.tuple.Tuples.$;
 public class RelationGraph extends DefaultGraphImpl<Annotation> {
    private static final long serialVersionUID = 1L;
    private volatile transient Lazy<ShortestPath<Annotation>> lazyShortestPath =
-      new Lazy<>(() -> new DijkstraShortestPath<>(this));
+         new Lazy<>(() -> new DijkstraShortestPath<>(this));
    private volatile transient Lazy<ShortestPath<Annotation>> lazyUnDirectedShortestPath =
-      new Lazy<>(() -> new DijkstraShortestPath<>(this, true));
+         new Lazy<>(() -> new DijkstraShortestPath<>(this, true));
 
    /**
     * Instantiates a new Relation graph.
     */
-   public RelationGraph() {
+   protected RelationGraph() {
       super(new RelationEdgeFactory());
    }
 
@@ -70,27 +69,15 @@ public class RelationGraph extends DefaultGraphImpl<Annotation> {
    public static RelationGraph from(@NonNull Collection<RelationEdge> edges) {
       RelationGraph gPrime = new RelationGraph();
       edges.forEach(e -> {
-         if (!gPrime.containsVertex(e.getFirstVertex())) {
+         if(!gPrime.containsVertex(e.getFirstVertex())) {
             gPrime.addVertex(e.getFirstVertex());
          }
-         if (!gPrime.containsVertex(e.getSecondVertex())) {
+         if(!gPrime.containsVertex(e.getSecondVertex())) {
             gPrime.addVertex(e.getSecondVertex());
          }
          gPrime.addEdge(e);
       });
       return gPrime;
-   }
-
-   /**
-    * Remove edge if.
-    *
-    * @param predicate the predicate
-    */
-   public void removeEdgeIf(@NonNull Predicate<RelationEdge> predicate) {
-      edges()
-         .parallelStream()
-         .filter(predicate)
-         .forEach(this::removeEdge);
    }
 
    @Override
@@ -119,10 +106,10 @@ public class RelationGraph extends DefaultGraphImpl<Annotation> {
       RelationGraph gPrime = new RelationGraph();
       edges().stream().filter(edgePredicate)
              .forEach(e -> {
-                if (!gPrime.containsVertex(e.getFirstVertex())) {
+                if(!gPrime.containsVertex(e.getFirstVertex())) {
                    gPrime.addVertex(e.getFirstVertex());
                 }
-                if (!gPrime.containsVertex(e.getSecondVertex())) {
+                if(!gPrime.containsVertex(e.getSecondVertex())) {
                    gPrime.addVertex(e.getSecondVertex());
                 }
                 gPrime.addEdge(e);
@@ -166,9 +153,66 @@ public class RelationGraph extends DefaultGraphImpl<Annotation> {
       return Cast.as(super.getOutEdges(vertex));
    }
 
+   /**
+    * Gets the sub-tree for the given node following the given child relations.
+    *
+    * @param node           the node
+    * @param childRelations the child relations
+    * @return the sub tree nodes
+    */
+   public Set<Annotation> getSubTreeNodes(@NonNull Annotation node, String... childRelations) {
+      Set<Annotation> children = new HashSet<>();
+      Set<String> targetRel = childRelations == null
+                              ? Collections.emptySet()
+                              : Sets.asHashSet(
+                                    Arrays.asList(childRelations));
+      Predicate<RelationEdge> keep = edge -> targetRel.size() == 0 || targetRel.contains(edge.getRelation());
+      Queue<RelationEdge> queue = getInEdges(node).stream()
+                                                  .filter(keep)
+                                                  .collect(Collectors.toCollection(LinkedList::new));
+      while(!queue.isEmpty()) {
+         RelationEdge n = queue.remove();
+         if(!"relcl".equals(n.getRelation()) && !"parataxis".equals(n.getRelation())) {
+            children.add(n.getFirstVertex());
+            queue.addAll(getInEdges(n.getFirstVertex())
+                               .stream()
+                               .filter(e -> !children.contains(e.getFirstVertex()))
+                               .collect(Collectors.toSet()));
+         }
+      }
+      return children;
+   }
+
+   /**
+    * Gets the text covering the sub-tree with this node (if includeGiven is true)
+    *
+    * @param node         the node
+    * @param includeGiven the include given
+    * @return the sub tree text
+    */
+   public HString getSubTreeText(Annotation node, boolean includeGiven) {
+      Set<Annotation> children = getSubTreeNodes(node);
+      if(includeGiven) {
+         children.add(node);
+      }
+      return HString.union(children);
+   }
+
    @Override
    public RelationEdge removeEdge(Annotation fromVertex, Annotation toVertex) {
       return Cast.as(super.removeEdge(fromVertex, toVertex));
+   }
+
+   /**
+    * Removes an edge  given from the graph if it evaluates to true using the given predicate.
+    *
+    * @param predicate the predicate
+    */
+   public void removeEdgeIf(@NonNull Predicate<RelationEdge> predicate) {
+      edges()
+            .parallelStream()
+            .filter(predicate)
+            .forEach(this::removeEdge);
    }
 
    /**
@@ -216,50 +260,6 @@ public class RelationGraph extends DefaultGraphImpl<Annotation> {
     */
    public List<RelationEdge> shortestPath(@NonNull Annotation source, @NonNull Annotation target) {
       return Cast.as(lazyShortestPath.get().path(source, target));
-   }
-
-   /**
-    * Gets sub tree nodes.
-    *
-    * @param node           the node
-    * @param childRelations the child relations
-    * @return the sub tree nodes
-    */
-   public Set<Annotation> getSubTreeNodes(@NonNull Annotation node, String... childRelations) {
-      Set<Annotation> children = new HashSet<>();
-      Set<String> targetRel = childRelations == null ? Collections.emptySet() : Sets.asHashSet(
-         Arrays.asList(childRelations));
-      Predicate<RelationEdge> keep = edge -> targetRel.size() == 0 || targetRel.contains(edge.getRelation());
-      Queue<RelationEdge> queue = getInEdges(node).stream()
-                                                  .filter(keep)
-                                                  .collect(Collectors.toCollection(LinkedList::new));
-      while (!queue.isEmpty()) {
-         RelationEdge n = queue.remove();
-         if (!"relcl".equals(n.getRelation()) && !"parataxis".equals(n.getRelation())) {
-            children.add(n.getFirstVertex());
-            queue.addAll(getInEdges(n.getFirstVertex())
-                            .stream()
-                            .filter(e -> !children.contains(e.getFirstVertex()))
-                            .collect(Collectors.toSet()));
-         }
-      }
-      return children;
-   }
-
-
-   /**
-    * Gets sub tree text.
-    *
-    * @param node         the node
-    * @param includeGiven the include given
-    * @return the sub tree text
-    */
-   public HString getSubTreeText(Annotation node, boolean includeGiven) {
-      Set<Annotation> children = getSubTreeNodes(node);
-      if (includeGiven) {
-         children.add(node);
-      }
-      return HString.union(children);
    }
 
 }//END OF RelationGraph

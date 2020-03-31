@@ -36,7 +36,7 @@ import lombok.NonNull;
  *
  * @author David B. Bracewell
  */
-public final class AnnotatorCache {
+final class AnnotatorCache {
 
    private static volatile AnnotatorCache INSTANCE;
    private final Cache<String, Annotator> cache;
@@ -51,14 +51,28 @@ public final class AnnotatorCache {
     * @return The instance of the <code>AnnotatorFactory</code>
     */
    public static AnnotatorCache getInstance() {
-      if (INSTANCE == null) {
-         synchronized (AnnotatorCache.class) {
-            if (INSTANCE == null) {
+      if(INSTANCE == null) {
+         synchronized(AnnotatorCache.class) {
+            if(INSTANCE == null) {
                INSTANCE = new AnnotatorCache();
             }
          }
       }
       return INSTANCE;
+   }
+
+   /**
+    * Invalidates the cache
+    */
+   public void clear() {
+      cache.invalidateAll();
+   }
+
+   private String createKey(AnnotatableType type, Language language) {
+      if(language == Language.UNKNOWN) {
+         return type.name();
+      }
+      return type.name() + "::" + language;
    }
 
    /**
@@ -73,17 +87,10 @@ public final class AnnotatorCache {
     */
    public Annotator get(@NonNull AnnotatableType annotationType, @NonNull Language language) {
       String key = createKey(annotationType, language);
-      if (!cache.containsKey(key)) {
+      if(!cache.containsKey(key)) {
          cache.put(key, annotationType.getAnnotator(language));
       }
       return cache.get(key);
-   }
-
-   private String createKey(AnnotatableType type, Language language) {
-      if (language == Language.UNKNOWN) {
-         return type.name();
-      }
-      return type.name() + "::" + language;
    }
 
    /**
@@ -97,14 +104,6 @@ public final class AnnotatorCache {
    }
 
    /**
-    * Invalidates the cache
-    */
-   public void clear() {
-      cache.invalidateAll();
-   }
-
-
-   /**
     * Manually caches an annotator for an annotation type / language pair. Note that this will not be safe in a
     * distributed environment like Spark or Map Reduce, but is useful for testing annotators.
     *
@@ -112,13 +111,15 @@ public final class AnnotatorCache {
     * @param language       the language
     * @param annotator      the annotator
     */
-   public void setAnnotator(@NonNull AnnotationType annotationType, @NonNull Language language, @NonNull Annotator annotator) {
+   public void setAnnotator(@NonNull AnnotationType annotationType,
+                            @NonNull Language language,
+                            @NonNull Annotator annotator) {
       Validation.checkArgument(annotator.satisfies().contains(annotationType),
                                "Attempting to register " + annotator.getClass()
                                                                     .getName() + " for " + annotationType.name() + " which it does not provide");
       cache.put(createKey(annotationType, language), annotator);
 
-      if (language == Language.UNKNOWN) {
+      if(language == Language.UNKNOWN) {
          Config.setProperty("Annotator" + annotationType.name() + ".annotator", "CACHED");
       } else {
          Config.setProperty("Annotator" + annotationType.name() + ".annotator." + language, "CACHED");
@@ -126,6 +127,5 @@ public final class AnnotatorCache {
 
       assert cache.containsKey(createKey(annotationType, language));
    }
-
 
 }//END OF AnnotatorFactory

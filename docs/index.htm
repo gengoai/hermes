@@ -567,9 +567,9 @@ table.CodeRay td.code>pre{padding:0}
 <li><a href="#_working_with_documents">3.5.2. Working with Documents</a></li>
 </ul>
 </li>
-<li><a href="#corpus">3.6. Corpus</a>
+<li><a href="#corpus">3.6. Document Collections and Corpora</a>
 <ul class="sectlevel3">
-<li><a href="#_corpus_formats">3.6.1. Corpus Formats</a>
+<li><a href="#_document_formats">3.6.1. Document Formats</a>
 <ul class="sectlevel4">
 <li><a href="#_defining_a_custom_corpus_format">Defining a Custom Corpus Format</a></li>
 </ul>
@@ -2178,14 +2178,24 @@ The default implementation uses an interval tree backed by a red-black tree, whi
 </div>
 </div>
 <div class="sect2">
-<h3 id="corpus"><a class="link" href="#corpus">3.6. Corpus</a></h3>
+<h3 id="corpus"><a class="link" href="#corpus">3.6. Document Collections and Corpora</a></h3>
 <div class="paragraph">
-<p>A Corpus represents a collection of documents.
-Hermes provides the ability to easily create, read, write, and analyze corpora locally and distributed.
-Hermes&#8217;s <em>Corpus</em> class makes it easy to annotate all documents with the desired annotations, attributes, and relations, query the documents using keywords, and perform analyses such as term extraction, keyword extraction, and significant n-gram extraction.</p>
+<p>A collection of documents in Hermes is represented using either a <em>DocumentCollection</em> or <em>Corpus</em>.
+The difference between the two is that a <em>Corpus</em> represents a <strong>persistent</strong> collection of documents whereas a <em>DocumentCollection</em> is a <strong>temporary</strong> collection used for ad-hoc analytics or to import documents into a corpus.
+The figure below, shows a typical flow of data in which: (1) A document is collection is created by reading files in a given format (e.g. plain text, html, pdf, etc.);  (2) The files are imported into a Corpus for processing; (3) Operations, e.g. annotation, are performed over the corpus which allows these operations to be persisted; and (4) Optionaly, the documents in the corpus in are exported to a set of files in a given format (e.g. CoNLL).</p>
+</div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="images/document-flow.png" alt="document flow" width="800px" height="196">
+</div>
+<div class="title">Figure 3. Typical flow of documents from Raw input to Corpus creation.</div>
+</div>
+<div class="paragraph">
+<p>Hermes provides the ability to easily create, read, write, and analyze document collections and corpora locally and distributed.
+Both makes it easy to annotate documents with a desired set of annotations, attributes, and relations, query the documents using keywords, and perform analyses such as term extraction, keyword extraction, and significant n-gram extraction.</p>
 </div>
 <div class="sect3">
-<h4 id="_corpus_formats"><a class="link" href="#_corpus_formats">3.6.1. Corpus Formats</a></h4>
+<h4 id="_document_formats"><a class="link" href="#_document_formats">3.6.1. Document Formats</a></h4>
 <div class="paragraph">
 <p>Hermes provides a straightforward way of reading and writing Corpora in a number of formats, including plain text, csv, and json.
 In addition, many formats can be used in a "one-per-line" corpus where each line represents a single document in the given format.
@@ -2961,7 +2971,7 @@ corpus.groupBy(doc -&gt; doc.getAttributeAsString(<span class="predefined-type">
 <div class="sectionbody">
 <div class="paragraph">
 <p>The goal of Text Mining is to turn unstructured data into high-quality structured information.
-Hermes provides a variety of tools to perform text mining over corpora, some of which were described in the <a href="#corpus">Corpus</a> section.
+Hermes provides a variety of tools to perform text mining over corpora, some of which were described in the <a href="#corpus">Document Collections and Corpora</a> section.
 Fundamental to text mining in Hermes is the concept of a <em>Extractor</em> and the <em>Extraction</em> it produces.
 Extractors are responsible for taking an <em>HString</em> as input and producing an <em>Extraction</em> as output via the <code>Extraction extract(@NonNull HString hString)</code> method.
 The class hierarchy for Extractors is as follows (note names in Yellow represent abstract classes or interfaces):</p>
@@ -2970,7 +2980,7 @@ The class hierarchy for Extractors is as follows (note names in Yellow represent
 <div class="content">
 <img src="images/extractor-hierarchy.png.png" alt="extractor hierarchy.png" width="800px" height="406">
 </div>
-<div class="title">Figure 3. Inheritance hierarchy for extractors.</div>
+<div class="title">Figure 4. Inheritance hierarchy for extractors.</div>
 </div>
 <div class="paragraph">
 <p>The <em>Lexicon</em> extractor uses a lexicon to match terms in an <em>HString</em> and described in detail in <a href="#lexicons">Lexicons</a>.
@@ -5244,7 +5254,7 @@ The application has the following command line options:</p>
 <div id="footer">
 <div id="footer-text">
 Version v1.0<br>
-Last updated 2020-03-21 15:16:16 -0500
+Last updated 2020-03-28 16:04:53 -0500
 </div>
 </div>
 </body>

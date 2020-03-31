@@ -27,6 +27,7 @@ import com.gengoai.Validation;
 import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.AttributeType;
 import com.gengoai.hermes.Hermes;
+import com.gengoai.hermes.ResourceType;
 import com.gengoai.hermes.Types;
 import com.gengoai.io.resource.Resource;
 import com.gengoai.kv.KeyValueStoreConnection;
@@ -95,8 +96,8 @@ public class LexiconSpecification implements Specifiable, Serializable {
          if(Strings.isNotNullOrBlank(language)) {
             lng = Language.fromString(language);
          }
-         lex.setResource(Hermes.findResource(path, Hermes.LEXICON, lng)
-                               .orElseThrow(() -> new FileSystemNotFoundException(specification)));
+         lex.setResource(ResourceType.LEXICON.locate(path, lng)
+                                             .orElseThrow(() -> new FileSystemNotFoundException(specification)));
       }
       return lex;
    }

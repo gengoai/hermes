@@ -42,7 +42,7 @@ public class HStringTest {
 
    @Test
    public void testCharNGrams() {
-      HString hString = Fragments.string("abcdef");
+      HString hString = Fragments.stringWrapper("abcdef");
       List<HString> unigrams = hString.charNGrams(1);
       assertEquals(6, unigrams.size());
       List<HString> bigrams = hString.charNGrams(2);
@@ -77,7 +77,7 @@ public class HStringTest {
 
    @Test
    public void testStringFunctions() {
-      HString hString = Fragments.string("abcdef");
+      HString hString = Fragments.stringWrapper("abcdef");
       assertTrue(hString.contentEquals("abcdef"));
       assertTrue(hString.contentEqualsIgnoreCase("ABCDEF"));
 

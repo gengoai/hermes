@@ -79,9 +79,9 @@ abstract class BaseHString implements HString {
 
    @Override
    public String toString() {
-      if (document() == null || isEmpty()) {
+      if(document() == null || isEmpty()) {
          return Strings.EMPTY;
       }
       return document().toString().substring(start(), end());
    }
-}//END OF HString
+}//END OF BaseHString

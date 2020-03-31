@@ -27,26 +27,31 @@ import com.gengoai.hermes.DocumentFactory;
 import com.gengoai.hermes.Types;
 import com.gengoai.io.resource.Resource;
 import com.gengoai.json.Json;
-import com.gengoai.stream.StreamingContext;
 import lombok.NonNull;
 import org.kohsuke.MetaInfServices;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-public class TwitterSearchFormat extends OneDocPerFileFormat {
+public class TwitterSearchFormat extends WholeFileTextFormat implements OneDocPerFileFormat, Serializable {
+   private static final long serialVersionUID = 1L;
    private final DocFormatParameters parameters;
 
    public TwitterSearchFormat(@NonNull DocFormatParameters parameters) {
       this.parameters = parameters;
    }
 
-   private Stream<Document> processFile(String json) {
-      DocumentFactory documentFactory = parameters.documentFactory.value();
+   @Override
+   public DocFormatParameters getParameters() {
+      return parameters;
+   }
+
+   protected Stream<Document> readSingleFile(String json) {
+      DocumentFactory documentFactory = parameters.getDocumentFactory();
       Map<String, ?> file = null;
       try {
          file = Json.parseObject(json);
@@ -76,14 +81,6 @@ public class TwitterSearchFormat extends OneDocPerFileFormat {
          document.put(Types.attribute("created_at", String.class), Val.of(status.get("created_at")).asString());
       });
       return documentList.stream();
-   }
-
-   @Override
-   public Iterator<Document> read(Resource inputResource) {
-      return StreamingContext.local()
-                             .textFile(inputResource, true)
-                             .flatMap(this::processFile)
-                             .iterator();
    }
 
    @Override

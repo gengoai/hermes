@@ -21,7 +21,6 @@
 
 package com.gengoai.hermes.preprocessing;
 
-
 import com.gengoai.Language;
 import com.gengoai.annotation.JsonHandler;
 import com.gengoai.config.Config;
@@ -40,28 +39,6 @@ import java.lang.reflect.Type;
 public abstract class TextNormalizer implements Serializable {
    private static final long serialVersionUID = 1L;
 
-
-   /**
-    * The type Marshaller.
-    */
-   public static class Marshaller extends com.gengoai.json.JsonMarshaller<TextNormalizer> {
-
-      @Override
-      protected TextNormalizer deserialize(JsonEntry entry, Type type) {
-         try {
-            return Reflect.onClass(entry.getAsString()).create().get();
-         } catch (Exception e) {
-            throw new RuntimeException(e);
-         }
-      }
-
-      @Override
-      protected JsonEntry serialize(TextNormalizer textNormalizer, Type type) {
-         return JsonEntry.from(textNormalizer.getClass().getName());
-      }
-   }
-
-
    /**
     * Performs a pre-processing operation on the input string in the given input language
     *
@@ -70,7 +47,7 @@ public abstract class TextNormalizer implements Serializable {
     * @return The post-processed text
     */
    public final String apply(String input, Language inputLanguage) {
-      if (input != null && Config.get(this.getClass(), inputLanguage, "apply").asBoolean(true)) {
+      if(input != null && Config.get(this.getClass(), inputLanguage, "apply").asBoolean(true)) {
          return performNormalization(input, inputLanguage);
       }
       return input;
@@ -84,5 +61,25 @@ public abstract class TextNormalizer implements Serializable {
     * @return The post-processed text
     */
    protected abstract String performNormalization(String input, Language language);
+
+   /**
+    * The type Marshaller.
+    */
+   public static class Marshaller extends com.gengoai.json.JsonMarshaller<TextNormalizer> {
+
+      @Override
+      protected TextNormalizer deserialize(JsonEntry entry, Type type) {
+         try {
+            return Reflect.onClass(entry.getAsString()).create().get();
+         } catch(Exception e) {
+            throw new RuntimeException(e);
+         }
+      }
+
+      @Override
+      protected JsonEntry serialize(TextNormalizer textNormalizer, Type type) {
+         return JsonEntry.from(textNormalizer.getClass().getName());
+      }
+   }
 
 }//END OF TextPreprocessor

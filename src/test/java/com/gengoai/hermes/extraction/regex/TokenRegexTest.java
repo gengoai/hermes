@@ -27,7 +27,8 @@ import com.gengoai.hermes.*;
 import com.gengoai.hermes.lexicon.Lexicon;
 import com.gengoai.hermes.lexicon.LexiconManager;
 import com.gengoai.hermes.lexicon.TrieLexicon;
-import com.gengoai.hermes.ner.Entities;
+import com.gengoai.hermes.Entities;
+import com.gengoai.hermes.morphology.POS;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -43,7 +44,8 @@ public class TokenRegexTest {
    @Before
    public void setUp() throws Exception {
       Config.initializeTest();
-      Config.setProperty("com.gengoai.com.gengoai.hermes.annotator.DefaultEntityAnnotator.subTypes", "ENTITY$TOKEN_TYPE_ENTITY");
+      Config.setProperty("Annotation.ENGLISH.ENTITY.annotator", "com.gengoai.hermes.annotator.DefaultEntityAnnotator");
+      Config.setProperty("com.gengoai.hermes.annotator.DefaultEntityAnnotator.subTypes", "ENTITY$TOKEN_TYPE_ENTITY");
       document = DocumentFactory.getInstance().create("John met Sally by the seashore at 12:30pm yesterday.");
       document.annotate(Types.TOKEN, Types.SENTENCE, Types.ENTITY);
 

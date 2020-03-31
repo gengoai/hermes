@@ -1,7 +1,7 @@
 package com.gengoai.hermes;
 
-import com.gengoai.stream.Streams;
 import com.gengoai.collection.tree.Span;
+import com.gengoai.stream.Streams;
 
 import java.io.Serializable;
 import java.util.*;
@@ -9,19 +9,12 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-
 /**
  * <p>
- * An <code>AnnotationSet</code> acts as the storage mechanism for annotations associated with a document. It provides
- * methods for adding, removing, and navigating the annotations. In particular, a <code>AnnotationSet</code> defines
- * sequential methods of accessing annotations ({@link #next(Annotation, AnnotationType)}, {@link #previous(Annotation,
- * AnnotationType)}*), based on criteria {@link #select(Predicate)} and {@link #select(Span, Predicate)}*, and by id
- * {@link #get(long)}.
- * </p>
- * <p>
- * Annotation sets also keep track of completed annotation types, i.e. those processed using a <code>Pipeline</code>.
- * This allows the pipeline to ignore further attempts to annotate a type that is marked complete. In addition to being
- * marked complete, information about the annotator is stored.
+ * An AnnotationSet acts as the storage mechanism for annotations associated with a document. It provides methods for
+ * adding, removing, and navigating the annotations. In particular, an it defines sequential methods of accessing
+ * annotations ({@link #next(Annotation, AnnotationType)}, {@link #previous(Annotation, AnnotationType)}), based on
+ * criteria {@link #select(Predicate)} and {@link #select(Span, Predicate)}*, and by id {@link #get(long)}.
  * </p>
  *
  * @author David B. Bracewell
@@ -53,8 +46,6 @@ public class AnnotationSet implements Iterable<Annotation>, Serializable {
       return !annotation.isDetached() && idAnnotationMap.get(annotation.getId()) == annotation;
    }
 
-
-
    /**
     * Gets the annotation for the given id
     *
@@ -62,7 +53,7 @@ public class AnnotationSet implements Iterable<Annotation>, Serializable {
     * @return The annotation associated with that id or null if one does not exist
     */
    public Annotation get(long id) {
-      return idAnnotationMap.getOrDefault(id, Fragments.detachedEmptyAnnotation());
+      return idAnnotationMap.getOrDefault(id, Fragments.orphanedAnnotation(AnnotationType.ROOT));
    }
 
    /**
@@ -129,7 +120,7 @@ public class AnnotationSet implements Iterable<Annotation>, Serializable {
     */
    public boolean remove(Annotation annotation) {
       boolean removed = tree.remove(annotation);
-      if (removed) {
+      if(removed) {
          idAnnotationMap.remove(annotation.getId());
       }
       return removed;
@@ -142,7 +133,7 @@ public class AnnotationSet implements Iterable<Annotation>, Serializable {
     * @return The list of annotations that were removed
     */
    public List<Annotation> removeAll(AnnotationType type) {
-      if (type != null) {
+      if(type != null) {
          setIsCompleted(type, false, null);
          List<Annotation> annotations = select(a -> a.isInstance(type));
          annotations.forEach(this::remove);
@@ -183,7 +174,7 @@ public class AnnotationSet implements Iterable<Annotation>, Serializable {
     * @param annotatorInformation the annotator information
     */
    public void setIsCompleted(AnnotatableType type, boolean isCompleted, String annotatorInformation) {
-      if (isCompleted) {
+      if(isCompleted) {
          completed.put(type, annotatorInformation);
       } else {
          completed.remove(type);
@@ -200,9 +191,7 @@ public class AnnotationSet implements Iterable<Annotation>, Serializable {
    }
 
    /**
-    * Stream stream.
-    *
-    * @return the stream
+    * @return a stream over the annotations in the set
     */
    public Stream<Annotation> stream() {
       return tree.stream();

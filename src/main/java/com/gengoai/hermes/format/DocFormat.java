@@ -22,16 +22,18 @@ package com.gengoai.hermes.format;
 import com.gengoai.hermes.Document;
 import com.gengoai.hermes.corpus.Corpus;
 import com.gengoai.io.resource.Resource;
+import com.gengoai.stream.MStream;
 
 import java.io.IOException;
-import java.util.Iterator;
 
 public interface DocFormat {
 
-   Iterator<Document> read(Resource inputResource);
+   MStream<Document> read(Resource inputResource);
 
    void write(Document document, Resource outputResource) throws IOException;
 
    void write(Corpus corpus, Resource outputResource) throws IOException;
+
+   DocFormatParameters getParameters();
 
 }//END OF DocFormat

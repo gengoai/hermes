@@ -19,28 +19,51 @@
 
 package com.gengoai.hermes.format;
 
+import com.gengoai.Language;
 import com.gengoai.ParamMap;
 import com.gengoai.ParameterDef;
 import com.gengoai.hermes.DocumentFactory;
-import com.gengoai.hermes.corpus.io.SaveMode;
+import com.gengoai.hermes.Hermes;
+import com.gengoai.hermes.preprocessing.TextNormalization;
+import com.gengoai.hermes.preprocessing.TextNormalizer;
+import com.gengoai.io.SaveMode;
+
+import java.util.List;
+
+import static com.gengoai.reflection.TypeUtils.parameterizedType;
 
 public class DocFormatParameters extends ParamMap<DocFormatParameters> {
    /**
-    * Defines the {@link DocumentFactory} to use for constructing documents
+    * Defines the default language for new documents
     */
-   public static final ParameterDef<DocumentFactory> DOCUMENT_FACTORY = ParameterDef.param("documentFactory",
-                                                                                           DocumentFactory.class);
+   public static final ParameterDef<Language> DEFAULT_LANGUAGE = ParameterDef.param("defaultLanguage", Language.class);
+   /**
+    * Defines if a document collection should be distributed (true) or local (false)
+    */
+   public static final ParameterDef<Boolean> DISTRIBUTED = ParameterDef.param("distributed", Boolean.class);
+   /**
+    * Defines the text normalization to use when constructing documents
+    */
+   public static final ParameterDef<List<TextNormalizer>> NORMALIZERS = ParameterDef.param("normalizers",
+                                                                                           parameterizedType(List.class,
+                                                                                                             TextNormalizer.class));
    /**
     * Defines the {@link SaveMode} when writing a Corpus
     */
    public static final ParameterDef<SaveMode> SAVE_MODE = ParameterDef.param("saveMode", SaveMode.class);
 
-   /**
-    * Defines the {@link DocumentFactory} to use for constructing documents
-    */
-   public final Parameter<DocumentFactory> documentFactory = parameter(DOCUMENT_FACTORY, DocumentFactory.getInstance());
-   /**
-    * Defines the {@link SaveMode} when writing a Corpus
-    */
    public final Parameter<SaveMode> saveMode = parameter(SAVE_MODE, SaveMode.ERROR);
+   public final Parameter<Boolean> distributed = parameter(DISTRIBUTED, false);
+   public final Parameter<Language> defaultLanguage = parameter(DEFAULT_LANGUAGE, Hermes.defaultLanguage());
+   public final Parameter<List<TextNormalizer>> normalizers = parameter(NORMALIZERS,
+                                                                        TextNormalization.configuredInstance()
+                                                                                         .getPreprocessors());
+
+   public DocumentFactory getDocumentFactory() {
+      return DocumentFactory.builder()
+                            .defaultLanguage(defaultLanguage.value())
+                            .normalizers(normalizers.value())
+                            .build();
+   }
+
 }//END OF DocFormatParameters

@@ -19,16 +19,12 @@
 
 package com.gengoai.hermes;
 
-import com.gengoai.Lazy;
 import com.gengoai.Tag;
 import com.gengoai.annotation.Preload;
-import com.gengoai.collection.Lists;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Queue;
-import java.util.Set;
-
+/**
+ * A basic set of categories to describe words which is useful for inferring higher level concepts.
+ */
 @Preload
 public enum BasicCategories implements Tag {
    ROOT(null),
@@ -503,36 +499,10 @@ public enum BasicCategories implements Tag {
    NATIONALITIES(GROUPS_OF_PEOPLE),
    TRIBES(NATIONALITIES);
 
-   private final Lazy<Set<BasicCategories>> ancestors;
    private BasicCategories parent;
 
-   private BasicCategories(BasicCategories parent) {
+   BasicCategories(BasicCategories parent) {
       this.parent = parent;
-      this.ancestors = new Lazy<>(() -> {
-         Set<BasicCategories> ancestors = new HashSet<>();
-         Queue<BasicCategories> queue = Lists.linkedListOf(parent);
-         while(queue.size() > 0) {
-            BasicCategories bc = queue.remove();
-            if(ancestors.contains(bc)) {
-               continue;
-            }
-            ancestors.add(bc);
-            queue.add(parent);
-         }
-         return Collections.unmodifiableSet(ancestors);
-      });
-   }
-
-   public Set<BasicCategories> ancestors() {
-      return ancestors.get();
-   }
-
-   public boolean isAnimal() {
-      return isInstance(ANIMALS);
-   }
-
-   public boolean isEmotion() {
-      return isInstance(EMOTIONS);
    }
 
    @Override
@@ -543,23 +513,14 @@ public enum BasicCategories implements Tag {
       if(this == tag || tag == ROOT) {
          return true;
       }
-      return ancestors.get().contains(tag);
-   }
-
-   public boolean isLivingThing() {
-      return isInstance(LIVING_THING);
-   }
-
-   public boolean isOrganization() {
-      return isInstance(ORGANIZATIONS);
-   }
-
-   public boolean isPerson() {
-      return isInstance(HUMAN);
-   }
-
-   public boolean isVehicle() {
-      return isInstance(VEHICLES);
+      Tag p = parent();
+      while(p != null) {
+         if(p == tag) {
+            return true;
+         }
+         p = p.parent();
+      }
+      return false;
    }
 
    @Override
@@ -567,6 +528,4 @@ public enum BasicCategories implements Tag {
       return parent;
    }
 
-
-
-}//END OF BC
+}//END OF BasicCategories

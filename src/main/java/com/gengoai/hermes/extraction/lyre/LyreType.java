@@ -81,6 +81,52 @@ enum LyreType implements TokenDef {
          grammar.prefix(this, (parser, token) -> LyreDSL.literal(token.getVariable(0)));
       }
    },
+   OUTGOING_RELATION(re(e('@'), e('>'), namedGroup("", IDENTIFIER),
+                        zeroOrOne(e('{'), LITERAL.pattern, e('}')))) {
+      @Override
+      public void register(Grammar grammar) {
+         method(grammar, (parser, token, arguments) -> {
+            final RelationType type = Types.relation(token.getVariable(0));
+            switch(arguments.size()) {
+               case 0:
+                  if(token.getVariableCount() > 1) {
+                     return LyreDSL.rel(RelationDirection.OUTGOING, type, token.getVariable(1));
+                  }
+                  return LyreDSL.rel(RelationDirection.OUTGOING, type);
+               case 1:
+                  if(token.getVariableCount() > 1) {
+                     return LyreDSL.rel(RelationDirection.OUTGOING, type, token.getVariable(1), arguments.get(0));
+                  }
+                  return LyreDSL.rel(RelationDirection.OUTGOING, type, arguments.get(1));
+               default:
+                  throw new ParseException("Illegal number of arguments for " + token.getText());
+            }
+         });
+      }
+   },
+   INCOMING_RELATION(re(e('@'), e('<'), namedGroup("", IDENTIFIER),
+                        zeroOrOne(e('{'), LITERAL.pattern, e('}')))) {
+      @Override
+      public void register(Grammar grammar) {
+         method(grammar, (parser, token, arguments) -> {
+            final RelationType type = Types.relation(token.getVariable(0));
+            switch(arguments.size()) {
+               case 0:
+                  if(token.getVariableCount() > 1) {
+                     return LyreDSL.rel(RelationDirection.INCOMING, type, token.getVariable(1));
+                  }
+                  return LyreDSL.rel(RelationDirection.INCOMING, type);
+               case 1:
+                  if(token.getVariableCount() > 1) {
+                     return LyreDSL.rel(RelationDirection.INCOMING, type, token.getVariable(1), arguments.get(0));
+                  }
+                  return LyreDSL.rel(RelationDirection.INCOMING, type, arguments.get(1));
+               default:
+                  throw new ParseException("Illegal number of arguments for " + token.getText());
+            }
+         });
+      }
+   },
    NULL("null") {
       @Override
       public void register(Grammar grammar) {
@@ -95,6 +141,11 @@ enum LyreType implements TokenDef {
             parser.consume(CLOSE_PARENS);
             return LyreDSL.lookAhead(condition, left.as(LyreExpression.class));
          }, 100);
+         grammar.prefix(this, (parser, token) -> {
+            LyreExpression condition = parser.parseExpression(LyreExpression.class);
+            parser.consume(CLOSE_PARENS);
+            return LyreDSL.lookAhead(condition, LyreDSL.$_);
+         });
       }
    },
    LOOKBEHIND(re(e('('), e('?'), e('<'))) {
@@ -104,6 +155,11 @@ enum LyreType implements TokenDef {
             LyreExpression condition = parser.parseExpression(LyreExpression.class);
             parser.consume(CLOSE_PARENS);
             return LyreDSL.lookBehind(condition, parser.parseExpression(LyreExpression.class));
+         });
+         grammar.prefix(this, (parser, token) -> {
+            LyreExpression condition = parser.parseExpression(LyreExpression.class);
+            parser.consume(CLOSE_PARENS);
+            return LyreDSL.lookBehind(condition, LyreDSL.$_);
          });
       }
    },
@@ -115,6 +171,11 @@ enum LyreType implements TokenDef {
             parser.consume(CLOSE_PARENS);
             return LyreDSL.negLookAhead(condition, left.as(LyreExpression.class));
          }, 100);
+         grammar.prefix(this, (parser, token) -> {
+            LyreExpression condition = parser.parseExpression(LyreExpression.class);
+            parser.consume(CLOSE_PARENS);
+            return LyreDSL.negLookAhead(condition, LyreDSL.$_);
+         });
       }
    },
    NEGLOOKBEHIND(re(e('('), e('?'), e('!'), e('<'))) {
@@ -124,6 +185,11 @@ enum LyreType implements TokenDef {
             LyreExpression exp = parser.parseExpression(LyreExpression.class);
             parser.consume(CLOSE_PARENS);
             return LyreDSL.negLookBehind(exp, parser.parseExpression(LyreExpression.class));
+         });
+         grammar.prefix(this, (parser, token) -> {
+            LyreExpression condition = parser.parseExpression(LyreExpression.class);
+            parser.consume(CLOSE_PARENS);
+            return LyreDSL.negLookBehind(condition, LyreDSL.$_);
          });
       }
    },
@@ -403,52 +469,6 @@ enum LyreType implements TokenDef {
                      return LyreDSL.dep(RelationDirection.INCOMING, token.getVariable(0), arguments.get(0));
                   }
                   return LyreDSL.dep(RelationDirection.INCOMING, arguments.get(0));
-               default:
-                  throw new ParseException("Illegal number of arguments for " + token.getText());
-            }
-         });
-      }
-   },
-   OUTGOING_RELATION(re(e('@'), e('>'), namedGroup("", IDENTIFIER),
-                        zeroOrOne(e('{'), LITERAL.pattern, e('}')))) {
-      @Override
-      public void register(Grammar grammar) {
-         method(grammar, (parser, token, arguments) -> {
-            final RelationType type = Types.relation(token.getVariable(0));
-            switch(arguments.size()) {
-               case 0:
-                  if(token.getVariableCount() > 1) {
-                     return LyreDSL.rel(RelationDirection.OUTGOING, type, token.getVariable(1));
-                  }
-                  return LyreDSL.rel(RelationDirection.OUTGOING, type);
-               case 1:
-                  if(token.getVariableCount() > 1) {
-                     return LyreDSL.rel(RelationDirection.OUTGOING, type, token.getVariable(1), arguments.get(0));
-                  }
-                  return LyreDSL.rel(RelationDirection.OUTGOING, type, arguments.get(1));
-               default:
-                  throw new ParseException("Illegal number of arguments for " + token.getText());
-            }
-         });
-      }
-   },
-   INCOMING_RELATION(re(e('@'), e('<'), namedGroup("", IDENTIFIER),
-                        zeroOrOne(e('{'), LITERAL.pattern, e('}')))) {
-      @Override
-      public void register(Grammar grammar) {
-         method(grammar, (parser, token, arguments) -> {
-            final RelationType type = Types.relation(token.getVariable(0));
-            switch(arguments.size()) {
-               case 0:
-                  if(token.getVariableCount() > 1) {
-                     return LyreDSL.rel(RelationDirection.INCOMING, type, token.getVariable(1));
-                  }
-                  return LyreDSL.rel(RelationDirection.INCOMING, type);
-               case 1:
-                  if(token.getVariableCount() > 1) {
-                     return LyreDSL.rel(RelationDirection.INCOMING, type, token.getVariable(1), arguments.get(0));
-                  }
-                  return LyreDSL.rel(RelationDirection.INCOMING, type, arguments.get(1));
                default:
                   throw new ParseException("Illegal number of arguments for " + token.getText());
             }

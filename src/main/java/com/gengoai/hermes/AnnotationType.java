@@ -21,7 +21,6 @@
 
 package com.gengoai.hermes;
 
-
 import com.gengoai.HierarchicalEnumValue;
 import com.gengoai.HierarchicalRegistry;
 import com.gengoai.Tag;
@@ -32,29 +31,23 @@ import com.gengoai.conversion.Cast;
 import java.util.Collection;
 
 /**
- * <p> An <code>AnnotationType</code> serves to define the structure and source of a specific annotation. The
- * definition provided by the type facilitates the portability of the annotation between different modules. An
- * annotation type defines the type name, parent type, annotator, and the tag type. </p>
+ * <p> An AnnotationType defines an {@link Annotation}, which is a <b>typed</b> (e.g. token, sentence, phrase chunk)
+ * span of text on a document having a defined set of attributes and relations. AnnotationTypes are hierarchical
+ * meaning that each type has a parent (<i>ANNOTATION</i> by default) and can have subtypes.Additionally, each
+ * AnnotationType has an associated {@link Tag} attribute type, which represents the central attribute of the
+ * annotation type (e.g. entity type for entities and part-of-speech for tokens.). By default, an annotation's tag type
+ * is inherited from the parent or defined as being a StringTag.
+ * </p>
  *
- * <p> Annotation types are hierarchical and all types have a parent defined. If no parent is explicitly declared, its
- * parent is resolved to the <code>ROOT</code> type. Annotation types inherit their parent's tag attribute. A tag can be
- * defined for a type during creation or by using the <code>tag</code> (e.g. <code>TypeName.tag=AttributeType</code>)
- * property, which defines the attribute to return on calls to <code>getTag()</code>. Children will inherit the tag type
- * of their parent unless explicitly specified.</p>
- *
- * <p>Type information can be defined during creation or via configuration. An Example is as follows:
- * <pre> {@code
- * Annotation {
- *       ENTITY {
- *          tag = ENTITY_TYPE
- *       }
- *
- *       REGEX_ENTITY {
- *          parent = ENTITY
- *          annotator = @{DEFAULT_ENTITY_REGEX}
- *       }
+ * <p>The following code snippet illustrates creating a simple AnnotationType with the default parent and a and an
+ * AnnotationType whose parent is <i>ENTITY</i>.:
+ * <pre>
+ * {@code
+ * // Assume that SENSE_TAG is a predefined AttributeType
+ * AnnotationType WORD_SENSE=AnnotationType.make("WORD_SENSE",SENSE_TAG);
+ * // MY_ENTITY will be a type of ENTITY and have an ENTITY_TYPE tag attribute inherited from ENTITY
+ * AnnotationType MY_ENTITY=AnnotationType.make(ENTITY,"MY_ENTITY");
  * }
- * }**
  * </pre>
  * </p>
  */
@@ -66,13 +59,13 @@ public final class AnnotationType extends HierarchicalEnumValue<AnnotationType> 
          "ROOT");
    private static final long serialVersionUID = 1L;
    /**
-    * The constant TYPE.
-    */
-   public static final String TYPE = "Annotation";
-   /**
     * The constant ROOT representing the base annotation type.
     */
    public static final AnnotationType ROOT = registry.ROOT;
+   /**
+    * The constant TYPE name.
+    */
+   public static final String TYPE = "Annotation";
    private volatile AttributeType<? extends Tag> tagAttributeType = null;
 
    private AnnotationType(String name) {
@@ -80,10 +73,10 @@ public final class AnnotationType extends HierarchicalEnumValue<AnnotationType> 
    }
 
    /**
-    * Is defined boolean.
+    * Determines if the given name is a defined AnnotationType
     *
     * @param name the name
-    * @return the boolean
+    * @return True if the name is a defined AnnotationType, False otherwise
     */
    public static boolean isDefined(String name) {
       return registry.contains(name);
@@ -147,18 +140,14 @@ public final class AnnotationType extends HierarchicalEnumValue<AnnotationType> 
    }
 
    /**
-    * Returns a collection of all currently registered AnnotationType
-    *
-    * @return the collection of AnnotationType
+    * @return the collection of all currently registered AnnotationType
     */
    public static Collection<AnnotationType> values() {
       return registry.values();
    }
 
    /**
-    * Gets the attribute associated with the tag of this annotation.
-    *
-    * @return the tag attribute
+    * @return the attribute associated with the tag of this annotation.
     */
    public AttributeType<Tag> getTagAttribute() {
       if(tagAttributeType == null) {

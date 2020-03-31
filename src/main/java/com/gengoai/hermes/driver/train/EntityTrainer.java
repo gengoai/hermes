@@ -19,25 +19,17 @@
 
 package com.gengoai.hermes.driver.train;
 
-import com.gengoai.Stopwatch;
 import com.gengoai.apollo.ml.FeatureExtractor;
 import com.gengoai.apollo.ml.Featurizer;
 import com.gengoai.apollo.ml.FitParameters;
-import com.gengoai.apollo.ml.data.ExampleDataset;
 import com.gengoai.apollo.ml.sequence.Crf;
 import com.gengoai.apollo.ml.sequence.SequenceLabeler;
 import com.gengoai.hermes.AnnotatableType;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.annotator.BaseWordCategorization;
-import com.gengoai.hermes.corpus.Corpus;
-import com.gengoai.hermes.ml.BIOLabelMaker;
 import com.gengoai.hermes.ml.BIOTrainer;
 import lombok.extern.java.Log;
 
-import java.io.IOException;
-
-import static com.gengoai.LogUtils.logInfo;
 import static com.gengoai.hermes.ml.feature.Features.*;
 import static com.gengoai.hermes.ml.feature.PredefinedFeatures.lenientContext;
 import static com.gengoai.hermes.ml.feature.PredefinedFeatures.strictContext;
@@ -58,22 +50,6 @@ public class EntityTrainer extends BIOTrainer {
 
    public static void main(String[] args) throws Exception {
       new EntityTrainer().run(args);
-   }
-
-   @Override
-   protected ExampleDataset getDataset(FeatureExtractor<HString> featurizer) throws IOException {
-      Stopwatch read = Stopwatch.createStarted();
-      Corpus c = Corpus.read(corpusSpecification)
-                       .update(BaseWordCategorization.INSTANCE::categorize);
-      read.stop();
-      logInfo(log, "Completed reading corpus in: {0}", read);
-      if(required().length > 0) {
-         c.annotate(required());
-      }
-      return c.asSequenceDataset(s -> {
-         s.featureExtractor(getFeaturizer());
-         s.labelGenerator(new BIOLabelMaker(trainingAnnotation, validTags()));
-      });
    }
 
    @Override
@@ -130,16 +106,9 @@ public class EntityTrainer extends BIOTrainer {
       return new Crf(getPreprocessors());
    }
 
-
-//   @Override
-//   protected Set<String> validTags() {
-//      return hashSetOf("PERSON", "LOCATION", "ORGANIZATION", "CARDINAL", "ORDINAL");
-//   }
-
    @Override
    protected AnnotatableType[] required() {
       return new AnnotatableType[]{Types.TOKEN, Types.SENTENCE};
    }
-
 
 }//END OF EntityTrainer

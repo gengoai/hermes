@@ -25,8 +25,8 @@ import com.gengoai.Language;
 import com.gengoai.StringTag;
 import com.gengoai.Tag;
 import com.gengoai.annotation.Preload;
+import com.gengoai.hermes.morphology.POS;
 import com.gengoai.hermes.morphology.TokenType;
-import com.gengoai.hermes.ner.EntityType;
 import com.gengoai.string.Strings;
 import lombok.NonNull;
 
@@ -39,7 +39,7 @@ import java.util.Set;
 import static com.gengoai.reflection.TypeUtils.parameterizedType;
 
 /**
- * <p>Common Annotation Types. The predefined types are pre-loaded on initialization.</p>
+ * <p>Common Annotatable Types. The predefined types are pre-loaded on initialization.</p>
  *
  * @author David B. Bracewell
  */
@@ -84,6 +84,7 @@ public interface Types {
     * The index of a span with regards to a document
     */
    AttributeType<Integer> INDEX = AttributeType.make("INDEX", int.class);
+   AttributeType<Boolean> IS_NEGATED = AttributeType.make("NEGATION", Boolean.class);
    /**
     *
     */
@@ -168,16 +169,16 @@ public interface Types {
     * The TRANSLITERATION.
     */
    AttributeType<String> TRANSLITERATION = AttributeType.make("TRANSLITERATION", String.class);
+   AttributeType<Set<String>> WIKI_CATEGORIES = AttributeType.make("WIKI_CATEGORIES",
+                                                                   parameterizedType(Set.class, String.class));
+   AttributeType<Map<String, String>> WIKI_LINKS = AttributeType.make("WIKI_LINKS",
+                                                                      parameterizedType(Map.class,
+                                                                                        String.class,
+                                                                                        String.class));
    /**
     * The constant WORD_SENSE.
     */
    AnnotationType WORD_SENSE = AnnotationType.make("WORD_SENSE", PART_OF_SPEECH);
-
-   AttributeType<Boolean> IS_NEGATED = AttributeType.make("NEGATION", Boolean.class);
-
-
-   AttributeType<Map<String,String>> WIKI_LINKS = AttributeType.make("WIKI_LINKS", parameterizedType(Map.class, String.class, String.class));
-   AttributeType<Set<String>> WIKI_CATEGORIES = AttributeType.make("WIKI_CATEGORIES", parameterizedType(Set.class, String.class));
 
    /**
     * Annotation annotation type.
@@ -222,7 +223,6 @@ public interface Types {
    static <T> AttributeType<T> attribute(String name, Class<T> type) {
       return AttributeType.make(name);
    }
-
 
    /**
     * Relation relation type.

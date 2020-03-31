@@ -20,7 +20,7 @@
 package com.gengoai.hermes.en;
 
 import com.gengoai.hermes.Annotation;
-import com.gengoai.hermes.POS;
+import com.gengoai.hermes.morphology.POS;
 import com.gengoai.hermes.Types;
 import com.gengoai.hermes.morphology.StopWords;
 import com.gengoai.hermes.morphology.TokenType;

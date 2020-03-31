@@ -23,7 +23,7 @@ import com.gengoai.stream.Streams;
 import com.gengoai.collection.multimap.ArrayListMultimap;
 import com.gengoai.collection.multimap.Multimap;
 import com.gengoai.collection.tree.Trie;
-import com.gengoai.hermes.POS;
+import com.gengoai.hermes.morphology.POS;
 import com.gengoai.hermes.morphology.Lemmatizer;
 import com.gengoai.io.CSV;
 import com.gengoai.io.CSVReader;

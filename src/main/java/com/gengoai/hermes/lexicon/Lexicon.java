@@ -126,7 +126,7 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
     * @return the maximum probability for the String
     */
    public final double getProbability(String lemma) {
-      return getProbability(Fragments.string(lemma));
+      return getProbability(Fragments.stringWrapper(lemma));
    }
 
    /**
@@ -152,7 +152,7 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
     * @return the maximum probability for the String with the given tag
     */
    public final double getProbability(String string, Tag tag) {
-      return getProbability(Fragments.string(string), tag);
+      return getProbability(Fragments.stringWrapper(string), tag);
    }
 
    /**
@@ -162,7 +162,7 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
     * @return the first matched tag for the String
     */
    public final Optional<Tag> getTag(String lemma) {
-      return getTag(Fragments.string(lemma));
+      return getTag(Fragments.stringWrapper(lemma));
    }
 
    /**

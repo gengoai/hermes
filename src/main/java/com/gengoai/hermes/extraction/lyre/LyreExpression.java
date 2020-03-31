@@ -33,7 +33,7 @@ import com.gengoai.conversion.Converter;
 import com.gengoai.function.SerializableFunction;
 import com.gengoai.function.SerializablePredicate;
 import com.gengoai.hermes.HString;
-import com.gengoai.hermes.POS;
+import com.gengoai.hermes.morphology.POS;
 import com.gengoai.hermes.extraction.Extraction;
 import com.gengoai.hermes.extraction.FeaturizingExtractor;
 import com.gengoai.hermes.lexicon.WordList;

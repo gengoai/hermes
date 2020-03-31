@@ -50,7 +50,6 @@ public class Runner extends HermesCorpusCLI {
       Specification in = getInputSpecification();
       Specification out = getOutputSpecification();
       return (inCorpus != outCorpus) ||
-         !inCorpus.isPersistent() ||
          !in.getSchema().equals(out.getSchema()) ||
          !in.getPath().equals(out.getPath());
    }

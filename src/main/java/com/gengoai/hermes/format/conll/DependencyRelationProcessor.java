@@ -25,8 +25,8 @@ package com.gengoai.hermes.format.conll;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.Document;
 import com.gengoai.hermes.HString;
-import com.gengoai.hermes.corpus.io.CoNLLColumnProcessor;
-import com.gengoai.hermes.corpus.io.CoNLLRow;
+import com.gengoai.hermes.format.CoNLLColumnProcessor;
+import com.gengoai.hermes.format.CoNLLRow;
 import com.gengoai.string.Strings;
 import com.gengoai.tuple.Tuple2;
 import org.kohsuke.MetaInfServices;
@@ -34,7 +34,7 @@ import org.kohsuke.MetaInfServices;
 import java.util.List;
 import java.util.Map;
 
-import static com.gengoai.hermes.corpus.io.CoNLLReader.EMPTY_FIELD;
+import static com.gengoai.hermes.format.CoNLLFormat.EMPTY_FIELD;
 
 /**
  * Processes dependency relation information in CoNLL Files
@@ -45,19 +45,23 @@ import static com.gengoai.hermes.corpus.io.CoNLLReader.EMPTY_FIELD;
 public class DependencyRelationProcessor implements CoNLLColumnProcessor {
 
    @Override
-   public void processInput(Document document, List<CoNLLRow> documentRows, Map<Tuple2<Integer, Integer>, Long> sentenceIndexToAnnotationId) {
+   public String getFieldName() {
+      return "DEPENDENCY_RELATION";
+   }
+
+   @Override
+   public void processInput(Document document,
+                            List<CoNLLRow> documentRows,
+                            Map<Tuple2<Integer, Integer>, Long> sentenceIndexToAnnotationId) {
 
    }
 
    @Override
    public String processOutput(HString document, Annotation token, int index) {
       String rel = token.dependency().v1;
-      return Strings.isNullOrBlank(rel) ? EMPTY_FIELD : rel;
-   }
-
-   @Override
-   public String getFieldName() {
-      return "DEPENDENCY_RELATION";
+      return Strings.isNullOrBlank(rel)
+             ? EMPTY_FIELD
+             : rel;
    }
 
    @Override

@@ -36,53 +36,32 @@ class DefaultAnnotationImpl extends BaseHString implements Annotation {
    private long id = DETACHED_ID;
    private volatile transient Annotation[] tokens;
 
-   /**
-    * Instantiates a new Annotation.
-    *
-    * @param owner          the document that owns this annotation
-    * @param annotationType The type of annotation
-    * @param start          the character starting offset in the document
-    * @param end            the character ending offset in the document
-    */
-   public DefaultAnnotationImpl(@NonNull Document owner, @NonNull AnnotationType annotationType, int start, int end) {
+   protected DefaultAnnotationImpl(Document owner,
+                                   AnnotationType type,
+                                   int start,
+                                   int end) {
       super(start, end);
       Validation.checkArgument(start <= end,
                                "Annotations must have a start character index that is less than or equal to the ending index.");
-      this.annotationType = annotationType;
+      this.annotationType = type == null
+                            ? AnnotationType.ROOT
+                            : type;
       this.owner = owner;
    }
 
-
-   /**
-    * Instantiates a new Annotation.
-    *
-    * @param string         the string that this annotation will encompass
-    * @param annotationType the annotation type
-    */
-   public DefaultAnnotationImpl(@NonNull HString string, @NonNull AnnotationType annotationType) {
+   protected DefaultAnnotationImpl(@NonNull HString string, @NonNull AnnotationType annotationType) {
       super(string.start(), string.end());
       this.owner = string.document();
       this.annotationType = annotationType;
    }
 
-   /**
-    * Instantiates a new Annotation.
-    */
    protected DefaultAnnotationImpl() {
       super(0, 0);
       this.owner = null;
       this.annotationType = AnnotationType.ROOT;
    }
 
-
-   /**
-    * Instantiates a new orphaned Annotation.
-    *
-    * @param type  The type of annotation
-    * @param start the character starting offset in the document
-    * @param end   the character ending offset in the document
-    */
-   protected DefaultAnnotationImpl(@NonNull AnnotationType type, int start, int end) {
+   protected DefaultAnnotationImpl(AnnotationType type, int start, int end) {
       super(start, end);
       this.owner = null;
       this.annotationType = type == null
@@ -107,11 +86,6 @@ class DefaultAnnotationImpl extends BaseHString implements Annotation {
    @Override
    public long getId() {
       return id;
-   }
-
-   @Override
-   public void setId(long id) {
-      this.id = id;
    }
 
    @Override
@@ -152,6 +126,11 @@ class DefaultAnnotationImpl extends BaseHString implements Annotation {
       if(outgoingRelations.remove(relation)) {
          relation.getTarget(this).removeRelation(new Relation(relation.getType(), relation.getValue(), getId()));
       }
+   }
+
+   @Override
+   public void setId(long id) {
+      this.id = id;
    }
 
    @Override

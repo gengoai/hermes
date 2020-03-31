@@ -25,15 +25,16 @@ package com.gengoai.hermes.format.conll;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.Document;
 import com.gengoai.hermes.HString;
-import com.gengoai.hermes.corpus.io.CoNLLColumnProcessor;
-import com.gengoai.hermes.corpus.io.CoNLLRow;
+import com.gengoai.hermes.morphology.POS;
+import com.gengoai.hermes.format.CoNLLColumnProcessor;
+import com.gengoai.hermes.format.CoNLLRow;
 import com.gengoai.tuple.Tuple2;
 import org.kohsuke.MetaInfServices;
 
 import java.util.List;
 import java.util.Map;
 
-import static com.gengoai.hermes.corpus.io.CoNLLReader.EMPTY_FIELD;
+import static com.gengoai.hermes.format.CoNLLFormat.EMPTY_FIELD;
 
 /**
  * Processes universal part-of-speech information
@@ -43,19 +44,22 @@ import static com.gengoai.hermes.corpus.io.CoNLLReader.EMPTY_FIELD;
 @MetaInfServices
 public class UPOSProcessor implements CoNLLColumnProcessor {
 
+   @Override
+   public String getFieldName() {
+      return "UPOS";
+   }
 
    @Override
-   public void processInput(Document document, List<CoNLLRow> documentRows, Map<Tuple2<Integer, Integer>, Long> sentenceIndexToAnnotationId) {
+   public void processInput(Document document,
+                            List<CoNLLRow> documentRows,
+                            Map<Tuple2<Integer, Integer>, Long> sentenceIndexToAnnotationId) {
 
    }
 
    @Override
    public String processOutput(HString document, Annotation token, int index) {
-      return token.pos() == null ? EMPTY_FIELD : token.pos().getUniversalTag().asString();
-   }
-
-   @Override
-   public String getFieldName() {
-      return "UPOS";
+      return token.pos() == null || token.pos() == POS.ANY
+             ? EMPTY_FIELD
+             : token.pos().getUniversalTag().asString();
    }
 }//END OF UPOSProcessor

@@ -23,15 +23,15 @@
 package com.gengoai.hermes.format.conll;
 
 import com.gengoai.hermes.*;
-import com.gengoai.hermes.corpus.io.CoNLLColumnProcessor;
-import com.gengoai.hermes.corpus.io.CoNLLRow;
+import com.gengoai.hermes.format.CoNLLColumnProcessor;
+import com.gengoai.hermes.format.CoNLLRow;
 import com.gengoai.tuple.Tuple2;
 import org.kohsuke.MetaInfServices;
 
 import java.util.List;
 import java.util.Map;
 
-import static com.gengoai.hermes.corpus.io.CoNLLReader.EMPTY_FIELD;
+import static com.gengoai.hermes.format.CoNLLFormat.EMPTY_FIELD;
 import static com.gengoai.tuple.Tuples.$;
 
 /**
@@ -43,9 +43,16 @@ import static com.gengoai.tuple.Tuples.$;
 public class DependencyLinkProcessor implements CoNLLColumnProcessor {
 
    @Override
-   public void processInput(Document document, List<CoNLLRow> documentRows, Map<Tuple2<Integer, Integer>, Long> sentenceIndexToAnnotationId) {
+   public String getFieldName() {
+      return "HEAD";
+   }
+
+   @Override
+   public void processInput(Document document,
+                            List<CoNLLRow> documentRows,
+                            Map<Tuple2<Integer, Integer>, Long> sentenceIndexToAnnotationId) {
       documentRows.forEach(row -> {
-         if (row.getParent() > 0) {
+         if(row.getParent() > 0) {
             long target = sentenceIndexToAnnotationId.get($(row.getSentence(), row.getParent()));
             document.annotation(row.getAnnotationID())
                     .add(new Relation(Types.DEPENDENCY, row.getDepRelation(), target));
@@ -56,22 +63,19 @@ public class DependencyLinkProcessor implements CoNLLColumnProcessor {
    @Override
    public String processOutput(HString document, Annotation token, int index) {
       Annotation targetAnnotation = token.dependency().v2;
-      long targetID = targetAnnotation.isEmpty() ? -1 : targetAnnotation.getId();
-      if (targetID < 0L) {
+      long targetID = targetAnnotation.isEmpty()
+                      ? -1
+                      : targetAnnotation.getId();
+      if(targetID < 0L) {
          return "0";
       }
       List<Annotation> sentence = document.tokens();
-      for (int i = 0; i < sentence.size(); i++) {
-         if (sentence.get(i).getId() == targetID) {
+      for(int i = 0; i < sentence.size(); i++) {
+         if(sentence.get(i).getId() == targetID) {
             return Integer.toString(i + 1);
          }
       }
       return EMPTY_FIELD;
-   }
-
-   @Override
-   public String getFieldName() {
-      return "HEAD";
    }
 
    @Override

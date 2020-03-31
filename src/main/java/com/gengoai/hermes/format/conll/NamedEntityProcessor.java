@@ -24,7 +24,7 @@ package com.gengoai.hermes.format.conll;
 
 import com.gengoai.config.Config;
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.corpus.io.CoNLLColumnProcessor;
+import com.gengoai.hermes.format.CoNLLColumnProcessor;
 import org.kohsuke.MetaInfServices;
 
 /**
@@ -51,8 +51,8 @@ public class NamedEntityProcessor extends IOBFieldProcessor {
    @Override
    protected String normalizeTag(String tag) {
       tag = tag.toUpperCase();
-      if (Config.get("conll.ner.normalize").asBooleanValue(false)) {
-         switch (tag) {
+      if(Config.get("conll.ner.normalize").asBooleanValue(false)) {
+         switch(tag) {
             case "PER":
                return "PERSON";
             case "ORG":
@@ -73,13 +73,13 @@ public class NamedEntityProcessor extends IOBFieldProcessor {
                return null;
          }
       }
-      if (tag.equals("ORG")) {
+      if(tag.equals("ORG")) {
          return "ORGANIZATION";
       }
-      if (tag.equals("LOC")) {
+      if(tag.equals("LOC")) {
          return "LOCATION";
       }
-      if (tag.equals("PER")) {
+      if(tag.equals("PER")) {
          return "PERSON";
       }
       return tag;

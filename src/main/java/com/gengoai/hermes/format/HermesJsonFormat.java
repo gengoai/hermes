@@ -21,21 +21,28 @@ package com.gengoai.hermes.format;
 
 import com.gengoai.hermes.Document;
 import com.gengoai.io.resource.Resource;
-import com.gengoai.stream.StreamingContext;
 import org.kohsuke.MetaInfServices;
 
 import java.io.IOException;
-import java.util.Iterator;
+import java.io.Serializable;
+import java.util.stream.Stream;
 
-public class HermesJsonFormat extends OneDocPerFileFormat {
+public class HermesJsonFormat extends WholeFileTextFormat implements OneDocPerFileFormat, Serializable {
    private static final long serialVersionUID = 1L;
+   private final DocFormatParameters parameters;
+
+   public HermesJsonFormat(DocFormatParameters parameters) {
+      this.parameters = parameters;
+   }
 
    @Override
-   public Iterator<Document> read(Resource inputResource) {
-      return StreamingContext.local()
-                             .textFile(inputResource, true)
-                             .map(Document::fromJson)
-                             .iterator();
+   public DocFormatParameters getParameters() {
+      return parameters;
+   }
+
+   @Override
+   protected Stream<Document> readSingleFile(String content) {
+      return Stream.of(Document.fromJson(content));
    }
 
    @Override
@@ -48,7 +55,7 @@ public class HermesJsonFormat extends OneDocPerFileFormat {
 
       @Override
       public DocFormat create(DocFormatParameters parameters) {
-         return new HermesJsonFormat();
+         return new HermesJsonFormat(parameters);
       }
 
       @Override

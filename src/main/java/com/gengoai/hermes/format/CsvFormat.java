@@ -36,20 +36,20 @@ import com.gengoai.io.CSV;
 import com.gengoai.io.CSVWriter;
 import com.gengoai.io.Resources;
 import com.gengoai.io.resource.Resource;
-import com.gengoai.stream.StreamingContext;
 import com.gengoai.stream.Streams;
 import com.gengoai.string.Strings;
 import lombok.NonNull;
 import org.kohsuke.MetaInfServices;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.gengoai.reflection.TypeUtils.parameterizedType;
 
-public class CsvFormat implements DocFormat {
+public class CsvFormat extends WholeFileTextFormat implements Serializable {
    private static final long serialVersionUID = 1L;
    /**
     * List of strings representing the column names
@@ -140,8 +140,14 @@ public class CsvFormat implements DocFormat {
       return columnNames;
    }
 
-   private Stream<Document> processFile(String file) {
-      final DocumentFactory documentFactory = parameters.documentFactory.value();
+   @Override
+   public DocFormatParameters getParameters() {
+      return parameters;
+   }
+
+   @Override
+   protected Stream<Document> readSingleFile(String file) {
+      final DocumentFactory documentFactory = parameters.getDocumentFactory();
       final LinkedList<List<String>> rows = Cast.as(Lists.asLinkedList(rows(file)));
       return Streams.asStream(new Iterator<Document>() {
          @Override
@@ -157,15 +163,6 @@ public class CsvFormat implements DocFormat {
             return createDocument(rows.removeFirst(), documentFactory);
          }
       });
-   }
-
-   @Override
-   public Iterator<Document> read(Resource inputResource) {
-      return StreamingContext.local()
-                             .textFile(inputResource, true)
-                             .flatMap(this::processFile)
-                             .iterator();
-
    }
 
    private Iterable<List<String>> rows(String fileContent) {
@@ -187,11 +184,6 @@ public class CsvFormat implements DocFormat {
       } catch(IOException e) {
          throw new RuntimeException(e);
       }
-   }
-
-   @Override
-   public void write(Document document, Resource outputResource) throws IOException {
-      write(Corpus.create(document), outputResource);
    }
 
    @Override
@@ -227,6 +219,11 @@ public class CsvFormat implements DocFormat {
             csvWriter.write(row);
          }
       }
+   }
+
+   @Override
+   public void write(Document document, Resource outputResource) throws IOException {
+      //write(Corpus.create(document), outputResource);
    }
 
    @MetaInfServices

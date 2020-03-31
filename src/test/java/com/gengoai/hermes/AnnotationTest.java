@@ -24,8 +24,6 @@ package com.gengoai.hermes;
 import com.gengoai.config.Config;
 import com.gengoai.hermes.annotator.DocumentProvider;
 import com.gengoai.hermes.morphology.TokenType;
-import com.gengoai.hermes.ner.Entities;
-import com.gengoai.hermes.ner.EntityType;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -43,7 +41,7 @@ public class AnnotationTest {
 
    @Test
    public void makeTest() {
-      Annotation a = new DefaultAnnotationImpl(Fragments.string("test"), ENTITY);
+      Annotation a = new DefaultAnnotationImpl(Fragments.stringWrapper("test"), ENTITY);
       a.put(ENTITY_TYPE, Entities.EMAIL);
 
       assertNotNull(a);

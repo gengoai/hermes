@@ -21,14 +21,14 @@ package com.gengoai.hermes.format;
 
 import com.gengoai.hermes.Document;
 import com.gengoai.io.resource.Resource;
-import com.gengoai.stream.StreamingContext;
 import lombok.NonNull;
 import org.kohsuke.MetaInfServices;
 
 import java.io.IOException;
-import java.util.Iterator;
+import java.io.Serializable;
+import java.util.stream.Stream;
 
-public class TxtFormat extends OneDocPerFileFormat {
+public class TxtFormat extends WholeFileTextFormat implements OneDocPerFileFormat, Serializable {
    private static final long serialVersionUID = 1L;
    private final DocFormatParameters parameters;
 
@@ -37,11 +37,13 @@ public class TxtFormat extends OneDocPerFileFormat {
    }
 
    @Override
-   public Iterator<Document> read(Resource inputResource) {
-      return StreamingContext.local()
-                             .textFile(inputResource, true)
-                             .map(line -> parameters.documentFactory.value().create(line))
-                             .iterator();
+   public DocFormatParameters getParameters() {
+      return parameters;
+   }
+
+   @Override
+   protected Stream<Document> readSingleFile(String content) {
+      return Stream.of(parameters.getDocumentFactory().create(content));
    }
 
    @Override

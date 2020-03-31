@@ -33,7 +33,7 @@ import com.gengoai.application.CommandLineApplication;
 import com.gengoai.application.Option;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.corpus.Corpus;
+import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.hermes.en.ENPOSValidator;
 import com.gengoai.hermes.ml.Mode;
 import com.gengoai.hermes.ml.POSTagger;
@@ -54,17 +54,11 @@ import static com.gengoai.apollo.ml.Featurizer.predicateFeaturizer;
  */
 public class POSTrainer extends CommandLineApplication {
    private static final long serialVersionUID = 1L;
-
    /**
     * The Corpus.
     */
-   @Option(description = "Location of the corpus to process", required = true)
-   Resource corpus;
-   /**
-    * The Corpus format.
-    */
-   @Option(name = "format", description = "Format of the corpus", defaultValue = "JSON_OPL")
-   String corpusFormat;
+   @Option(description = "The specification of the document collection to use as the training data", required = true)
+   String data;
    /**
     * The Model.
     */
@@ -87,8 +81,7 @@ public class POSTrainer extends CommandLineApplication {
    Language language;
 
    private volatile Lazy<FeatureExtractor<HString>> featurizer
-         = new Lazy<>(() ->
-                            Featurizer.chain(new AffixFeaturizer(3, 3),
+         = new Lazy<>(() -> Featurizer.chain(new AffixFeaturizer(3, 3),
                                              Features.LowerCaseWord,
                                              predicateFeaturizer("ALL_UPPERCASE", Strings::isUpperCase),
                                              predicateFeaturizer("START_UPPERCASE",
@@ -119,7 +112,6 @@ public class POSTrainer extends CommandLineApplication {
                                                              "~WORD[+1]|WORD[+2]"
                                                             )
    );
-
 
    /**
     * Instantiates a new Pos trainer.
@@ -152,14 +144,13 @@ public class POSTrainer extends CommandLineApplication {
     * @throws Exception the exception
     */
    protected ExampleDataset loadDataset() throws Exception {
-      return Corpus.reader(corpusFormat)
-                   .read(corpus)
-                   .asSequenceDataset(dd -> {
-                      dd.labelAttribute(Types.PART_OF_SPEECH);
-                      dd.sequenceType(Types.SENTENCE);
-                      dd.tokenType(Types.TOKEN);
-                      dd.featureExtractor(featurizer.get());
-                   }, DatasetType.InMemory);
+      return DocumentCollection.create(data)
+                               .asSequenceDataset(dd -> {
+                                  dd.labelAttribute(Types.PART_OF_SPEECH);
+                                  dd.sequenceType(Types.SENTENCE);
+                                  dd.tokenType(Types.TOKEN);
+                                  dd.featureExtractor(featurizer.get());
+                               }, DatasetType.InMemory);
    }
 
    @Override
@@ -191,7 +182,7 @@ public class POSTrainer extends CommandLineApplication {
       POSTagger tagger = POSTagger.read(model);
       ExampleDataset test = loadDataset();
       PerInstanceEvaluation evaluation = new PerInstanceEvaluation();
-      evaluation.evaluate(tagger.getSequenceLabeler(), test);
+      evaluation.evaluate(tagger.getLabeler(), test);
       evaluation.output(true);
    }
 

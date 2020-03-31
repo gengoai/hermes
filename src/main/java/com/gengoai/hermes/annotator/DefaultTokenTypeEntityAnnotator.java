@@ -25,8 +25,8 @@ import com.gengoai.hermes.AnnotatableType;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.Types;
 import com.gengoai.hermes.morphology.TokenType;
-import com.gengoai.hermes.ner.Entities;
-import com.gengoai.hermes.ner.EntityType;
+import com.gengoai.hermes.Entities;
+import com.gengoai.hermes.EntityType;
 
 import java.util.Collections;
 import java.util.HashMap;

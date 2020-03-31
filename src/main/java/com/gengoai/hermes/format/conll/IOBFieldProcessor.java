@@ -26,8 +26,8 @@ import com.gengoai.StringTag;
 import com.gengoai.Tag;
 import com.gengoai.conversion.Converter;
 import com.gengoai.hermes.*;
-import com.gengoai.hermes.corpus.io.CoNLLColumnProcessor;
-import com.gengoai.hermes.corpus.io.CoNLLRow;
+import com.gengoai.hermes.format.CoNLLColumnProcessor;
+import com.gengoai.hermes.format.CoNLLRow;
 import com.gengoai.string.Strings;
 import com.gengoai.tuple.Tuple2;
 
@@ -123,6 +123,5 @@ public abstract class IOBFieldProcessor implements CoNLLColumnProcessor {
       }
       return "O";
    }
-
 
 }//END OF IOBFieldProcessor

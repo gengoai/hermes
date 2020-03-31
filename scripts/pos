@@ -7,6 +7,6 @@ CORPUS_DIR=/data/corpora/
 
 
 mode=$(echo "${1:-TRAIN}" | tr "[:lower:]" "[:upper:]")
-jexec POSTrainer --corpus "$CORPUS_DIR/$LANG/part_of_speech/combined.txt" --format POS \
+jexec POSTrainer --data "pos_opl::/$CORPUS_DIR/$LANG/part_of_speech/combined.txt" \
   --model "$MODEL_FILE" --mode $mode --ndarray.factory SPARSE \
   --com.gengoai.hermes.resources.dir "$HERMES_RESOURCE_DIR"

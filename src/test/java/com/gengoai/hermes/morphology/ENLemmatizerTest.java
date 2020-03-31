@@ -22,7 +22,6 @@
 package com.gengoai.hermes.morphology;
 
 import com.gengoai.config.Config;
-import com.gengoai.hermes.POS;
 import com.gengoai.hermes.en.ENLemmatizer;
 import org.junit.Test;
 

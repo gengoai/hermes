@@ -28,7 +28,7 @@ import com.gengoai.collection.multimap.HashSetMultimap;
 import com.gengoai.collection.multimap.SetMultimap;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.HString;
-import com.gengoai.hermes.POS;
+import com.gengoai.hermes.morphology.POS;
 import com.gengoai.hermes.Types;
 import com.gengoai.hermes.corpus.Corpus;
 import com.gengoai.hermes.extraction.Extraction;

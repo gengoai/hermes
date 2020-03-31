@@ -23,16 +23,17 @@
 package com.gengoai.hermes.format.conll;
 
 import com.gengoai.hermes.*;
-import com.gengoai.hermes.corpus.io.CoNLLColumnProcessor;
-import com.gengoai.hermes.corpus.io.CoNLLRow;
-import com.gengoai.hermes.corpus.io.POSCorrection;
+import com.gengoai.hermes.format.CoNLLColumnProcessor;
+import com.gengoai.hermes.format.CoNLLRow;
+import com.gengoai.hermes.format.POSCorrection;
+import com.gengoai.hermes.morphology.POS;
 import com.gengoai.tuple.Tuple2;
 import org.kohsuke.MetaInfServices;
 
 import java.util.List;
 import java.util.Map;
 
-import static com.gengoai.hermes.corpus.io.CoNLLReader.EMPTY_FIELD;
+import static com.gengoai.hermes.format.CoNLLFormat.EMPTY_FIELD;
 
 /**
  * Processes part-of-speech fields
@@ -53,11 +54,11 @@ public final class POSFieldProcessor implements CoNLLColumnProcessor {
                             Map<Tuple2<Integer, Integer>, Long> sentenceIndexToAnnotationId) {
       documentRows.forEach(row -> {
          String posStr = row.getPos();
-         if (posStr.contains("|")) {
+         if(posStr.contains("|")) {
             posStr = posStr.substring(0, posStr.indexOf('|'));
          }
          document.annotation(row.getAnnotationID()).put(Types.PART_OF_SPEECH,
-                                                              POS.fromString(POSCorrection.pos(row.getWord(), posStr)));
+                                                        POS.fromString(POSCorrection.pos(row.getWord(), posStr)));
 
       });
       document.setCompleted(Types.PART_OF_SPEECH, "PROVIDED");
@@ -66,7 +67,9 @@ public final class POSFieldProcessor implements CoNLLColumnProcessor {
    @Override
    public String processOutput(HString sentence, Annotation token, int index) {
       POS pos = token.pos();
-      return pos == null ? EMPTY_FIELD : pos.asString();
+      return pos == null || pos == POS.ANY
+             ? EMPTY_FIELD
+             : pos.asString();
    }
 
    @Override

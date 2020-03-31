@@ -29,28 +29,21 @@ import com.gengoai.string.Strings;
 import com.gengoai.tuple.Tuple2;
 import lombok.NonNull;
 
-import java.util.Objects;
-
 import static com.gengoai.tuple.Tuples.$;
 
 /**
- * <p> Annotations are specialized {@link HString}s representing linguistic overlays on a document that associate a
- * type, e.g. token, sentence, named entity, and a set of attributes, e.g. part of speech and entity type, to  a
- * specific  span of a document, which may include the entire document. Annotation type information is defined via the
- * {@link AnnotationType} class. </p>
- *
- * <p> Annotations provide many convenience methods to make navigating the  annotation and relation graph easier. The
- * {@link #next()}, {@link #next(AnnotationType)}, {@link #previous()}, and {@link #previous(AnnotationType)} methods
- * facilitate retrieval of the next and previous annotation of the same or different type. The <code>sources</code>,
- * <code>targets</code>, and {@link #outgoingRelations(RelationType, boolean)} methods allow retrieval of the
- * annotations connected via relations and the relations (edges) themeselves. </p>
+ * <p>
+ * An annotation is an {@link HString} that associates an {@link AnnotationType}, e.g. token, sentence, named entity,
+ * to a specific span of characters in a document, which may include the entire document. Annotations typically have
+ * attributes, e.g. part-of-speech, entity type, etc, and relations, e.g. dependency and co-reference, associated with
+ * them. Annotations are assigned a <b>long</b> id when attached to a document, which uniquely identifies it within that
+ * document.
+ * </p>
  *
  * <p> Commonly, annotations have an associated <code>Tag</code> attribute which acts as label. Examples of tags
  * include part-of-speech and entity type. Tags can be retrieved using the {@link #getTag()} method. Annotation types
- * specify the attribute that represents the tag of an annotation of its type (in some cases annotations may have
- * multiple tags and this definition allows the primary tag to specified). If no tag is specified, a default attribute
- * of
- * <code>TAG</code> is used. </p>
+ * specify the tag attribute when it is created. Note that an annotation can have multiple attributes that are tags,
+ * but the <code>getTag</code> method returns the primary tag as defined by the annotation type.</p>
  *
  * @author David B. Bracewell
  */
@@ -60,10 +53,22 @@ public interface Annotation extends HString {
     */
    long DETACHED_ID = Long.MIN_VALUE;
 
+   /**
+    * Attaches the annotation the document is contained in
+    */
    default void attach() {
       if(isDetached()) {
+         Validation.checkState(document() != null, "Attempting to attach an annotation that has no owning document.");
          document().attach(this);
       }
+   }
+
+   @Override
+   default <T> T attribute(@NonNull AttributeType<T> attributeType) {
+      if(attributeType == Types.TAG) {
+         return Cast.as(attributeMap().get(getType().getTagAttribute()));
+      }
+      return attributeMap().get(attributeType);
    }
 
    @Override
@@ -74,17 +79,8 @@ public interface Annotation extends HString {
             .filter(r -> !this.overlaps(r.getTarget(this)))
             .map(r -> Tuple2.of(r.getValue(), r.getTarget(this)))
             .findFirst()
-            .orElse($(Strings.EMPTY, Fragments.emptyAnnotation(document())));
+            .orElse($(Strings.EMPTY, Fragments.orphanedAnnotation(AnnotationType.ROOT)));
    }
-
-   @Override
-   default <T> T attribute(@NonNull AttributeType<T> attributeType) {
-      if( attributeType == Types.TAG ){
-         return Cast.as(attributeMap().get(getType().getTagAttribute()));
-      }
-      return attributeMap().get(attributeType);
-   }
-
 
    /**
     * Gets the unique id associated with the annotation.
@@ -95,19 +91,7 @@ public interface Annotation extends HString {
    long getId();
 
    /**
-    * Sets the unique id of the annotation.
-    *
-    * @param id the id
-    */
-   void setId(long id);
-
-   /**
-    * <p> Gets the tag, if one, associated with the annotation. The tag attribute is defined for an annotation type
-    * using the <code>tag</code> configuration property, e.g. <code>Annotation.TYPE.tag=fully.qualified.tag.implementation</code>.
-    * Tags must implement the <code>Tag</code> interface. If no tag type is defined, the <code>Attrs.TAG</code>
-    * attribute will be retrieved. </p>
-    *
-    * @return An optional containing the tag if present
+    * @return The value of the tag attribute for the annotation.
     */
    default Tag getTag() {
       AttributeType<? extends Tag> tagAttributeType = getType().getTagAttribute();
@@ -115,10 +99,7 @@ public interface Annotation extends HString {
    }
 
    /**
-    * <p> Gets the tag, if one, associated with the annotation. The tag attribute is defined for an annotation type
-    * using the <code>tag</code> configuration property, e.g. <code>Annotation.TYPE.tag=fully.qualified.tag.implementation</code>.
-    * Tags must implement the <code>Tag</code> interface. If no tag type is defined, the <code>Attrs.TAG</code>
-    * attribute will be retrieved. </p>
+    * Gets the tag, if one, associated with the annotation.
     *
     * @param defaultTag The default tag if one is not on the annotation
     * @return An optional containing the tag if present
@@ -131,17 +112,17 @@ public interface Annotation extends HString {
              : out;
    }
 
-   default boolean hasTag(){
-      return attribute(getType().getTagAttribute()) != null;
-   }
-
    /**
-    * Gets the type of the annotation
-    *
-    * @return the annotation type
+    * @return the type of the annotation
     */
    AnnotationType getType();
 
+   /**
+    * @return True if the annotation has an tag value set, false otherwise
+    */
+   default boolean hasTag() {
+      return attribute(getType().getTagAttribute()) != null;
+   }
 
    @Override
    default boolean isAnnotation() {
@@ -149,9 +130,7 @@ public interface Annotation extends HString {
    }
 
    /**
-    * Is this annotation detached, i.e. not associated with a document?
-    *
-    * @return True if the annotation is detached
+    * @return True if the annotation is detached, False otherwise
     */
    default boolean isDetached() {
       return document() == null || getId() == DETACHED_ID;
@@ -163,8 +142,6 @@ public interface Annotation extends HString {
    }
 
    /**
-    * Gets the next annotation with the same type as this one
-    *
     * @return The next annotation with the same type as this one or an empty fragment
     */
    default Annotation next() {
@@ -172,40 +149,26 @@ public interface Annotation extends HString {
    }
 
    /**
-    * Gets the next annotation with the same type as this one
-    *
-    * @return The next annotation with the same type as this one or an empty fragment
-    */
-   default Annotation next(int n) {
-      Validation.checkArgument(n > 0);
-      Annotation next = next(getType());
-      while(n > 1) {
-         next = next.next(getType());
-         n--;
-      }
-      return next;
-   }
-
-
-   /**
-    * Gets the previous annotation with the same type as this one
-    *
     * @return The previous annotation with the same type as this one or an empty fragment
     */
    default Annotation previous() {
       return previous(getType());
    }
 
-   /**
-    * Determines if this annotation's tag is equal to the given tag.
-    *
-    * @param tag the tag to check
-    * @return True if this annotation's tag is equals of the given tag.
-    */
-   default boolean tagEquals(Object tag) {
-      Tag target = getType().getTagAttribute().decode(tag);
-      return target != null && Objects.equals(getTag(), target);
+   @Override
+   default <T> T put(@NonNull AttributeType<T> attributeType, T value) {
+      return HString.super.put(attributeType == Types.TAG
+                               ? Cast.as(getType().getTagAttribute())
+                               : attributeType,
+                               value);
    }
+
+   /**
+    * Sets the unique id of the annotation.
+    *
+    * @param id the id
+    */
+   void setId(long id);
 
    /**
     * Determines if this annotation's tag is an instance of the given tag.
@@ -219,6 +182,5 @@ public interface Annotation extends HString {
                    : getType().getTagAttribute().decode(tag);
       return target != null && getTag() != null && getTag().isInstance(target);
    }
-
 
 }//END OF Annotation

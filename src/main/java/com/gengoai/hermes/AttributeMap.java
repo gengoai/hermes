@@ -37,7 +37,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Specialized HashMap for storing {@link AttributeType}s and their values
+ * Specialized HashMap for storing {@link AttributeType}s and their values that correctly handles json serialization /
+ * deserialization and allows for checked type gets.
  *
  * @author David B. Bracewell
  */
@@ -59,7 +60,7 @@ public class AttributeMap extends HashMap<AttributeType<?>, Object> {
     * @param attributeType the attribute type
     * @return the value of the attribute
     */
-   public <T> T get(AttributeType<T> attributeType) {
+   public <T> T get(@NonNull AttributeType<T> attributeType) {
       return Cast.as(get((Object) attributeType));
    }
 
@@ -71,15 +72,15 @@ public class AttributeMap extends HashMap<AttributeType<?>, Object> {
     * @param defaultValue  the default value
     * @return the value of the attribute or the default value if the attribute is not in the map
     */
-   public <T> T getOrDefault(AttributeType<T> attributeType, T defaultValue) {
+   public <T> T getOrDefault(@NonNull AttributeType<T> attributeType, T defaultValue) {
       return Cast.as(getOrDefault((Object) attributeType, defaultValue));
    }
 
    @Override
    public Object put(@NonNull AttributeType attributeType, Object value) {
-      if (value == null) {
+      if(value == null) {
          return Cast.as(remove(attributeType));
-      } else if (value instanceof Val) {
+      } else if(value instanceof Val) {
          value = Cast.<Val>as(value).as(attributeType.getValueType());
       }
       return Cast.as(super.put(attributeType, attributeType.decode(value)));
@@ -98,10 +99,7 @@ public class AttributeMap extends HashMap<AttributeType<?>, Object> {
       oos.writeUTF(Json.dumps(this));
    }
 
-   /**
-    * Json Marshaller to serialize and deserialize AttributeMaps in/from Json
-    */
-   public static class AttributeMapMarshaller extends com.gengoai.json.JsonMarshaller<AttributeMap> {
+   static class AttributeMapMarshaller extends com.gengoai.json.JsonMarshaller<AttributeMap> {
 
       @Override
       protected AttributeMap deserialize(JsonEntry entry, Type type) {

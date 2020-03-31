@@ -39,7 +39,6 @@ import com.gengoai.hermes.Types;
 import com.gengoai.io.MonitoredObject;
 import com.gengoai.io.ResourceMonitor;
 import com.gengoai.io.resource.ByteArrayResource;
-import com.gengoai.parsing.ParseException;
 import com.gengoai.stream.MStream;
 import com.gengoai.stream.StreamingContext;
 import lombok.NonNull;
@@ -136,11 +135,6 @@ public class LuceneCorpus implements Corpus {
    }
 
    @Override
-   public Corpus cache() {
-      return this;
-   }
-
-   @Override
    public void close() throws IOException {
       directory.close();
    }
@@ -171,7 +165,7 @@ public class LuceneCorpus implements Corpus {
             long freq = 0;
             int doc;
             while((doc = pe.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-               if(liveDocs.get(doc)) {
+               if(liveDocs == null || liveDocs.get(doc)) {
                   freq++;
                }
             }
@@ -181,31 +175,6 @@ public class LuceneCorpus implements Corpus {
       } catch(IOException e) {
          throw new RuntimeException(e);
       }
-   }
-
-   @Override
-   public Corpus filter(SerializablePredicate<? super Document> filter) {
-      return new StreamingCorpus(stream().filter(filter));
-   }
-
-   @Override
-   public Document get(long index) {
-      return loadDocument((int) index);
-   }
-
-   @Override
-   public Document get(String id) {
-      TermQuery idQuery = new TermQuery(new Term(ID_FIELD, id));
-      try(IndexReader reader = getIndexReader()) {
-         IndexSearcher searcher = new IndexSearcher(reader);
-         ScoreDoc[] r = searcher.search(idQuery, 1).scoreDocs;
-         if(r.length > 0) {
-            return loadDocument(reader, r[0].doc);
-         }
-      } catch(IOException e) {
-         throw new RuntimeException(e);
-      }
-      return null;
    }
 
    @Override
@@ -236,6 +205,21 @@ public class LuceneCorpus implements Corpus {
    public Set<AnnotatableType> getCompletedAnnotations() {
       final long size = size();
       return count(ANNOTATIONS_FIELD, AnnotatableType::valueOf).filterByValue(d -> d >= size).items();
+   }
+
+   @Override
+   public Document getDocument(String id) {
+      TermQuery idQuery = new TermQuery(new Term(ID_FIELD, id));
+      try(IndexReader reader = getIndexReader()) {
+         IndexSearcher searcher = new IndexSearcher(reader);
+         ScoreDoc[] r = searcher.search(idQuery, 1).scoreDocs;
+         if(r.length > 0) {
+            return loadDocument(reader, r[0].doc);
+         }
+      } catch(IOException e) {
+         throw new RuntimeException(e);
+      }
+      return null;
    }
 
    @Override
@@ -278,11 +262,6 @@ public class LuceneCorpus implements Corpus {
    }
 
    @Override
-   public boolean isPersistent() {
-      return true;
-   }
-
-   @Override
    public Iterator<Document> iterator() {
       try {
          return new LuceneDocumentIterator(ResourceMonitor.monitor(getIndexReader()));
@@ -318,15 +297,27 @@ public class LuceneCorpus implements Corpus {
    @Override
    public SearchResults query(@NonNull Query query) {
       try {
-         return new LuceneSearchResults(ResourceMonitor.monitor(getIndexReader()), query);
+         return new LuceneSearchResults(this, queryAndReturnIds(query), query);
       } catch(IOException e) {
          throw new RuntimeException(e);
       }
    }
 
-   @Override
-   public SearchResults query(@NonNull String query) throws ParseException {
-      return query(QueryParser.parse(query));
+   private LinkedHashSet<String> queryAndReturnIds(Query query) throws IOException {
+      LinkedHashSet<String> ids = new LinkedHashSet<>();
+      final org.apache.lucene.search.Query luceneQuery = query.toLucene();
+      try(IndexReader reader = getIndexReader()) {
+         IndexSearcher searcher = new IndexSearcher(reader);
+         TopDocs d = searcher.search(luceneQuery, 10_000);
+         while(d.scoreDocs.length > 0) {
+            ids.addAll(toDocumentIds(reader, d.scoreDocs));
+            d = searcher.searchAfter(d.scoreDocs[d.scoreDocs.length - 1], luceneQuery, 10_000);
+            if(d.scoreDocs.length == 0) {
+               break;
+            }
+         }
+      }
+      return ids;
    }
 
    @Override
@@ -346,13 +337,13 @@ public class LuceneCorpus implements Corpus {
    }
 
    @Override
-   public Corpus sample(int size) {
+   public DocumentCollection sample(int size) {
       return sample(size, new Random());
    }
 
    @Override
-   public Corpus sample(int count, @NonNull Random random) {
-      TopDocs docs;
+   public DocumentCollection sample(int count, @NonNull Random random) {
+      LinkedHashSet<String> ids;
       try(IndexReader reader = getIndexReader()) {
          IndexSearcher searcher = new IndexSearcher(reader);
          Sort sort = new Sort();
@@ -362,14 +353,11 @@ public class LuceneCorpus implements Corpus {
                return new RandomOrderComparator(random);
             }
          }));
-         docs = searcher.search(new MatchAllDocsQuery(), count, sort);
+         ids = toDocumentIds(reader, searcher.search(new MatchAllDocsQuery(), count, sort).scoreDocs);
       } catch(IOException e) {
          throw new RuntimeException(e);
       }
-      return new StreamingCorpus(StreamingContext.local()
-                                                 .stream(docs.scoreDocs)
-                                                 .parallel()
-                                                 .map(sd -> loadDocument(sd.doc)));
+      return new LuceneFilteredView(this, ids);
    }
 
    @Override
@@ -433,6 +421,18 @@ public class LuceneCorpus implements Corpus {
       return iDoc;
    }
 
+   protected LinkedHashSet<String> toDocumentIds(IndexReader reader, ScoreDoc[] scoreDocs) {
+      LinkedHashSet<String> ids = new LinkedHashSet<>();
+      for(ScoreDoc scoreDoc : scoreDocs) {
+         try {
+            ids.add(reader.document(scoreDoc.doc, Collections.singleton(ID_FIELD)).getField(ID_FIELD).stringValue());
+         } catch(IOException e) {
+            throw new RuntimeException(e);
+         }
+      }
+      return ids;
+   }
+
    private Field toField(String name, Object v) {
       if(v instanceof Float) {
          return new FloatPoint(name, ((Number) v).floatValue());
@@ -474,7 +474,7 @@ public class LuceneCorpus implements Corpus {
       } catch(IOException e) {
          e.printStackTrace();
       }
-      logInfo(LuceneCorpus.log,
+      logInfo(log,
               "Documents/Second: {0}",
               consumer.documentCounter.get() / timer.elapsed(TimeUnit.SECONDS));
       return this;
@@ -575,123 +575,6 @@ public class LuceneCorpus implements Corpus {
       }
    }
 
-   private class LuceneSearchIterator implements Iterator<Document> {
-      private final org.apache.lucene.search.Query query;
-      private final MonitoredObject<IndexReader> reader;
-      private final IndexSearcher searcher;
-      int index = 0;
-      private TopDocs docs = null;
-      private boolean hasMoreDocs = true;
-      private ScoreDoc scoreDoc = null;
-
-      public LuceneSearchIterator(MonitoredObject<IndexReader> reader, org.apache.lucene.search.Query query) {
-         this.reader = reader;
-         this.searcher = new IndexSearcher(reader.object);
-         this.query = query;
-      }
-
-      private boolean advance() {
-         if(!hasMoreDocs) {
-            return false;
-         }
-         if(scoreDoc != null) {
-            return true;
-         }
-         try {
-            if(docs == null) {
-               docs = searcher.search(query, 10_000);
-               hasMoreDocs = docs.scoreDocs.length > 0;
-               if(hasMoreDocs) {
-                  scoreDoc = docs.scoreDocs[0];
-                  index = 1;
-               }
-               return hasMoreDocs;
-            } else if(index >= docs.scoreDocs.length) {
-               docs = searcher.searchAfter(scoreDoc, query, 10_000);
-               hasMoreDocs = docs.scoreDocs.length > 0;
-               scoreDoc = docs.scoreDocs[0];
-               index = 1;
-               return hasMoreDocs;
-            }
-            scoreDoc = docs.scoreDocs[index];
-            index++;
-            return true;
-         } catch(IOException e) {
-            hasMoreDocs = false;
-            return false;
-         }
-      }
-
-      @Override
-      public boolean hasNext() {
-         return advance();
-      }
-
-      @Override
-      public Document next() {
-         if(!advance()) {
-            throw new NoSuchElementException();
-         }
-         Document doc = loadDocument(reader.object, scoreDoc.doc);
-         scoreDoc = null;
-         return doc;
-      }
-   }
-
-   private class LuceneSearchResults implements SearchResults {
-      private final Query hermesQuery;
-      private final org.apache.lucene.search.Query luceneQuery;
-      private final MonitoredObject<IndexReader> reader;
-      Long size = null;
-
-      public LuceneSearchResults(MonitoredObject<IndexReader> reader, Query hermesQuery) {
-         this.reader = reader;
-         this.hermesQuery = hermesQuery;
-         this.luceneQuery = hermesQuery.toLucene();
-      }
-
-      @Override
-      public Query getQuery() {
-         return hermesQuery;
-      }
-
-      @Override
-      public long getTotalHits() {
-         if(size != null) {
-            return size;
-         }
-         long cnt = 0;
-
-         try {
-            IndexSearcher searcher = new IndexSearcher(reader.object);
-            TopDocs d = searcher.search(luceneQuery, 10_000);
-            cnt += d.scoreDocs.length;
-            while(d.scoreDocs.length > 0) {
-               d = searcher.searchAfter(d.scoreDocs[d.scoreDocs.length - 1], luceneQuery, 10_000);
-               cnt += d.scoreDocs.length;
-               if(d.scoreDocs.length == 0) {
-                  size = cnt;
-                  return size;
-               }
-            }
-         } catch(IOException ioe) {
-            throw new RuntimeException(ioe);
-         }
-
-         if(size == null) {
-            size = cnt;
-         }
-         return size;
-      }
-
-      @Override
-      public Iterator<Document> iterator() {
-         return new LuceneSearchIterator(reader, luceneQuery);
-      }
-
-
-   }
-
    private class LuceneSplitIterator implements Spliterator<Document> {
       private final Bits liveDocs;
       private final MonitoredObject<IndexReader> reader;
@@ -756,7 +639,6 @@ public class LuceneCorpus implements Corpus {
       private final AtomicLong wordCounter = new AtomicLong();
       private final IndexWriter writer;
 
-
       /**
        * Instantiates a new Update consumer.
        *
@@ -771,7 +653,6 @@ public class LuceneCorpus implements Corpus {
             throw new RuntimeException(e);
          }
       }
-
 
       @Override
       public void accept(Document document) {
@@ -800,7 +681,6 @@ public class LuceneCorpus implements Corpus {
             }
          }
       }
-
 
    }
 

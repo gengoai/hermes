@@ -52,7 +52,6 @@ public class TextNormalization implements Serializable {
    private static volatile TextNormalization INSTANCE;
    private final List<TextNormalizer> preprocessors;
 
-
    private TextNormalization() {
       preprocessors = new ArrayList<>();
    }
@@ -83,6 +82,16 @@ public class TextNormalization implements Serializable {
    }
 
    /**
+    * Create instance text normalization.
+    *
+    * @param normalizers the normalizers
+    * @return the text normalization
+    */
+   public static TextNormalization createInstance(Collection<? extends TextNormalizer> normalizers) {
+      return new TextNormalization(normalizers);
+   }
+
+   /**
     * No op instance text normalization.
     *
     * @return A TextNormalization that does no normalization
@@ -93,14 +102,8 @@ public class TextNormalization implements Serializable {
       return factory;
    }
 
-   /**
-    * Create instance text normalization.
-    *
-    * @param normalizers the normalizers
-    * @return the text normalization
-    */
-   public static TextNormalization createInstance(Collection<? extends TextNormalizer> normalizers) {
-      return new TextNormalization(normalizers);
+   public List<TextNormalizer> getPreprocessors() {
+      return Collections.unmodifiableList(preprocessors);
    }
 
    private void initConfig() {
@@ -150,7 +153,6 @@ public class TextNormalization implements Serializable {
          return JsonEntry.from(textNormalization.preprocessors);
       }
    }
-
 
 }//END OF TextNormalizer
 

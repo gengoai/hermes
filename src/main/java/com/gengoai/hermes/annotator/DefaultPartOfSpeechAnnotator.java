@@ -25,14 +25,13 @@ import com.gengoai.Language;
 import com.gengoai.cache.Cache;
 import com.gengoai.hermes.AnnotatableType;
 import com.gengoai.hermes.Annotation;
+import com.gengoai.hermes.ResourceType;
 import com.gengoai.hermes.Types;
 import com.gengoai.hermes.ml.POSTagger;
 
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Set;
-
-import static com.gengoai.hermes.Hermes.modelCache;
 
 /**
  * The type Default part of speech annotator.
@@ -41,8 +40,8 @@ import static com.gengoai.hermes.Hermes.modelCache;
  */
 public class DefaultPartOfSpeechAnnotator extends SentenceLevelAnnotator implements Serializable {
    private static final long serialVersionUID = 1L;
-   private static final Cache<Language, POSTagger> cache = modelCache("Attribute.PART_OF_SPEECH", "pos");
-
+   private static final Cache<Language, POSTagger> cache = ResourceType.MODEL.createCache("Attribute.PART_OF_SPEECH",
+                                                                                          "pos");
 
    @Override
    public void annotate(Annotation sentence) {

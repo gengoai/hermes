@@ -22,18 +22,22 @@ package com.gengoai.hermes.format;
 import com.gengoai.Validation;
 import com.gengoai.hermes.*;
 import com.gengoai.hermes.annotator.BaseWordCategorization;
-import com.gengoai.hermes.corpus.io.POSCorrection;
+import com.gengoai.hermes.morphology.POS;
 import com.gengoai.io.resource.Resource;
-import com.gengoai.stream.StreamingContext;
 import com.gengoai.string.Strings;
 import lombok.NonNull;
 import org.kohsuke.MetaInfServices;
 
 import java.io.IOException;
-import java.util.*;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public class POSFormat extends OneDocPerFileFormat {
+public class POSFormat extends WholeFileTextFormat implements OneDocPerFileFormat, Serializable {
    private static final long serialVersionUID = 1L;
    private final DocFormatParameters parameters;
 
@@ -41,8 +45,14 @@ public class POSFormat extends OneDocPerFileFormat {
       this.parameters = parameters;
    }
 
-   private Document processFile(String content) {
-      DocumentFactory documentFactory = parameters.documentFactory.value();
+   @Override
+   public DocFormatParameters getParameters() {
+      return parameters;
+   }
+
+   @Override
+   protected Stream<Document> readSingleFile(String content) {
+      DocumentFactory documentFactory = parameters.getDocumentFactory();
       List<String> tokens = new LinkedList<>();
       List<String> pos = new ArrayList<>();
       String[] parts = content.split("\\s+");
@@ -74,15 +84,7 @@ public class POSFormat extends OneDocPerFileFormat {
          document.setCompleted(Types.PART_OF_SPEECH, "PROVIDED");
       }
       BaseWordCategorization.INSTANCE.categorize(document);
-      return document;
-   }
-
-   @Override
-   public Iterator<Document> read(Resource inputResource) {
-      return StreamingContext.local()
-                             .textFile(inputResource, true)
-                             .map(this::processFile)
-                             .iterator();
+      return Stream.of(document);
    }
 
    @Override

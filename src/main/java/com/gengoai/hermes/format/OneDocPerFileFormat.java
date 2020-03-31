@@ -27,12 +27,10 @@ import com.gengoai.string.Strings;
 import java.io.IOException;
 import java.io.Serializable;
 
-public abstract class OneDocPerFileFormat implements DocFormat, Serializable {
-   private static final long serialVersionUID = 1L;
-
+public interface OneDocPerFileFormat extends DocFormat, Serializable {
 
    @Override
-   public final void write(Corpus corpus, Resource outputResource) throws IOException {
+   default void write(Corpus corpus, Resource outputResource) throws IOException {
       if(!outputResource.isDirectory()) {
          throw new IOException(outputResource.descriptor() + " must be a directory");
       }
@@ -44,4 +42,5 @@ public abstract class OneDocPerFileFormat implements DocFormat, Serializable {
          i++;
       }
    }
+
 }//END OF OneDocPerFileFormat

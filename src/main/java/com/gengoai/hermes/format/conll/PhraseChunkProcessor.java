@@ -23,7 +23,7 @@
 package com.gengoai.hermes.format.conll;
 
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.corpus.io.CoNLLColumnProcessor;
+import com.gengoai.hermes.format.CoNLLColumnProcessor;
 import org.kohsuke.MetaInfServices;
 
 /**

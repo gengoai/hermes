@@ -28,11 +28,7 @@ import com.gengoai.cache.Cache;
 import com.gengoai.cache.LRUCache;
 import com.gengoai.conversion.Cast;
 import com.gengoai.function.Unchecked;
-import com.gengoai.hermes.AttributeType;
-import com.gengoai.hermes.HString;
-import com.gengoai.hermes.Hermes;
-import com.gengoai.hermes.Types;
-import com.gengoai.string.Strings;
+import com.gengoai.hermes.*;
 import lombok.NonNull;
 import lombok.extern.java.Log;
 
@@ -168,15 +164,22 @@ public final class LexiconManager implements Serializable {
 
    protected static Lexicon loadLexicon(String name, Language language) {
       try {
-         LexiconSpecification specification = safeParse(Hermes.findConfig(name, Hermes.LEXICON, language).orElse(null));
+         LexiconSpecification specification = safeParse(ResourceType.LEXICON.getConfigValue(name, language)
+                                                                            .orElse(null));
          if(specification == null) {
-            return Hermes.findResource(Strings.appendIfNotPresent(name, ".json"), Hermes.LEXICON, language)
-                         .map(r -> "lexicon:mem:json::" + r.descriptor())
-                         .map(Unchecked.function(s -> LexiconSpecification.parse(s).create()))
-                         .orElseGet(() -> {
-                            logWarning(log, "Unable to find lexicon: {0} in {1}", name, language);
-                            return EmptyLexicon;
-                         });
+            //No Lexicon Specification defined, we will try loading a lexicon
+            return ResourceType.LEXICON
+                  .locate(name, language)
+                  .map(r -> {
+                     if(r.baseName().endsWith(".json")) {
+                        return "lexicon:mem:json::" + r.descriptor();
+                     }
+                     return "lexicon:disk:" + name + "::" + r.descriptor();
+                  }).map(Unchecked.function(s -> LexiconSpecification.parse(s).create()))
+                  .orElseGet(() -> {
+                     logWarning(log, "Unable to find lexicon: {0} in {1}", name, language);
+                     return EmptyLexicon;
+                  });
          }
          return specification.create();
       } catch(IOException e) {

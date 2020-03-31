@@ -25,9 +25,9 @@ import com.gengoai.apollo.ml.data.ExampleDataset;
 import com.gengoai.apollo.ml.sequence.Crf;
 import com.gengoai.apollo.ml.sequence.SequenceLabeler;
 import com.gengoai.hermes.HString;
-import com.gengoai.hermes.POS;
+import com.gengoai.hermes.morphology.POS;
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.corpus.Corpus;
+import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.hermes.ml.BIOLabelMaker;
 import com.gengoai.hermes.ml.BIOTrainer;
 
@@ -64,36 +64,35 @@ public class PhraseChunkTrainer extends BIOTrainer {
 
    @Override
    protected ExampleDataset getDataset(FeatureExtractor<HString> featurizer) throws IOException {
-      return Corpus.read(corpusSpecification)
-            .update(d -> d.setUncompleted(Types.PART_OF_SPEECH))
-            .annotate(Types.PART_OF_SPEECH)
-            .update(d -> d.annotations(Types.PHRASE_CHUNK).forEach(annotation -> {
-               if(annotation.attribute(Types.PART_OF_SPEECH).isInstance(POS.INTJ,
-                                                                        POS.LST,
-                                                                        POS.UCP)) {
-                  d.remove(annotation);
-               }
-            }))
-            .asSequenceDataset(def -> {
-               def.labelGenerator(new BIOLabelMaker(annotationType));
-               def.featureExtractor(featurizer);
-            });
+      return DocumentCollection.create(data)
+                               .update(d -> d.setUncompleted(Types.PART_OF_SPEECH))
+                               .annotate(Types.PART_OF_SPEECH)
+                               .update(d -> d.annotations(Types.PHRASE_CHUNK).forEach(annotation -> {
+                                  if(annotation.attribute(Types.PART_OF_SPEECH).isInstance(POS.INTJ,
+                                                                                           POS.LST,
+                                                                                           POS.UCP)) {
+                                     d.remove(annotation);
+                                  }
+                               }))
+                               .asSequenceDataset(def -> {
+                                  def.labelGenerator(new BIOLabelMaker(annotationType));
+                                  def.featureExtractor(featurizer);
+                               });
    }
 
    @Override
    protected FeatureExtractor<HString> getFeaturizer() {
       return Featurizer.chain(LowerCaseWord, PartOfSpeech)
-            .withContext(lenientContext(LowerCaseWord, -1),
-                         strictContext(LowerCaseWord, -1, LowerCaseWord, 0),
-                         strictContext(PartOfSpeech, -1),
-                         strictContext(PartOfSpeech, -1, PartOfSpeech, 0),
-                         strictContext(PartOfSpeech, -1, LowerCaseWord, 0));
+                       .withContext(lenientContext(LowerCaseWord, -1),
+                                    strictContext(LowerCaseWord, -1, LowerCaseWord, 0),
+                                    strictContext(PartOfSpeech, -1),
+                                    strictContext(PartOfSpeech, -1, PartOfSpeech, 0),
+                                    strictContext(PartOfSpeech, -1, LowerCaseWord, 0));
    }
 
    @Override
    protected SequenceLabeler getLearner() {
       return new Crf(getPreprocessors());
    }
-
 
 }// END OF PhraseChunkTrainer

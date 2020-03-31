@@ -25,7 +25,6 @@ import com.gengoai.Language;
 import com.gengoai.collection.tree.Trie;
 import com.gengoai.config.Config;
 import com.gengoai.hermes.Hermes;
-import com.gengoai.hermes.POS;
 import com.gengoai.reflection.Reflect;
 import com.gengoai.reflection.ReflectionException;
 import lombok.NonNull;

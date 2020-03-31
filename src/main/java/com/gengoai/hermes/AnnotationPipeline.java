@@ -40,8 +40,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 /**
- * Helper class for determining the required sequence of annotation for a document to fulfill a required set of desired
- * annotatable types.
+ * Helper class for determining the correct sequence of annotators to apply on a Document in order for to satisfy the
+ * given AnnotatableType.
  *
  * @author David B. Bracewell
  */
@@ -52,18 +52,18 @@ public class AnnotationPipeline implements Serializable {
    private transient SetMultimap<Language, AnnotatableType> provided = new HashSetMultimap<>();
 
    /**
-    * Instantiates a new Annotate sequence with the given set of annotatable types to be annotated.
+    * Instantiates a new AnnotationPipeline with the given set of annotatable types to be annotated.
     *
-    * @param types the types
+    * @param types the AnnotatableType we want to the document to have
     */
-   public AnnotationPipeline(AnnotatableType... types) {
+   public AnnotationPipeline(@NonNull AnnotatableType... types) {
       this(Arrays.asList(types));
    }
 
    /**
-    * Instantiates a new Annotate sequence.
+    * Instantiates a new AnnotationPipeline with the given set of annotatable types to be annotated.
     *
-    * @param types the types
+    * @param types the AnnotatableType we want to the document to have
     */
    public AnnotationPipeline(@NonNull Collection<? extends AnnotatableType> types) {
       this.types = types.stream().filter(Objects::nonNull).toArray(AnnotatableType[]::new);
@@ -73,14 +73,14 @@ public class AnnotationPipeline implements Serializable {
     * Annotates a document to fulfill the desired set of annotatable types
     *
     * @param document the document to annotate
-    * @return the document with annotations
+    * @return true if the document was modified, false otherwise
     */
-   public boolean annotate(Document document) {
+   public boolean annotate(@NonNull Document document) {
       AtomicBoolean updated = new AtomicBoolean(false);
       getAnnotators(document).forEach(annotator -> {
          annotator.annotate(document);
          updated.set(true);
-         for (AnnotatableType type : annotator.satisfies()) {
+         for(AnnotatableType type : annotator.satisfies()) {
             document.setCompleted(type, annotator.getClass().getName() + "::" + annotator.getVersion());
          }
       });
@@ -94,10 +94,10 @@ public class AnnotationPipeline implements Serializable {
    }
 
    private List<Annotator> getSequence(Language language) {
-      if (!annotators.containsKey(language)) {
-         synchronized (types) {
-            if (!annotators.containsKey(language)) {
-               for (AnnotatableType type : types) {
+      if(!annotators.containsKey(language)) {
+         synchronized(types) {
+            if(!annotators.containsKey(language)) {
+               for(AnnotatableType type : types) {
                   processType(type, language);
                }
             }
@@ -108,22 +108,22 @@ public class AnnotationPipeline implements Serializable {
 
    private void processType(AnnotatableType type, Language language) {
       Annotator annotator = AnnotatorCache.getInstance().get(type, language);
-      if (annotator == null) {
+      if(annotator == null) {
          throw new IllegalStateException("Could not get annotator for " + type);
       }
-      if (!annotator.satisfies().contains(type)) {
+      if(!annotator.satisfies().contains(type)) {
          throw new IllegalStateException(
-            annotator.getClass().getName() + " does not satisfy " + type);
+               annotator.getClass().getName() + " does not satisfy " + type);
       }
       boolean providesNew = false;
-      for (AnnotatableType satisfy : annotator.satisfies()) {
-         if (!provided.contains(language, satisfy)) {
+      for(AnnotatableType satisfy : annotator.satisfies()) {
+         if(!provided.contains(language, satisfy)) {
             providesNew = true;
          }
          provided.put(language, satisfy);
       }
-      if (providesNew) {
-         for (AnnotatableType prereq : annotator.requires()) {
+      if(providesNew) {
+         for(AnnotatableType prereq : annotator.requires()) {
             processType(prereq, language);
          }
          annotators.put(language, annotator);
@@ -137,13 +137,10 @@ public class AnnotationPipeline implements Serializable {
    }
 
    /**
-    * Requires update boolean.
-    *
-    * @return the boolean
+    * @return true if the Pipeline has AnnotatableType to annotate, False if not
     */
    public boolean requiresUpdate() {
       return types.length > 0;
    }
-
 
 }//END OF AnnotationPipeline

@@ -25,7 +25,6 @@ package com.gengoai.hermes.morphology;
 import cc.mallet.util.Strings;
 import com.gengoai.collection.tree.Trie;
 import com.gengoai.hermes.HString;
-import com.gengoai.hermes.POS;
 import com.gengoai.hermes.Types;
 import lombok.NonNull;
 

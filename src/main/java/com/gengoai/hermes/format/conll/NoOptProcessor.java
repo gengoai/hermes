@@ -25,15 +25,15 @@ package com.gengoai.hermes.format.conll;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.Document;
 import com.gengoai.hermes.HString;
-import com.gengoai.hermes.corpus.io.CoNLLColumnProcessor;
-import com.gengoai.hermes.corpus.io.CoNLLRow;
+import com.gengoai.hermes.format.CoNLLColumnProcessor;
+import com.gengoai.hermes.format.CoNLLRow;
 import com.gengoai.tuple.Tuple2;
 import org.kohsuke.MetaInfServices;
 
 import java.util.List;
 import java.util.Map;
 
-import static com.gengoai.hermes.corpus.io.CoNLLReader.EMPTY_FIELD;
+import static com.gengoai.hermes.format.CoNLLFormat.EMPTY_FIELD;
 
 /**
  * No Operation Processor
@@ -44,18 +44,20 @@ import static com.gengoai.hermes.corpus.io.CoNLLReader.EMPTY_FIELD;
 public final class NoOptProcessor implements CoNLLColumnProcessor {
 
    @Override
-   public void processInput(Document document, List<CoNLLRow> documentRows, Map<Tuple2<Integer, Integer>, Long> sentenceIndexToAnnotationId) {
+   public String getFieldName() {
+      return "IGNORE";
+   }
+
+   @Override
+   public void processInput(Document document,
+                            List<CoNLLRow> documentRows,
+                            Map<Tuple2<Integer, Integer>, Long> sentenceIndexToAnnotationId) {
 
    }
 
    @Override
    public String processOutput(HString document, Annotation token, int index) {
       return EMPTY_FIELD;
-   }
-
-   @Override
-   public String getFieldName() {
-      return "IGNORE";
    }
 
    @Override

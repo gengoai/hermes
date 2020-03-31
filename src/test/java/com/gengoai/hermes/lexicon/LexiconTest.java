@@ -7,7 +7,7 @@ import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.Document;
 import com.gengoai.hermes.Fragments;
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.ner.Entities;
+import com.gengoai.hermes.Entities;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -36,14 +36,14 @@ public class LexiconTest {
                    Lists.asArrayList(lexicon.extract(document).string()));
 
       //Items in the lexicon
-      assertTrue(lexicon.test(Fragments.string("test")));
-      assertTrue(lexicon.test(Fragments.string("testing")));
-      assertTrue(lexicon.test(Fragments.string("bark")));
-      assertTrue(lexicon.test(Fragments.string("barking")));
+      assertTrue(lexicon.test(Fragments.stringWrapper("test")));
+      assertTrue(lexicon.test(Fragments.stringWrapper("testing")));
+      assertTrue(lexicon.test(Fragments.stringWrapper("bark")));
+      assertTrue(lexicon.test(Fragments.stringWrapper("barking")));
 
       //Items not in the lexicon
-      assertFalse(lexicon.test(Fragments.string("BARK")));
-      assertFalse(lexicon.test(Fragments.string("missing")));
+      assertFalse(lexicon.test(Fragments.stringWrapper("BARK")));
+      assertFalse(lexicon.test(Fragments.stringWrapper("missing")));
 
       //Tags
       assertEquals(new StringTag("TEST"), lexicon.getTag("testing").get());

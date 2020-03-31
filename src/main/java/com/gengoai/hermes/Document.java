@@ -22,13 +22,9 @@ package com.gengoai.hermes;
 import com.gengoai.Language;
 import com.gengoai.annotation.JsonHandler;
 import com.gengoai.collection.Collect;
-import com.gengoai.collection.Sets;
 import com.gengoai.collection.tree.Span;
-import com.gengoai.conversion.Cast;
 import com.gengoai.json.Json;
 import com.gengoai.json.JsonEntry;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -38,20 +34,24 @@ import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
- * <p>The document is the central object class in the TIPSTER architecture. It serves as repository for Attributes and
- * Annotations. In the TIPSTER architecture a document is part of one or more collections and can only be accessed as a
- * member of that collection. In this architecture the document is independent of the collection, but  can be linked
- * back to the collection through an Attribute.</p>
- * <p>Documents are not normally constructed directly, instead they are built through the {@link DocumentFactory} which
- * takes care of normalizing and parsing the underlying text. Pre-tokenized text can be converted into a document using
- * the {@link DocumentFactory#fromTokens(Iterable)} method.</p>
+ * <p>
+ * A document represents text content with an accompanying set of metadata (Attributes), linguistic overlays
+ * (Annotations), and relations between elements in the document. Documents are represented as {@link HString} with
+ * additional  methods for adding, removing, and accessing the annotations over its content. Every document has an id
+ * associated with it, which should be unique within a corpus.
+ * </p>
+ *
+ * <p>
+ * Documents are created using a {@link DocumentFactory}, which defines the preprocessing (e.g whitespace and unicode
+ * normalization) steps (TextNormalizers) to be performed on raw text before creating a document and the default
+ * language with which the documents are written. Additionally, the Document class provides a number of convenience
+ * <code>create</code> methods for constructing documents using the default DocumentFactory instance.
+ * </p>
  *
  * @author David B. Bracewell
  */
-
 @JsonHandler(Document.DocumentMarshaller.class)
 public interface Document extends HString {
 
@@ -61,7 +61,7 @@ public interface Document extends HString {
     * @param text the text content making up the document
     * @return the document
     */
-   static Document create(String text) {
+   static Document create(@NonNull String text) {
       return DocumentFactory.getInstance().create(text);
    }
 
@@ -72,7 +72,7 @@ public interface Document extends HString {
     * @param language the language of the content
     * @return the document
     */
-   static Document create(String text, Language language) {
+   static Document create(@NonNull String text, @NonNull Language language) {
       return DocumentFactory.getInstance().create(text, language);
    }
 
@@ -84,7 +84,9 @@ public interface Document extends HString {
     * @param attributes the attributes, i.e. metadata, associated with the document
     * @return the document
     */
-   static Document create(String text, Language language, Map<AttributeType<?>, ?> attributes) {
+   static Document create(@NonNull String text,
+                          @NonNull Language language,
+                          @NonNull Map<AttributeType<?>, ?> attributes) {
       return DocumentFactory.getInstance().create(text, language, attributes);
    }
 
@@ -95,7 +97,7 @@ public interface Document extends HString {
     * @param attributes the attributes, i.e. metadata, associated with the document
     * @return the document
     */
-   static Document create(String text, Map<AttributeType<?>, ?> attributes) {
+   static Document create(@NonNull String text, @NonNull Map<AttributeType<?>, ?> attributes) {
       return DocumentFactory.getInstance().create(text, Hermes.defaultLanguage(), attributes);
    }
 
@@ -106,7 +108,7 @@ public interface Document extends HString {
     * @param text the text content making up the document
     * @return the document
     */
-   static Document create(String id, String text) {
+   static Document create(@NonNull String id, @NonNull String text) {
       return DocumentFactory.getInstance().create(id, text);
    }
 
@@ -118,7 +120,7 @@ public interface Document extends HString {
     * @param language the language of the content
     * @return the document
     */
-   static Document create(String id, String text, Language language) {
+   static Document create(@NonNull String id, @NonNull String text, @NonNull Language language) {
       return DocumentFactory.getInstance().create(id, text, language);
    }
 
@@ -131,7 +133,10 @@ public interface Document extends HString {
     * @param attributes the attributes, i.e. metadata, associated with the document
     * @return the document
     */
-   static Document create(String id, String text, Language language, Map<AttributeType<?>, ?> attributes) {
+   static Document create(@NonNull String id,
+                          @NonNull String text,
+                          @NonNull Language language,
+                          @NonNull Map<AttributeType<?>, ?> attributes) {
       return DocumentFactory.getInstance().create(id, text, language, attributes);
    }
 
@@ -143,7 +148,7 @@ public interface Document extends HString {
     * @param attributes the attributes, i.e. metadata, associated with the document
     * @return the document
     */
-   static Document create(String id, String text, Map<AttributeType<?>, ?> attributes) {
+   static Document create(@NonNull String id, @NonNull String text, @NonNull Map<AttributeType<?>, ?> attributes) {
       return DocumentFactory.getInstance().create(id, text, Hermes.defaultLanguage(), attributes);
    }
 
@@ -153,36 +158,12 @@ public interface Document extends HString {
     * @param jsonString the json string
     * @return the document
     */
-   static Document fromJson(String jsonString) {
+   static Document fromJson(@NonNull String jsonString) {
       try {
          return Json.parse(jsonString, Document.class);
       } catch(IOException e) {
          throw new RuntimeException(e);
       }
-   }
-
-   /**
-    * Has annotations boolean.
-    *
-    * @param json  the json
-    * @param types the types
-    * @return the boolean
-    */
-   static boolean hasAnnotations(String json, AnnotatableType... types) {
-      if(types.length == 0) {
-         return true;
-      }
-      Set<AnnotatableType> target = Sets.asLinkedHashSet(Arrays.asList(types));
-      Type mapType = new TypeToken<Map<String, Object>>() {
-      }.getType();
-      Gson gson = new Gson();
-      Map<String, Object> rawDoc = gson.fromJson(json, mapType);
-      return rawDoc.containsKey("completed") && Cast.<Map<String, Object>>as(rawDoc.get("completed"))
-            .keySet()
-            .stream()
-            .map(AnnotatableType::valueOf)
-            .collect(Collectors.toSet())
-            .containsAll(target);
    }
 
    /**
@@ -199,8 +180,6 @@ public interface Document extends HString {
     * @return the annotation
     */
    Annotation annotation(long id);
-
-
 
    /**
     * Creates an annotation builder for adding annotations to the document.
@@ -229,22 +208,35 @@ public interface Document extends HString {
     * @return All annotations of the given type on the document that overlap with the give span and meet the given
     * filter.
     */
-   List<Annotation> annotations(AnnotationType type, Span span, Predicate<? super Annotation> filter);
+   List<Annotation> annotations(AnnotationType type,
+                                Span span,
+                                Predicate<? super Annotation> filter);
 
-   void attach(@NonNull Annotation annotation);
+   /**
+    * Attaches the given annotation to the document.
+    *
+    * @param annotation The annotation to attach to the document.
+    */
+   void attach(Annotation annotation);
 
    @Override
-   default List<Annotation> children(String relation) {
+   default List<Annotation> children(@NonNull String relation) {
       return annotations();
    }
 
    /**
-    * Gets the set of completed AnnotatableType.
+    * Gets the set of completed AnnotatableType on this document.
     *
     * @return the set of completed AnnotatableType
     */
    Set<AnnotatableType> completed();
 
+   /**
+    * Determines if the given annotation is attached to this document.
+    *
+    * @param annotation The annotation to check
+    * @return True if this annotation is attached to this document, false otherwise.
+    */
    boolean contains(Annotation annotation);
 
    /**
@@ -258,11 +250,11 @@ public interface Document extends HString {
     * @param relations    the relations to add on the annotation
     * @return the created annotation
     */
-   Annotation createAnnotation(@NonNull AnnotationType type,
+   Annotation createAnnotation(AnnotationType type,
                                int start,
                                int end,
-                               @NonNull Map<AttributeType<?>, ?> attributeMap,
-                               @NonNull List<Relation> relations);
+                               Map<AttributeType<?>, ?> attributeMap,
+                               List<Relation> relations);
 
    /**
     * Creates an annotation of the given type encompassing the given span and having the given attributes. The
@@ -289,6 +281,12 @@ public interface Document extends HString {
       return annotations();
    }
 
+   /**
+    * Gets the provider for the given AnnotatableType when that type is completed on the document.
+    *
+    * @param type the annotatable type whose provider we want
+    * @return The provider of the given annotatable type
+    */
    String getAnnotationProvider(AnnotatableType type);
 
    /**
@@ -297,13 +295,6 @@ public interface Document extends HString {
     * @return The id of the document
     */
    String getId();
-
-   /**
-    * Sets the id of the document. If a null or blank id is given a random id will generated.
-    *
-    * @param id The new id of the document
-    */
-   void setId(String id);
 
    @Override
    default Language getLanguage() {
@@ -346,8 +337,19 @@ public interface Document extends HString {
       return true;
    }
 
-   Annotation next(@NonNull Annotation annotation, @NonNull AnnotationType type);
+   /**
+    * Determines the next annotation of the given type after the given annotation (e.g. what is the token after the
+    * current token)
+    *
+    * @param annotation The current annotation.
+    * @param type       The type of annotation we want to find after the current annotation.
+    * @return The annotation of the given type after the current annotation or an empty HString if there are none.
+    */
+   Annotation next(Annotation annotation, AnnotationType type);
 
+   /**
+    * @return The number of annotations on the document
+    */
    int numberOfAnnotations();
 
    @Override
@@ -370,7 +372,15 @@ public interface Document extends HString {
       return Collections.emptyList();
    }
 
-   Annotation previous(@NonNull Annotation annotation, @NonNull AnnotationType type);
+   /**
+    * Determines the previous annotation of the given type after the given annotation (e.g. what is the token before the
+    * current token)
+    *
+    * @param annotation The current annotation.
+    * @param type       The type of annotation we want to find before the current annotation.
+    * @return The annotation of the given type the the current annotation or an empty HString if there are none.
+    */
+   Annotation previous(Annotation annotation, AnnotationType type);
 
    /**
     * Removes the given annotation from the document
@@ -387,13 +397,29 @@ public interface Document extends HString {
     */
    void removeAnnotationType(AnnotationType type);
 
-   void setCompleted(AnnotatableType type, String annotatorInformation);
+   /**
+    * Marks the given AnnotatableType as being completed by the given provider.
+    *
+    * @param type     The AnnotatableType to mark as completed.
+    * @param provider The provided that satisfied the given AnnotatableType
+    */
+   void setCompleted(AnnotatableType type, String provider);
 
+   /**
+    * Sets the id of the document. If a null or blank id is given a random id will generated.
+    *
+    * @param id The new id of the document
+    */
+   void setId(String id);
+
+   /**
+    * Marks the given AnnotatableType as not being completed. Useful for reannotating for a given type.
+    *
+    * @param type The AnnotatableType to mark as uncompleted.
+    */
    void setUncompleted(AnnotatableType type);
 
    /**
-    * Converts the document to json
-    *
     * @return JSON representation of the document
     */
    default String toJson() {
@@ -490,18 +516,36 @@ public interface Document extends HString {
          return annotation;
       }
 
+      /**
+       * Sets the bounds, and adds the relations and attributes from the given HString to this builder.
+       *
+       * @param hString The HString to copy from
+       * @return This builder
+       */
       public AnnotationBuilder from(@NonNull HString hString) {
          return bounds(hString).attributes(hString)
                                .relation(hString.outgoingRelations());
       }
 
+      /**
+       * Adds the given relation.
+       *
+       * @param relation The relation to add
+       * @return This builder
+       */
       public AnnotationBuilder relation(@NonNull Relation relation) {
          this.relations.add(relation);
          return this;
       }
 
-      public AnnotationBuilder relation(@NonNull Iterable<Relation> relation) {
-         Collect.addAll(this.relations, relation);
+      /**
+       * Adds the given iterable of relations.
+       *
+       * @param relations The relations to add
+       * @return This builder
+       */
+      public AnnotationBuilder relation(@NonNull Iterable<Relation> relations) {
+         Collect.addAll(this.relations, relations);
          return this;
       }
 

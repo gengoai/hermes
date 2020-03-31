@@ -40,7 +40,7 @@ import com.gengoai.hermes.AnnotatableType;
 import com.gengoai.hermes.AnnotationType;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Hermes;
-import com.gengoai.hermes.corpus.Corpus;
+import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.io.resource.Resource;
 
 import java.io.IOException;
@@ -65,8 +65,8 @@ public abstract class BIOTrainer extends CommandLineApplication {
    /**
     * The Corpus.
     */
-   @Option(name = "corpus", description = "The corpus specification of the corpus to use to train", required = true)
-   protected String corpusSpecification;
+   @Option(description = "The specification of the document collection to use as the training data", required = true)
+   protected String data;
    /**
     * The Model.
     */
@@ -111,13 +111,13 @@ public abstract class BIOTrainer extends CommandLineApplication {
     */
    protected ExampleDataset getDataset(FeatureExtractor<HString> featurizer) throws IOException {
       Stopwatch read = Stopwatch.createStarted();
-      Corpus c = Corpus.read(corpusSpecification);
+      DocumentCollection collection = DocumentCollection.create(data);
       read.stop();
       logInfo(LogUtils.getLogger(getClass()), "Completed reading corpus in: {0}", read);
       if(required().length > 0) {
-         c.annotate(required());
+         collection = collection.annotate(required());
       }
-      return c.asSequenceDataset(s -> {
+      return collection.asSequenceDataset(s -> {
          s.featureExtractor(getFeaturizer());
          s.labelGenerator(new BIOLabelMaker(trainingAnnotation, validTags()));
       });

@@ -23,7 +23,6 @@
 package com.gengoai.hermes.format;
 
 import com.gengoai.Validation;
-import com.gengoai.hermes.corpus.io.CoNLLColumnProcessor;
 import lombok.NonNull;
 
 import java.util.*;
