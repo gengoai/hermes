@@ -1,0 +1,40 @@
+{
+  "name": "Extended Named Entity Annotation",
+  "annotationType": "ENTITY",
+  "view": "Document",
+  "includeTagValues": true,
+  "tags": {
+    "ORGANIZATION": {
+      "color": "BLUE",
+      "shortcut": "O"
+    },
+    "PERSON": {
+      "color": "#FF0000",
+      "shortcut": "P"
+    },
+    "PRODUCT": {
+      "color": "ORANGE",
+      "shortcut": "alt P"
+    },
+    "LOCATION": {
+      "color": "GREEN",
+      "shortcut": "L"
+    },
+    "FACILITY": {
+      "color": "#a2e0b2",
+      "shortcut": "F"
+    },
+    "GOE": {
+      "shortcut": "G"
+    },
+    "DATE_TIME": {
+      "color": "PINK"
+    },
+    "DATE_TIME$DATE": {
+      "shortcut": "D"
+    },
+    "DATE_TIME$TIME": {
+      "shortcut": "T"
+    }
+  }
+}

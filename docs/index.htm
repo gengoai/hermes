@@ -823,9 +823,8 @@ The following code snippet illustrates creating a simple AnnotationType with the
 <div class="content">
 <pre class="CodeRay highlight"><code data-lang="java"><span class="comment">/* Assume that SENSE_TAG is a predefined AttributeType */</span>
 AnnotationType WORD_SENSE = AnnotationType.make(<span class="string"><span class="delimiter">&quot;</span><span class="content">WORD_SENSE</span><span class="delimiter">&quot;</span></span>, SENSE_TAG);
-<span class="comment">/* MY_ENTITY will be a type of ENTITY and have an ENTITY_TYPE tag attribute
-inherited from ENTITY  */</span>
-AnnotationType MY_ENTITY = AnnotationType.make(ENTITY, <span class="string"><span class="delimiter">&quot;</span><span class="content">ENTITY</span><span class="delimiter">&quot;</span></span>);</code></pre>
+<span class="comment">/* MY_ENTITY will be a type of ENTITY and have an ENTITY_TYPE tag attribute inherited from ENTITY  */</span>
+AnnotationType MY_ENTITY = AnnotationType.make(ENTITY, <span class="string"><span class="delimiter">&quot;</span><span class="content">MY_ENTITY</span><span class="delimiter">&quot;</span></span>);</code></pre>
 </div>
 </div>
 </div>
@@ -857,7 +856,7 @@ Pictorial this would be represented as follows:</p>
 <h4 id="_annotators"><a class="link" href="#_annotators">3.1.4. Annotators</a></h4>
 <div class="paragraph">
 <p>Annotator(s) satisfy, i.e. provide, one or more AnnotatableType (<a href="#annotation_type">AnnotationType</a>, <a href="#attribute_type">AttributeType</a>, or <a href="#relation_Type">RelationType</a>) by processing a document and adding a new or modifying an existing annotation.
-In order to provide the new AnnotatableType an annotator may require one or more AnnotableType to be present on the document.
+In order to provide the new AnnotatableType an annotator may require one or more AnnotatableType to be present on the document.
 For example, an annotator providing the PHRASE_CHUNK AnnotationType would require the presence of the TOKEN AnnotationType and PART_OF_SPEECH AttributeType.
 When annotation is complete, the AnnotatableType is marked as complete on the document and an annotator provided version is associated with the type.</p>
 </div>
@@ -2182,7 +2181,7 @@ The default implementation uses an interval tree backed by a red-black tree, whi
 <div class="paragraph">
 <p>A collection of documents in Hermes is represented using either a <em>DocumentCollection</em> or <em>Corpus</em>.
 The difference between the two is that a <em>Corpus</em> represents a <strong>persistent</strong> collection of documents whereas a <em>DocumentCollection</em> is a <strong>temporary</strong> collection used for ad-hoc analytics or to import documents into a corpus.
-The figure below, shows a typical flow of data in which: (1) A document is collection is created by reading files in a given format (e.g. plain text, html, pdf, etc.);  (2) The files are imported into a Corpus for processing; (3) Operations, e.g. annotation, are performed over the corpus which allows these operations to be persisted; and (4) Optionaly, the documents in the corpus in are exported to a set of files in a given format (e.g. CoNLL).</p>
+The figure below, shows a typical flow of data in which: (1) A document is collection is created by reading files in a given format (e.g. plain text, html, pdf, etc.); (2) The files are imported into a Corpus for processing; (3) Operations, e.g. annotation, are performed over the corpus which allows these operations to be persisted; and (4) Optionaly, the documents in the corpus in are exported to a set of files in a given format (e.g. CoNLL).</p>
 </div>
 <div class="imageblock text-center">
 <div class="content">
@@ -5254,7 +5253,7 @@ The application has the following command line options:</p>
 <div id="footer">
 <div id="footer-text">
 Version v1.0<br>
-Last updated 2020-03-28 16:04:53 -0500
+Last updated 2020-03-30 09:56:27 -0500
 </div>
 </div>
 </body>

@@ -17,7 +17,7 @@ footer:
     left:
       content: '{document-title}'
     center:
-      content: image:../images/gengoai.png[pdfwidth=0.8in]
+      content: image:gengoai.png[pdfwidth=0.8in]
     right:
       content: '*{page-number}*'
   verso: *shared_footer

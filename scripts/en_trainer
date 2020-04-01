@@ -1,0 +1,29 @@
+#!/bin/bash
+
+LANG=en
+HERMES_RESOURCE_DIR=/data/hermes/
+CORPUS_DIR=/data/corpora/hermes_data
+
+declare -A models
+models[POS]=$HERMES_RESOURCE_DIR/$LANG/models/pos.model.bin
+models[ENTITY]=$HERMES_RESOURCE_DIR/$LANG/models/ner.model.bin
+models[PHRASE_CHUNK]=$HERMES_RESOURCE_DIR/$LANG/models/phrase_chunk.model.bin
+
+declare -A data
+data[POS]="pos_opl::/$CORPUS_DIR/$LANG/part_of_speech/combined.txt"
+data[ENTITY]="json_opl::$CORPUS_DIR/$LANG/named_entity/ontonotes_all_entities.json_opl"
+data[PHRASE_CHUNK]="conll::$CORPUS_DIR/$LANG/phrase_chunk/train.txt"
+
+declare -A tagger
+tagger[POS]="EN_POS"
+tagger[ENTITY]="ENTITY"
+tagger[PHRASE_CHUNK]="PHRASE_CHUNK"
+
+if [[ "$1" == "" || "$2" == "" ]]; then
+  cd tools || jexec TaggerApp --h
+fi
+
+op=$(echo $1 | tr a-z A-Z)
+model=$(echo $2 | tr a-z A-Z)
+
+cd tools || jexec TaggerApp "$op" --tagger ${tagger[$model]} --docFormat ${data[$model]} --model ${models[$model]}

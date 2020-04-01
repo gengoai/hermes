@@ -1,0 +1,12 @@
+{
+  "annotationType": "ENTITY",
+  "includeAllTags": true,
+  "tags": {
+    "ORGANIZATION": "BLUE",
+    "PERSON": "#FF0000",
+    "PRODUCT": "ORANGE",
+    "LOCATION": "GREEN",
+    "FACILITY": "#a2e0b2",
+    "DATE_TIME": "PINK"
+  }
+}
