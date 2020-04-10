@@ -90,6 +90,30 @@
             <build>
                 <plugins>
                     <plugin>
+                        <!-- added the resources plugin to copy images before adoc transform starts. -->
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-resources-plugin</artifactId>
+                        <version>2.7</version>
+                        <executions>
+                            <execution>
+                                <id>copy-resources</id>
+                                <phase>initialize</phase>
+                                <goals>
+                                    <goal>copy-resources</goal>
+                                </goals>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/docs/images</outputDirectory>
+                                    <resources>
+                                        <resource>
+                                            <directory>src/main/docs/images</directory>
+                                            <filtering>false</filtering>
+                                        </resource>
+                                    </resources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
                         <groupId>org.asciidoctor</groupId>
                         <artifactId>asciidoctor-maven-plugin</artifactId>
                         <version>1.6.0</version>
@@ -122,7 +146,7 @@
                                     <goal>process-asciidoc</goal>
                                 </goals>
                                 <configuration>
-                                    <imagesDir>../docs/images/</imagesDir>
+                                    <imagesDir>${project.build.directory}/docs/images</imagesDir>
                                     <backend>pdf</backend>
                                     <sourceHighlighter>coderay</sourceHighlighter>
                                     <attributes>

@@ -753,14 +753,14 @@ The _DocumentCollection_ class provides the following methods to create a docume
 
 The following is an example of creating a document collection from Twitter data:
 
-[code,java]
+[source,java]
 ....
 DocumentCollection twitter = DocumentCollection.create("twitter_search::/data/twitter_search_results/");
 ....
 
 A more complex example is creation from CSV files:
 
-[code,java]
+[source,java]
 ....
 DocumentCollection csv = DocumentCollection.create("csv::/data/my_csv.csv;columns=id,content,language,author,source");
 ....
