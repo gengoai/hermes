@@ -19,7 +19,7 @@ public class TransliterationAnnotatorTest {
   public void testAnnotate() throws Exception {
     Config.initializeTest();
     Document document = DocumentProvider.getChineseDocument();
-    TransliterationAnnotator annotator = new TransliterationAnnotator("Han-Latin");
+    DefaultTransliterationAnnotator annotator = new DefaultTransliterationAnnotator();
     annotator.annotate(document);
     List<Annotation> tokens = document.tokens();
     assertEquals("wǒ", tokens.get(0).attribute(Types.TRANSLITERATION));

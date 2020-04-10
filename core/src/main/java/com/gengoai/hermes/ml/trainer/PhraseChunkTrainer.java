@@ -30,7 +30,7 @@ import com.gengoai.apollo.ml.sequence.SequenceLabeler;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Types;
 import com.gengoai.hermes.corpus.DocumentCollection;
-import com.gengoai.hermes.ml.BIOTaggerTrainer;
+import com.gengoai.hermes.ml.IOBTaggerTrainer;
 import com.gengoai.hermes.morphology.PennTreeBank;
 import lombok.NonNull;
 import lombok.extern.java.Log;
@@ -45,7 +45,7 @@ import static com.gengoai.hermes.ml.feature.PredefinedFeatures.lenientContext;
 import static com.gengoai.hermes.ml.feature.PredefinedFeatures.strictContext;
 
 @Log
-public class PhraseChunkTrainer extends BIOTaggerTrainer {
+public class PhraseChunkTrainer extends IOBTaggerTrainer {
 
    public PhraseChunkTrainer() {
       super(Types.PHRASE_CHUNK);
@@ -54,7 +54,7 @@ public class PhraseChunkTrainer extends BIOTaggerTrainer {
    @Override
    public ExampleDataset createDataset(@NonNull DocumentCollection data) {
       Stopwatch sw = Stopwatch.createStarted();
-      ExampleDataset dataset = data.update(d -> d.setUncompleted(Types.PART_OF_SPEECH))
+      ExampleDataset dataset = data.update("RemovePartOfSpeech", d -> d.setUncompleted(Types.PART_OF_SPEECH))
                                    .annotate(Types.PART_OF_SPEECH)
                                    .asDataset(getSequenceGenerator(), DatasetType.InMemory);
       sw.stop();
@@ -79,7 +79,8 @@ public class PhraseChunkTrainer extends BIOTaggerTrainer {
 
    @Override
    public FitParameters<?> getDefaultFitParameters() {
-      return new Crf.Parameters();
+      return new Crf.Parameters()
+            .minFeatureFreq.set(5);
    }
 
    @Override

@@ -27,11 +27,15 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.stream.Stream;
 
+/**
+ * <p>Format Name: <b>hjson</b></p>
+ * <p>Reads and writes documents in Hermes Json format created when using {@link Document#toJson()}</p>
+ */
 public class HermesJsonFormat extends WholeFileTextFormat implements OneDocPerFileFormat, Serializable {
    private static final long serialVersionUID = 1L;
    private final DocFormatParameters parameters;
 
-   public HermesJsonFormat(DocFormatParameters parameters) {
+   HermesJsonFormat(DocFormatParameters parameters) {
       this.parameters = parameters;
    }
 
@@ -50,6 +54,9 @@ public class HermesJsonFormat extends WholeFileTextFormat implements OneDocPerFi
       outputResource.write(document.toJson());
    }
 
+   /**
+    * The type Provider.
+    */
    @MetaInfServices
    public static class Provider implements DocFormatProvider {
 

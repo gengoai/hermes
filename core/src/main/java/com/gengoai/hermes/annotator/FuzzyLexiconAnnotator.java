@@ -21,12 +21,14 @@
 
 package com.gengoai.hermes.annotator;
 
+import com.gengoai.Language;
 import com.gengoai.Validation;
 import com.gengoai.collection.Sets;
 import com.gengoai.collection.counter.Counter;
 import com.gengoai.collection.counter.Counters;
 import com.gengoai.collection.multimap.HashSetMultimap;
 import com.gengoai.collection.multimap.SetMultimap;
+import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.*;
 import com.gengoai.hermes.lexicon.Lexicon;
 import com.gengoai.hermes.lexicon.LexiconEntry;
@@ -55,24 +57,33 @@ public class FuzzyLexiconAnnotator extends ViterbiAnnotator {
    private final SetMultimap<String, String[]> prefix = new HashSetMultimap<>();
    private final SetMultimap<String, String[]> suffix = new HashSetMultimap<>();
    private final AnnotationType type;
-
+   private final AttributeType<?> attributeType;
 
    /**
-    * Instantiates a new Gappy lexicon annotator.
+    * Instantiates a new FuzzyLexiconAnnotator.
     *
-    * @param type        the type
-    * @param lexicon     the lexicon
-    * @param maxDistance the max distance
+    * @param annotationType  the annotationType of annotation to create.
+    * @param attributeType   the attribute type
+    * @param lexicon         the lexicon to perform annotation based on
+    * @param lexiconLanguage the language of the lexicon
+    * @param maxDistance     the maximum fuzzy distance allowed.
     */
-   public FuzzyLexiconAnnotator(@NonNull AnnotationType type, @NonNull Lexicon lexicon, int maxDistance) {
+   public FuzzyLexiconAnnotator(@NonNull AnnotationType annotationType,
+                                @NonNull AttributeType<?> attributeType,
+                                @NonNull Lexicon lexicon,
+                                @NonNull Language lexiconLanguage,
+                                int maxDistance) {
       super(lexicon.getMaxTokenLength() + maxDistance);
       Validation.checkArgument(maxDistance >= 0, "Maximum fuzzy distance must be > 0");
-      this.type = type;
+      this.attributeType = attributeType;
+      this.type = annotationType;
       this.lexicon = lexicon;
       this.maxDistance = maxDistance;
-      for (String item : this.lexicon) {
-         String[] parts = item.split("\\s+");
-         if (parts.length > 1) {
+      for(String item : this.lexicon) {
+         String[] parts = (lexiconLanguage.usesWhitespace()
+                           ? item.split("\\s+")
+                           : item.split(""));
+         if(parts.length > 1) {
             prefix.put(parts[0], parts);
             suffix.put(parts[parts.length - 1], parts);
          }
@@ -80,23 +91,28 @@ public class FuzzyLexiconAnnotator extends ViterbiAnnotator {
    }
 
    /**
-    * Instantiates a new Fuzzy lexicon annotator.
+    * Instantiates a new FuzzyLexiconAnnotator.
     *
-    * @param type        the type
-    * @param lexiconName the lexicon name
-    * @param maxDistance the max distance
+    * @param annotationType  the annotationType of annotation to create.
+    * @param attributeType   the attribute type
+    * @param lexiconName     the name of the lexicon to perform annotation based on
+    * @param lexiconLanguage the language of the lexicon
+    * @param maxDistance     the maximum fuzzy distance allowed.
     */
-   public FuzzyLexiconAnnotator(@NonNull AnnotationType type, @NonNull String lexiconName, int maxDistance) {
-      this(type, LexiconManager.getLexicon(lexiconName), maxDistance);
+   public FuzzyLexiconAnnotator(@NonNull AnnotationType annotationType,
+                                @NonNull AttributeType<?> attributeType,
+                                @NonNull String lexiconName,
+                                @NonNull Language lexiconLanguage,
+                                int maxDistance) {
+      this(annotationType, attributeType, LexiconManager.getLexicon(lexiconName), lexiconLanguage, maxDistance);
    }
-
 
    @Override
    protected void createAndAttachAnnotation(Document document, LexiconMatch match) {
-      if (!Strings.isNullOrBlank(match.getMatchedString())) {
+      if(!Strings.isNullOrBlank(match.getMatchedString())) {
          Annotation annotation = document.annotationBuilder(type).bounds(match.getSpan()).createAttached();
-         if (lexicon.getTagAttributeType() != null) {
-            annotation.put(lexicon.getTagAttributeType(), match.getTag());
+         if(Strings.isNotNullOrBlank(match.getTag())) {
+            annotation.put(attributeType, Cast.as(attributeType.decode(match.getTag())));
          }
          annotation.put(Types.CONFIDENCE, match.getScore());
          annotation.put(Types.MATCHED_STRING, match.getMatchedString());
@@ -106,42 +122,43 @@ public class FuzzyLexiconAnnotator extends ViterbiAnnotator {
    private double distance(List<Annotation> span, String[] candidate) {
       //Make sure the span contains at least all of the words in the candidate
       Counter<String> cCtr = Counters.newCounter(Arrays.asList(candidate));
-      for (Annotation a : span) {
-         if (cCtr.contains(a.toString())) {
+      for(Annotation a : span) {
+         if(cCtr.contains(a.toString())) {
             cCtr.decrement(a.toString());
-         } else if (!lexicon.isCaseSensitive() && cCtr.contains(a.toString().toLowerCase())) {
+         } else if(!lexicon.isCaseSensitive() && cCtr.contains(a.toString().toLowerCase())) {
             cCtr.decrement(a.toString().toLowerCase());
-         } else if (cCtr.contains(a.getLemma())) {
+         } else if(cCtr.contains(a.getLemma())) {
             cCtr.decrement(a.getLemma());
-         } else if (!lexicon.isCaseSensitive() && cCtr.contains(a.getLemma().toLowerCase())) {
+         } else if(!lexicon.isCaseSensitive() && cCtr.contains(a.getLemma().toLowerCase())) {
             cCtr.decrement(a.getLemma().toLowerCase());
          }
       }
-      if (cCtr.sum() > 0) {
+      if(cCtr.sum() > 0) {
          return Double.POSITIVE_INFINITY;
       }
 
-
       double[] row0 = new double[candidate.length + 1];
       double[] row1 = new double[candidate.length + 1];
-      for (int i = 0; i < row0.length; i++) {
+      for(int i = 0; i < row0.length; i++) {
          row0[i] = i;
       }
 
-      for (int i = 0; i < span.size(); i++) {
+      for(int i = 0; i < span.size(); i++) {
          row1[0] = i + 1;
-         for (int j = 0; j < candidate.length; j++) {
+         for(int j = 0; j < candidate.length; j++) {
             double cost =
-               (Strings.safeEquals(candidate[j], span.get(i).toString(), lexicon.isCaseSensitive()) ||
-                  Strings.safeEquals(candidate[j], span.get(i).getLemma(), lexicon.isCaseSensitive())) ? 0d : 1d;
+                  (Strings.safeEquals(candidate[j], span.get(i).toString(), lexicon.isCaseSensitive()) ||
+                        Strings.safeEquals(candidate[j], span.get(i).getLemma(), lexicon.isCaseSensitive()))
+                  ? 0d
+                  : 1d;
 
-            if (cost == 1 && Strings.isPunctuation(span.get(j).toString())) {
+            if(cost == 1 && Strings.isPunctuation(span.get(j).toString())) {
                cost = row0.length;
             }
 
             row1[j + 1] = Math.min(row1[j] + cost, Math.min(row0[j + 1] + cost, row0[j] + cost));
          }
-         if (row1[candidate.length] > maxDistance) {
+         if(row1[candidate.length] > maxDistance) {
             return Double.POSITIVE_INFINITY;
          }
          System.arraycopy(row1, 0, row0, 0, row0.length);
@@ -155,55 +172,68 @@ public class FuzzyLexiconAnnotator extends ViterbiAnnotator {
    }
 
    @Override
+   public String getProvider(Language language) {
+      return "FuzzyLexicon(lexicon='" + lexicon.getName() + "', maxDistance=" + maxDistance + ")";
+   }
+
+   @Override
    public Set<AnnotatableType> satisfies() {
       return Collections.singleton(type);
    }
 
    @Override
    protected LexiconEntry scoreSpan(HString span) {
-      LexiconEntry entry = lexicon.getEntries(span).stream().findFirst().orElse(null);
+      LexiconEntry entry = lexicon.match(span)
+                                  .stream()
+                                  .findFirst()
+                                  .orElse(null);
 
-      if (entry != null) {
+      if(entry != null) {
          return entry;
       }
 
-      if (span.tokenLength() > 2) {
+      if(span.tokenLength() > 2) {
          List<Annotation> tokens = span.tokens();
          int TL = tokens.size() - 1;
          Set<String[]> candidates;
 
-         if (lexicon.isCaseSensitive()) {
-            candidates = Sets.union(
-               getCandidates(tokens.get(0).toString(), tokens.get(TL).toString()),
-               getCandidates(tokens.get(0).getLemma(), tokens.get(TL).getLemma())
-                                   );
+         if(lexicon.isCaseSensitive()) {
+            candidates = Sets.union(getCandidates(tokens.get(0).toString(),
+                                                  tokens.get(TL).toString()),
+                                    getCandidates(tokens.get(0).getLemma(),
+                                                  tokens.get(TL).getLemma()));
          } else {
-            candidates = Sets.union(
-               getCandidates(tokens.get(0).toString().toLowerCase(), tokens.get(TL).toString().toLowerCase()),
-               getCandidates(tokens.get(0).getLemma().toLowerCase(), tokens.get(TL).getLemma().toLowerCase())
-                                   );
+            candidates = Sets.union(getCandidates(tokens.get(0).toString().toLowerCase(),
+                                                  tokens.get(TL).toString().toLowerCase()),
+                                    getCandidates(tokens.get(0).getLemma().toLowerCase(),
+                                                  tokens.get(TL).getLemma().toLowerCase()));
          }
 
          String[] bestCandidate = null;
          double minDist = Double.POSITIVE_INFINITY;
-         for (String[] candidate : candidates) {
-            if (candidate.length < tokens.size()) {
+         for(String[] candidate : candidates) {
+            if(candidate.length < tokens.size()) {
                double d = distance(tokens, candidate);
-               if (d < minDist) {
+               if(d < minDist) {
                   minDist = d;
                   bestCandidate = candidate;
                }
             }
          }
 
-         if (minDist <= maxDistance && bestCandidate != null) {
-            String matchedString = Strings.join(bestCandidate, " ");
+         if(minDist <= maxDistance && bestCandidate != null) {
+            String matchedString = Strings.join(bestCandidate,
+                                                span.getLanguage().usesWhitespace()
+                                                ? " "
+                                                : Strings.EMPTY);
             double score = lexicon.getProbability(Fragments.stringWrapper(matchedString)) / (0.1 + minDist);
-            return new LexiconEntry(matchedString, score, lexicon.getTag(matchedString).orElse(null), null);
+            return LexiconEntry.of(matchedString,
+                                   score,
+                                   lexicon.getTag(matchedString).orElse(null),
+                                   bestCandidate.length);
          }
-
       }
-      return new LexiconEntry(Strings.EMPTY, 0, null, null);
+      return LexiconEntry.empty();
    }
 
 }//END OF FuzzyLexiconAnnotator

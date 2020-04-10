@@ -28,12 +28,12 @@ import com.gengoai.conversion.Cast;
 import com.gengoai.conversion.Converter;
 import com.gengoai.hermes.*;
 import com.gengoai.hermes.annotator.DocumentProvider;
-import com.gengoai.hermes.lexicon.Lexicon;
+import com.gengoai.hermes.lexicon.LexiconEntry;
 import com.gengoai.hermes.lexicon.LexiconManager;
 import com.gengoai.hermes.lexicon.TrieLexicon;
+import com.gengoai.hermes.morphology.PartOfSpeech;
 import com.gengoai.hermes.morphology.PennTreeBank;
 import com.gengoai.hermes.morphology.StopWords;
-import com.gengoai.hermes.morphology.PartOfSpeech;
 import com.gengoai.math.Math2;
 import com.gengoai.string.Strings;
 import net.didion.jwnl.data.POS;
@@ -415,12 +415,12 @@ public class LyreExpressionTest {
 
    @Test
    public void isUpper() {
-//      testLambda(Lyre.parse("isUpper"),
-//                 document,
-//                 Strings::isUpperCase,
-//                 h -> Boolean.toString(Strings.isUpperCase(h)),
-//                 Strings::isUpperCase,
-//                 h -> Strings.isUpperCase(h) ? 1 : 0);
+      //      testLambda(Lyre.parse("isUpper"),
+      //                 document,
+      //                 Strings::isUpperCase,
+      //                 h -> Boolean.toString(Strings.isUpperCase(h)),
+      //                 Strings::isUpperCase,
+      //                 h -> Strings.isUpperCase(h) ? 1 : 0);
 
       List<Object> list = Lyre.parse("isUpper(['A','b',['C','d','E']])").applyAsList(
             Fragments.orphanedAnnotation(Types.TOKEN));
@@ -452,8 +452,8 @@ public class LyreExpressionTest {
 
    @Test
    public void lexicon() {
-      Lexicon lexicon = TrieLexicon.builder(Types.ENTITY_TYPE, false)
-                                   .add("alice", Entities.PERSON).build();
+      TrieLexicon lexicon = new TrieLexicon("TEST", false);
+      lexicon.add(LexiconEntry.of("alice", Entities.PERSON.label(), 1));
       LexiconManager.register("alice", lexicon);
       testLambda(Lyre.parse("%alice"),
                  document,
@@ -582,12 +582,12 @@ public class LyreExpressionTest {
       pos.tokenAt(4).put(Types.PART_OF_SPEECH, PennTreeBank.PERIOD);
       LyreExpression posFunc = Lyre.parse("pos");
 
-//      testLambda(posFunc,
-//                 pos,
-//                 h -> true,
-//                 h -> h.pos().toString(),
-//                 HString::pos,
-//                 h -> Double.NaN);
+      //      testLambda(posFunc,
+      //                 pos,
+      //                 h -> true,
+      //                 h -> h.pos().toString(),
+      //                 HString::pos,
+      //                 h -> Double.NaN);
 
       assertFalse(posFunc.test(Fragments.emptyHString(pos)));
 
@@ -663,14 +663,17 @@ public class LyreExpressionTest {
       Config.initializeTest();
       Config.loadPackageConfig("com.gengoai.hermes");
       document = DocumentProvider.getAnnotatedDocument();
-      Lexicon ner = TrieLexicon.builder(Types.ENTITY_TYPE, false)
-                               .add("Alice", Entities.PERSON)
-                               .add("rabbit-hole", Entities.LOCATION)
-                               .add("daisies", Entities.PRODUCT)
-                               .add("sister", Entities.PERSON)
-                               .build();
-      ner.extract(document)
-         .forEach(h -> document.annotationBuilder(Types.ENTITY).from(h).createAttached());
+      TrieLexicon lexicon = new TrieLexicon("TEST", true);
+      lexicon.add(LexiconEntry.of("alice", Entities.PERSON.label(), 1));
+      lexicon.add(LexiconEntry.of("daisies", Entities.PRODUCT.label(), 1));
+      lexicon.add(LexiconEntry.of("rabbit-hole", Entities.LOCATION.label(), 1));
+      lexicon.add(LexiconEntry.of("sister", Entities.PERSON.label(), 1));
+      lexicon.extract(document)
+             .forEach(h -> document.annotationBuilder(Types.ENTITY)
+                                   .from(h)
+                                   .attribute(Types.ENTITY_TYPE,
+                                              Types.ENTITY_TYPE.decode(h.attribute(Types.MATCHED_TAG)))
+                                   .createAttached());
    }
 
    @Test
@@ -1025,7 +1028,7 @@ public class LyreExpressionTest {
    public void trim() {
       testLambda(Lyre.parse("trim"),
                  document,
-                 StopWords.isNotStopWord(),
+                 StopWords.isContentWord(),
                  h -> StopWords.isStopWord().test(h)
                       ? ""
                       : h.toString(),

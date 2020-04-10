@@ -23,7 +23,6 @@ import com.gengoai.apollo.ml.Model;
 import com.gengoai.apollo.ml.embedding.Embedding;
 import com.gengoai.apollo.ml.embedding.VSQuery;
 import com.gengoai.application.Option;
-import com.gengoai.hermes.application.HermesCLI;
 import com.gengoai.io.resource.Resource;
 
 import java.io.Console;

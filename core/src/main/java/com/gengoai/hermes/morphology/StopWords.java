@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * The type Stop words.
+ * <p>Defines a methodology for determining if an HString or String is a stopword for a given language.</p>
  *
  * @author David B. Bracewell
  */
@@ -45,23 +45,23 @@ public abstract class StopWords implements Serializable {
    private static volatile Map<Language, StopWords> stopWordLists = new ConcurrentHashMap<>();
 
    /**
-    * Gets instance.
+    * Gets the Stopwords instance for the given language.
     *
     * @param language the language
-    * @return the instance
+    * @return the Stopwords instance
     */
    public static StopWords getStopWords(Language language) {
-      if (!stopWordLists.containsKey(language)) {
-         synchronized (StopWords.class) {
-            if (Config.hasProperty("hermes.StopWords", language, "class")) {
+      if(!stopWordLists.containsKey(language)) {
+         synchronized(StopWords.class) {
+            if(Config.hasProperty("hermes.StopWords", language, "class")) {
                stopWordLists.put(language, Config.get("hermes.StopWords", language, "class")
                                                  .as(StopWords.class, new NoOptStopWords()));
             } else {
                Class<?> clazz = Hermes.defaultImplementation(language, "StopWords");
-               if (clazz != null) {
+               if(clazz != null) {
                   try {
                      stopWordLists.put(language, Reflect.onClass(clazz).create().get());
-                  } catch (ReflectionException e) {
+                  } catch(ReflectionException e) {
                      throw new RuntimeException(e);
                   }
                } else {
@@ -74,13 +74,18 @@ public abstract class StopWords implements Serializable {
    }
 
    /**
-    * Has stop word serializable predicate.
-    *
-    * @return the serializable predicate
+    * @return predicate returning true when all tokens in the given HString are content words (i.e. not a stopword)
+    */
+   public static SerializablePredicate<HString> hasOnlyContentWords() {
+      return hasStopWord().negate();
+   }
+
+   /**
+    * @return predicate returning true when any token in a given HString is a stopword
     */
    public static SerializablePredicate<HString> hasStopWord() {
       return hString -> {
-         if (hString == null) {
+         if(hString == null) {
             return true;
          }
          return hString.tokens().stream().anyMatch(isStopWord());
@@ -88,22 +93,18 @@ public abstract class StopWords implements Serializable {
    }
 
    /**
-    * Is not stop word serializable predicate.
-    *
-    * @return the serializable predicate
+    * @return predicate returning true when the given HString is a content word (i.e. not a stopword)
     */
-   public static SerializablePredicate<HString> isNotStopWord() {
+   public static SerializablePredicate<HString> isContentWord() {
       return isStopWord().negate();
    }
 
    /**
-    * Is stop word serializable predicate.
-    *
-    * @return the serializable predicate
+    * @return @return predicate returning true when the given HString is a stopword.
     */
    public static SerializablePredicate<HString> isStopWord() {
       return hString -> {
-         if (hString == null) {
+         if(hString == null) {
             return true;
          }
          return StopWords.getStopWords(hString.getLanguage()).isStopWord(hString);
@@ -111,41 +112,32 @@ public abstract class StopWords implements Serializable {
    }
 
    /**
-    * Not has stop word serializable predicate.
-    *
-    * @return the serializable predicate
-    */
-   public static SerializablePredicate<HString> notHasStopWord() {
-      return hasStopWord().negate();
-   }
-
-   /**
-    * Returns true if any token in the supplied text is a stop word.
+    * Returns true when any token in a given HString is a stopword
     *
     * @param text the text
-    * @return boolean
+    * @return true when any token in a given HString is a stopword
     */
    public boolean hasStopWord(HString text) {
-      if (text == null) {
+      if(text == null) {
          return true;
-      } else if (text.isInstance(Types.TOKEN)) {
+      } else if(text.isInstance(Types.TOKEN)) {
          return isTokenStopWord(Cast.as(text));
       }
       return text.tokens().stream().anyMatch(this::isTokenStopWord);
    }
 
    /**
-    * Is stop word.
+    * Checks if the given text is a stopword
     *
     * @param text the text
-    * @return the boolean
+    * @return True if a stopword, False if a content word.
     */
    public boolean isStopWord(HString text) {
-      if (text == null) {
+      if(text == null) {
          return true;
-      } else if (text.isInstance(Types.TOKEN)) {
+      } else if(text.isInstance(Types.TOKEN)) {
          return isTokenStopWord(Cast.as(text));
-      } else if (text.tokenLength() > 0) {
+      } else if(text.tokenLength() > 0) {
          return text.tokens().stream().allMatch(this::isTokenStopWord);
       } else {
          return isStopWord(text.toString());
@@ -153,23 +145,23 @@ public abstract class StopWords implements Serializable {
    }
 
    /**
-    * Is stop word.
+    * Checks if the given word is a stopword
     *
     * @param word the word
-    * @return the boolean
+    * @return True if a stopword, False if a content word.
     */
    public abstract boolean isStopWord(String word);
 
    /**
-    * Is token stop word boolean.
+    * Checks if the given token is a stopword
     *
     * @param token the token
-    * @return the boolean
+    * @return True if a stopword, False if a content word.
     */
    protected abstract boolean isTokenStopWord(Annotation token);
 
    /**
-    * The type No opt stop words.
+    * StopWords implementation that treats everything as a content word.
     */
    public static class NoOptStopWords extends StopWords {
       private static final long serialVersionUID = 1L;
@@ -184,8 +176,6 @@ public abstract class StopWords implements Serializable {
          return false;
       }
 
-
    }//END OF StopWords$EmptyStopWords
-
 
 }//END OF StopWords

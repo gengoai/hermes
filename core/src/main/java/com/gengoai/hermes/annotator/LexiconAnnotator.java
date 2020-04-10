@@ -21,6 +21,7 @@
 
 package com.gengoai.hermes.annotator;
 
+import com.gengoai.Language;
 import com.gengoai.hermes.AnnotatableType;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.AnnotationType;
@@ -33,7 +34,7 @@ import java.util.Collections;
 import java.util.Set;
 
 /**
- * <p>A lexicon annotator that uses a trie-backed lexicon allowing for prefix matches.</p>
+ * Annotator that provides annotations based on a lexicon.
  *
  * @author David B. Bracewell
  */
@@ -42,22 +43,21 @@ public class LexiconAnnotator extends SentenceLevelAnnotator implements Serializ
    private final AnnotationType type;
    private final Lexicon lexicon;
 
-
    /**
-    * Instantiates a new Lexicon annotator.
+    * Instantiates a new LexiconAnnotator.
     *
-    * @param type        the type
-    * @param lexiconName the lexicon name
+    * @param type        the type of annotation to create.
+    * @param lexiconName the name of the lexicon to perform annotation based on
     */
    public LexiconAnnotator(@NonNull AnnotationType type, @NonNull String lexiconName) {
       this(type, LexiconManager.getLexicon(lexiconName));
    }
 
    /**
-    * Instantiates a new Lexicon annotator.
+    * Instantiates a new LexiconAnnotator.
     *
-    * @param type    the type
-    * @param lexicon the lexicon
+    * @param type    the type of annotation to create.
+    * @param lexicon the lexicon to perform annotation based on
     */
    public LexiconAnnotator(@NonNull AnnotationType type, @NonNull Lexicon lexicon) {
       this.lexicon = lexicon;
@@ -65,12 +65,17 @@ public class LexiconAnnotator extends SentenceLevelAnnotator implements Serializ
    }
 
    @Override
-   public void annotate(@NonNull Annotation sentence) {
+   protected void annotate(@NonNull Annotation sentence) {
       lexicon.extract(sentence)
              .forEach(hString -> sentence.document()
                                          .annotationBuilder(type)
                                          .from(hString)
                                          .createAttached());
+   }
+
+   @Override
+   public String getProvider(Language language) {
+      return lexicon.getName();
    }
 
    @Override

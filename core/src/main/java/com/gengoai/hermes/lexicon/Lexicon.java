@@ -22,10 +22,14 @@
 package com.gengoai.hermes.lexicon;
 
 import com.gengoai.Tag;
-import com.gengoai.conversion.Cast;
-import com.gengoai.hermes.*;
+import com.gengoai.conversion.Converter;
+import com.gengoai.hermes.Annotation;
+import com.gengoai.hermes.Fragments;
+import com.gengoai.hermes.HString;
+import com.gengoai.hermes.Types;
 import com.gengoai.hermes.extraction.Extraction;
 import com.gengoai.hermes.extraction.Extractor;
+import com.gengoai.string.Strings;
 import lombok.NonNull;
 
 import java.io.Serializable;
@@ -33,31 +37,81 @@ import java.util.*;
 import java.util.function.Predicate;
 
 /**
- * <p>Defines a lexicon in which words/phrases are mapped to categories.</p>
+ * <p>
+ * A traditional approach to information extraction incorporates the use of lexicons, also called gazetteers, for
+ * finding specific lexical items in text. Hermes's Lexicon classes provide the ability to match lexical items using a
+ * greedy longest match first or maximum span probability strategy. Both matching strategies allow for case-sensitive or
+ * case-insensitive matching and the use of constraints (using the Lyre expression language), such as part-of-speech, on
+ * the match.
+ * </p>
+ * <p>
+ * Lexicons are managed using the {@link LexiconManager}, which acts as a cache associating lexicons with a name and a
+ * language. This allows for lexicons to be defined via configuration and then to be loaded and retrieved by their name
+ * (this is particularly useful for annotators that use lexicons).
+ * </p>
+ * <p>
+ * Lexicons are defined using a {@link LexiconSpecification} in the following format:
+ * </p>
+ * <pre>
+ * {@code
+ * lexicon:(mem|disk):name(:(csv|json))*::RESOURCE(;ARG=VALUE)*
+ * }**
+ * </pre>
+ * <p>
+ * The schema of the specification is "lexicon" and the currently supported protocols are: mem: An in-memory Trie-based
+ * lexicon. disk: A persistent on-disk based lexicon.The name of the lexicon is used during annotation to mark the
+ * provider. Additionally, a format (csv or json) can be specified, with json being the default if none is provided, to
+ * specify the lexicon format when creating in-memory lexicons. Finally, a number of query parameters (ARG=VALUE) can be
+ * given from the following choices:
+ * <ul>
+ * <li><code>caseSensitive=(true|false)</code>: Is the lexicon case-sensitive (</b>true<b>) or case-insensitive (</b>false<b>) (default </b>false<b>).</li>
+ * <li><code>defaultTag=TAG</code>: The default tag value for entry when one is not defined (default null).</li>
+ * <li><code>language=LANGUAGE</code>: The default language of entries in the lexicon (default Hermes.defaultLanguage()).</li>
+ * </p>
+ * and the following for CSV lexicons:
+ * <ul>
+ * <li><code>lemma=INDEX</code>: The index in the csv row containing the lemma (default 0).</li>
+ * <li><code>tag=INDEX</code>: The index in the csv row containing the tag (default 1).</li>
+ * <li><code>probability=INDEX</code>: The index in the csv row containing the probability (default 2).</li>
+ * <li><code>constraint=INDEX</code>: The index in the csv row containing the constraint (default 3).</li>
+ * </ul>
+ * </p>
  *
  * @author David B. Bracewell
  */
 public abstract class Lexicon implements Predicate<HString>, WordList, Extractor, PrefixSearchable, Serializable {
    private static final long serialVersionUID = 1L;
 
+   /**
+    * Adds an entry to the lexicon
+    *
+    * @param lexiconEntry the lexicon entry to add
+    */
+   public abstract void add(LexiconEntry lexiconEntry);
+
+   /**
+    * Adds all lexicon entries in the given iterable to the lexicon
+    *
+    * @param lexiconEntries the lexicon entries to add
+    */
+   public void addAll(@NonNull Iterable<LexiconEntry> lexiconEntries) {
+      lexiconEntries.forEach(this::add);
+   }
+
    private HString createFragment(LexiconMatch match) {
       HString tmp = match.getSpan().document().substring(match.getSpan().start(), match.getSpan().end());
       tmp.put(Types.CONFIDENCE, match.getScore());
       tmp.put(Types.MATCHED_STRING, match.getMatchedString());
-      if(getTagAttributeType() != null) {
-         tmp.put(getTagAttributeType(), match.getTag());
+      if(Strings.isNotNullOrBlank(match.getTag())) {
+         tmp.put(Types.MATCHED_TAG, match.getTag());
       }
       return tmp;
    }
 
-   public abstract Set<LexiconEntry<?>> entries(String lemma);
-
    /**
-    * Gets the set of lexicon entries in the lexicon
-    *
-    * @return the set of lexicon entries the lexicon matches against
+    * @return the set of lexicon entries in the lexicon
     */
-   public abstract Set<LexiconEntry<?>> entries();
+   public abstract Set<LexiconEntry> entries();
 
    @Override
    public Extraction extract(@NonNull HString source) {
@@ -68,42 +122,27 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
    }
 
    /**
-    * Gets the matched entries for a given {@link HString}
+    * Returns the {@link LexiconEntry} associated with a given word in the Lexicon or an empty set if there are none.
     *
-    * @param hString the {@link HString} to match against
-    * @return the entries matching the {@link HString}
+    * @param word the word in the lexicon whose entries we want
+    * @return the {@link LexiconEntry} associated with a given word in the Lexicon or an empty set if there are none.
     */
-   public abstract List<LexiconEntry<?>> getEntries(HString hString);
+   public abstract Set<LexiconEntry> get(@NonNull String word);
 
    /**
-    * Gets the matched entries for a given {@link HString}
-    *
-    * @param hString the {@link HString} to match against
-    * @return the entries matching the {@link HString}
+    * @return the max lemma length
     */
-   public abstract List<LexiconEntry<?>> getEntries(String hString);
-
-   /**
-    * Gets the first matched lemma, if one, for the given {@link HString}
-    *
-    * @param hString the {@link HString} to match against
-    * @return the first matched lemma for the {@link HString}
-    */
-   public final Optional<String> getMatch(HString hString) {
-      return getEntries(hString)
-            .stream()
-            .map(LexiconEntry::getLemma)
-            .findFirst();
-   }
-
    public abstract int getMaxLemmaLength();
 
    /**
-    * Gets max token length.
-    *
     * @return the max token length
     */
    public abstract int getMaxTokenLength();
+
+   /**
+    * @return the name of the lexicon
+    */
+   public abstract String getName();
 
    /**
     * Gets the maximum probability for matching the given {@link HString}
@@ -111,8 +150,8 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
     * @param hString the {@link HString} to match against
     * @return the maximum probability for the {@link HString}
     */
-   public final double getProbability(HString hString) {
-      return getEntries(hString)
+   public final double getProbability(@NonNull HString hString) {
+      return match(hString)
             .stream()
             .mapToDouble(LexiconEntry::getProbability)
             .max()
@@ -125,7 +164,7 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
     * @param lemma the String to match against
     * @return the maximum probability for the String
     */
-   public final double getProbability(String lemma) {
+   public final double getProbability(@NonNull String lemma) {
       return getProbability(Fragments.stringWrapper(lemma));
    }
 
@@ -136,12 +175,18 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
     * @param tag     the tag that must be present for the match
     * @return the maximum probability for the {@link HString} with the given tag
     */
-   public final double getProbability(HString hString, Tag tag) {
-      return getEntries(hString).stream()
-                                .filter(le -> le.getTag() != null && le.getTag().isInstance(tag))
-                                .mapToDouble(LexiconEntry::getProbability)
-                                .max()
-                                .orElse(0d);
+   public final double getProbability(@NonNull HString hString, @NonNull Tag tag) {
+      return match(hString).stream()
+                           .filter(le -> {
+                              if(Strings.isNullOrBlank(le.getTag())) {
+                                 return false;
+                              }
+                              Tag leTag = Converter.convertSilently(le.getTag(), tag.getClass());
+                              return leTag != null && leTag.isInstance(tag);
+                           })
+                           .mapToDouble(LexiconEntry::getProbability)
+                           .max()
+                           .orElse(0d);
    }
 
    /**
@@ -151,7 +196,7 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
     * @param tag    the tag that must be present for the match
     * @return the maximum probability for the String with the given tag
     */
-   public final double getProbability(String string, Tag tag) {
+   public final double getProbability(@NonNull String string, @NonNull Tag tag) {
       return getProbability(Fragments.stringWrapper(string), tag);
    }
 
@@ -161,7 +206,7 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
     * @param lemma the  String to match against
     * @return the first matched tag for the String
     */
-   public final Optional<Tag> getTag(String lemma) {
+   public final Optional<String> getTag(@NonNull String lemma) {
       return getTag(Fragments.stringWrapper(lemma));
    }
 
@@ -171,20 +216,12 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
     * @param hString the {@link HString} to match against
     * @return the first matched tag for the {@link HString}
     */
-   public final Optional<Tag> getTag(HString hString) {
-      return getEntries(hString).stream()
-                                .filter(e -> e.getTag() != null)
-                                .map(LexiconEntry::getTag)
-                                .map(Cast::<Tag>as)
-                                .findFirst();
+   public final Optional<String> getTag(@NonNull HString hString) {
+      return match(hString).stream()
+                           .filter(e -> e.getTag() != null)
+                           .map(LexiconEntry::getTag)
+                           .findFirst();
    }
-
-   /**
-    * Gets the tag attribute assigned by the Lexicon
-    *
-    * @return the tag attribute
-    */
-   public abstract AttributeType<Tag> getTagAttributeType();
 
    /**
     * Is the Lexicon case sensitive or not
@@ -200,7 +237,7 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
     */
    public abstract boolean isProbabilistic();
 
-   private List<HString> longestMatchFirst(HString source) {
+   private List<HString> longestMatchFirst(@NonNull HString source) {
       List<HString> results = new LinkedList<>();
       List<Annotation> tokens = source.tokens();
 
@@ -213,7 +250,7 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
                if(temp.length() > getMaxLemmaLength()) {
                   break;
                }
-               List<LexiconEntry<?>> entries = getEntries(temp);
+               List<LexiconEntry> entries = match(temp);
                if(entries.size() > 0) {
                   bestMatch = new LexiconMatch(temp, entries.get(0));
                }
@@ -230,7 +267,7 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
             }
 
          } else if(test(token)) {
-            results.add(createFragment(new LexiconMatch(token, getEntries(token).get(0))));
+            results.add(createFragment(new LexiconMatch(token, match(token).get(0))));
             i++;
          } else {
             i++;
@@ -239,6 +276,22 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
 
       return results;
    }
+
+   /**
+    * Gets the matched entries for a given {@link HString}
+    *
+    * @param string the {@link HString} to match against
+    * @return the entries matching the {@link HString}
+    */
+   public abstract List<LexiconEntry> match(@NonNull HString string);
+
+   /**
+    * Returns the {@link LexiconEntry} associated with a given word in the Lexicon or an empty set if there are none.
+    *
+    * @param term the word in the lexicon whose entries we want
+    * @return the {@link LexiconEntry} associated with a given word in the Lexicon or an empty set if there are none.
+    */
+   public abstract List<LexiconEntry> match(@NonNull String term);
 
    /**
     * Normalizes the string based whether the lexicon is case sensitive or not.
@@ -261,8 +314,12 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
    public abstract int size();
 
    @Override
-   public final boolean test(HString hString) {
-      return getMatch(hString).isPresent();
+   public final boolean test(@NonNull HString hString) {
+      return match(hString)
+            .stream()
+            .map(LexiconEntry::getLemma)
+            .findFirst()
+            .isPresent();
    }
 
    private List<HString> viterbi(HString source) {
@@ -279,7 +336,7 @@ public abstract class Lexicon implements Predicate<HString>, WordList, Extractor
             if(span.length() > maxLen) {
                break;
             }
-            LexiconEntry<?> entry = getEntries(span).stream().findFirst().orElse(new LexiconEntry<>("", 0, null, null));
+            LexiconEntry entry = match(span).stream().findFirst().orElse(LexiconEntry.empty());
             LexiconMatch score = new LexiconMatch(span, entry.getProbability(), entry.getLemma(), entry.getTag());
             double segmentScore = score.getScore() + best[start];
             if(segmentScore >= best[end]) {

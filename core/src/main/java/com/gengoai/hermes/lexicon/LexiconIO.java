@@ -22,10 +22,9 @@
 
 package com.gengoai.hermes.lexicon;
 
-import com.gengoai.Tag;
+import com.gengoai.Language;
 import com.gengoai.Validation;
-import com.gengoai.hermes.AttributeType;
-import com.gengoai.hermes.Types;
+import com.gengoai.hermes.Hermes;
 import com.gengoai.hermes.extraction.lyre.Lyre;
 import com.gengoai.io.CSV;
 import com.gengoai.io.CSVReader;
@@ -42,8 +41,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import static com.gengoai.reflection.TypeUtils.parameterizedType;
-
 /**
  * Utility methods reading and writing Lexicon
  *
@@ -57,28 +54,30 @@ public final class LexiconIO {
    private static final String PROBABILITY = "probability";
    private static final String SPECIFICATION_SECTION = "@spec";
    private static final String TAG = "tag";
-   private static final String TAG_ATTRIBUTE = "tagAttribute";
+   private static final String LANGUAGE = "language";
 
    private LexiconIO() {
       throw new IllegalAccessError();
    }
 
    /**
-    * Import csv lexicon.
+    * Imports a CSV file into an in-memory lexicon.
     *
+    * @param name    the lexicon name
     * @param csvFile the csv file
-    * @param updater the updater
+    * @param updater consumer to set the CSVParameters
     * @return the lexicon
-    * @throws IOException the io exception
+    * @throws IOException Something went wrong reading the CSV file
     */
-   public static Lexicon importCSV(@NonNull Resource csvFile,
+   public static Lexicon importCSV(@NonNull String name,
+                                   @NonNull Resource csvFile,
                                    @NonNull Consumer<CSVParameters> updater) throws IOException {
       CSVParameters parameters = new CSVParameters();
       updater.accept(parameters);
       Validation.checkArgument(parameters.lemma >= 0,
                                "A non-negative index for the lemma position in the csv file must be defined.");
-      LexiconBuilder builder = TrieLexicon.builder(parameters.tagAttribute, parameters.isCaseSensitive);
-      builder.setProbabilistic(parameters.probability > 0);
+      TrieLexicon lexicon = new TrieLexicon(name, parameters.isCaseSensitive);
+      final Language language = parameters.language;
       try(CSVReader reader = parameters.csvFormat.reader(csvFile)) {
          List<String> row;
          while((row = reader.nextRow()) != null) {
@@ -88,19 +87,71 @@ public final class LexiconIO {
             }
             double prob = parameters.probability >= 0 && row.size() >= parameters.probability
                           ? Double.parseDouble(row.get(parameters.probability))
-                          : 1.0;
-            Tag tag = parameters.tag >= 0 && row.size() >= parameters.tag
-                      ? parameters.tagAttribute.decode(row.get(parameters.tag))
-                      : parameters.defaultTag;
-
+                          : -1.0;
+            String tag = parameters.tag >= 0 && row.size() >= parameters.tag
+                         ? row.get(parameters.tag)
+                         : parameters.defaultTag;
             if(parameters.constraint >= 0 && row.size() > parameters.constraint) {
-               builder.add(new LexiconEntry<>(lemma, prob, tag, Lyre.parse(row.get(parameters.constraint))));
+               lexicon.add(LexiconEntry.of(lemma,
+                                           prob,
+                                           tag,
+                                           Lyre.parse(row.get(parameters.constraint)),
+                                           LexiconEntry.calculateTokenLength(lemma, language)));
             } else {
-               builder.add(lemma, prob, tag);
+               lexicon.add(LexiconEntry.of(lemma, prob, tag, LexiconEntry.calculateTokenLength(lemma, language)));
             }
          }
       }
-      return builder.build();
+      return lexicon;
+   }
+
+   /**
+    * Imports a CSV file into an in-memory lexicon.
+    *
+    * @param csvFile the csv file
+    * @param updater consumer to set the CSVParameters
+    * @return the lexicon
+    * @throws IOException Something went wrong reading the CSV file
+    */
+   public static Lexicon importCSV(@NonNull Resource csvFile,
+                                   @NonNull Consumer<CSVParameters> updater) throws IOException {
+      return importCSV(csvFile.baseName(), csvFile, updater);
+   }
+
+   /**
+    * Reads a lexicon in Json format from the given lexicon resource
+    *
+    * @param name            the name of the lexicon
+    * @param lexiconResource the lexicon resource
+    * @return the lexicon
+    * @throws IOException Something went wrong reading the resource
+    */
+   public static Lexicon read(@NonNull String name, @NonNull Resource lexiconResource) throws IOException {
+      Map<String, JsonEntry> lexJson = Json.parseObject(lexiconResource);
+      Map<String, JsonEntry> spec = lexJson.getOrDefault(SPECIFICATION_SECTION, JsonEntry.from(new HashMap<>()))
+                                           .getAsMap();
+      final boolean isCaseSensitive = spec.getOrDefault(IS_CASE_SENSITIVE, JsonEntry.from(false)).getAsBoolean();
+      final String defaultTag = spec.getOrDefault(TAG, JsonEntry.nullValue()).getAsString();
+      final Language language = spec.getOrDefault(LANGUAGE, JsonEntry.from(Hermes.defaultLanguage()))
+                                    .getAs(Language.class);
+      TrieLexicon lexicon = new TrieLexicon(name, isCaseSensitive);
+      lexJson.get(ENTRIES_SECTION)
+             .elementIterator()
+             .forEachRemaining(e -> {
+                if(!e.hasProperty(TAG) && defaultTag != null) {
+                   e.addProperty(TAG, defaultTag);
+                }
+                if(!e.hasProperty(PROBABILITY)) {
+                   e.addProperty(PROBABILITY, -1.0);
+                }
+                if(!e.hasProperty("tokenLength")) {
+                   e.addProperty("tokenLength",
+                                 LexiconEntry.calculateTokenLength(e.getStringProperty("lemma"), language));
+                }
+                lexicon.add(e.getAs(LexiconEntry.class));
+             });
+
+      return lexicon;
    }
 
    /**
@@ -111,32 +162,7 @@ public final class LexiconIO {
     * @throws IOException Something went wrong reading the resource
     */
    public static Lexicon read(@NonNull Resource lexiconResource) throws IOException {
-      Map<String, JsonEntry> lexicon = Json.parseObject(lexiconResource);
-      Map<String, JsonEntry> spec = lexicon.getOrDefault(SPECIFICATION_SECTION, JsonEntry.from(new HashMap<>()))
-                                           .getAsMap();
-      boolean isCaseSensitive = spec.getOrDefault(IS_CASE_SENSITIVE, JsonEntry.from(false)).getAsBoolean();
-      AttributeType<? extends Tag> tagAttribute = spec.getOrDefault(TAG_ATTRIBUTE, JsonEntry.from(Types.TAG))
-                                                      .getAs(parameterizedType(AttributeType.class, Tag.class));
-      Tag defaultTag = spec.getOrDefault(TAG, JsonEntry.nullValue()).getAs(tagAttribute.getValueType());
-
-      LexiconBuilder builder = TrieLexicon.builder(tagAttribute, isCaseSensitive);
-      lexicon.get(ENTRIES_SECTION)
-             .elementIterator()
-             .forEachRemaining(e -> {
-                if(!e.hasProperty(TAG) && defaultTag != null) {
-                   e.addProperty(TAG, defaultTag.name());
-                }
-
-                if(!e.hasProperty(PROBABILITY)) {
-                   e.addProperty(PROBABILITY, 1.0);
-                } else {
-                   builder.setProbabilistic(true);
-                }
-                builder.add(e.<LexiconEntry<?>>getAs(parameterizedType(LexiconEntry.class,
-                                                                       tagAttribute.getValueType())));
-             });
-
-      return builder.build();
+      return read(lexiconResource.baseName(), lexiconResource);
    }
 
    /**
@@ -147,7 +173,7 @@ public final class LexiconIO {
     * @param defaultTag      the default tag to assign entries
     * @throws IOException Something went wrong writing the lexicon
     */
-   public static void write(Lexicon lexicon, Resource lexiconResource, Tag defaultTag) throws IOException {
+   public static void write(Lexicon lexicon, Resource lexiconResource, String defaultTag) throws IOException {
       try(JsonWriter writer = Json.createWriter(lexiconResource)) {
          writer.spaceIndent(2);
          writer.beginDocument();
@@ -157,11 +183,9 @@ public final class LexiconIO {
             {
                writer.name(IS_CASE_SENSITIVE);
                writer.value(lexicon.isCaseSensitive());
-               writer.name(TAG_ATTRIBUTE);
-               writer.value(lexicon.getTagAttributeType());
                if(defaultTag != null) {
                   writer.name(TAG);
-                  writer.value(defaultTag.name());
+                  writer.value(defaultTag);
                }
             }
             writer.endObject();
@@ -169,18 +193,20 @@ public final class LexiconIO {
             //Write Entries
             writer.beginArray(ENTRIES_SECTION);
             {
-               for(LexiconEntry<?> entry : lexicon.entries()) {
+               for(LexiconEntry entry : lexicon.entries()) {
                   writer.beginObject();
                   {
                      writer.name(LEMMA);
                      writer.value(entry.getLemma());
+                     writer.name("tokenLength");
+                     writer.value(entry.getTokenLength());
                      if(entry.getProbability() != 1.0) {
                         writer.name(PROBABILITY);
                         writer.value(entry.getProbability());
                      }
-                     if(entry.getTag() != null && entry.getTag() != defaultTag) {
+                     if(entry.getTag() != null && !entry.getTag().equals(defaultTag)) {
                         writer.name(TAG);
-                        writer.value(entry.getTag().name());
+                        writer.value(entry.getTag());
                      }
                      if(entry.getConstraint() != null) {
                         writer.name(CONSTRAINT);
@@ -212,7 +238,7 @@ public final class LexiconIO {
       /**
        * The Default tag.
        */
-      public Tag defaultTag = null;
+      public String defaultTag = null;
       /**
        * The Is case sensitive.
        */
@@ -230,10 +256,9 @@ public final class LexiconIO {
        */
       public int tag = -1;
       /**
-       * The Tag attribute.
+       * The Language
        */
-      @NonNull
-      public AttributeType<? extends Tag> tagAttribute = Types.TAG;
+      public Language language = Hermes.defaultLanguage();
    }
 
 }//END OF LexiconIO

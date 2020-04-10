@@ -22,9 +22,17 @@
 package com.gengoai.hermes.lexicon;
 
 import com.gengoai.hermes.HString;
+import lombok.NonNull;
 
 /**
- * A basic lookup structure for words and phrases
+ * <p>Word lists provide a set like interface to set of vocabulary items. Implementations of WordList may implement the
+ * {@link PrefixSearchable} interface allowing prefix matching. Word lists are loaded from plain text files with "#" at
+ * the beginning of a line denoting a comment. Whereas lexicons provide a robust way to match and label HStrings,
+ * _WordList_s provide a simple means of determining if a word/phrase is defined.</p>
+ * <p>
+ * Note that convention states that if the first line of a word list is a comment stating "case-insensitive" then
+ * loading of that word list will result in all words being lower-cased.
+ * </p>
  *
  * @author David B. Bracewell
  */
@@ -44,7 +52,7 @@ public interface WordList extends Iterable<String> {
     * @param string the {@link HString} to lookup
     * @return True if the {@link HString} is in the WordList, False otherwise
     */
-   default boolean contains(HString string) {
+   default boolean contains(@NonNull HString string) {
       return contains(string.toString());
    }
 
@@ -54,6 +62,5 @@ public interface WordList extends Iterable<String> {
     * @return the number of words in the list
     */
    int size();
-
 
 }//END OF WordList

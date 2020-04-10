@@ -22,60 +22,15 @@
 
 package com.gengoai.hermes.workflow;
 
-import com.gengoai.hermes.corpus.Corpus;
-import lombok.NonNull;
-
 import java.io.Serializable;
 
 /**
- * The type Processing state.
+ * Defines an action state which can be LOADED where the action has loaded its state or NOT_LOADED meaning the action
+ * has no state to load.
  *
  * @author David B. Bracewell
  */
-public class State implements Serializable {
-   private static final long serialVersionUID = 1L;
-
-   private final Corpus corpus;
-
-   private State(Corpus corpus) {
-      this.corpus = corpus;
-   }
-
-   /**
-    * Loaded processing state.
-    *
-    * @param corpus the corpus
-    * @return the processing state
-    */
-   public static State LOADED(@NonNull Corpus corpus) {
-      return new State(corpus);
-   }
-
-   /**
-    * Not loaded processing state.
-    *
-    * @return the processing state
-    */
-   public static State NOT_LOADED() {
-      return new State(null);
-   }
-
-   /**
-    * Is loaded boolean.
-    *
-    * @return the boolean
-    */
-   public boolean isLoaded() {
-      return corpus != null;
-   }
-
-   /**
-    * Gets corpus.
-    *
-    * @return the corpus
-    */
-   public Corpus getCorpus() {
-      return corpus;
-   }
-
+public enum State implements Serializable {
+   LOADED,
+   NOT_LOADED;
 }//END OF ProcessingState

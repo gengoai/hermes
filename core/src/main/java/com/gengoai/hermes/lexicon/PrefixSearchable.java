@@ -26,7 +26,7 @@ import com.gengoai.hermes.HString;
 import java.util.Set;
 
 /**
- * Interface defining a lexicon that can be searched using prefixes
+ * Interface defining a lexicon or word list that can be searched using prefixes
  *
  * @author David B. Bracewell
  */
@@ -40,6 +40,13 @@ public interface PrefixSearchable {
     */
    boolean isPrefixMatch(HString hString);
 
+   /**
+    * Check if a prefix matches the given String
+    *
+    * @param hString the String to check for a prefix match
+    * @return True if a prefix matches, False otherwise
+    */
+   boolean isPrefixMatch(String hString);
 
    /**
     * Gets the prefixes that match the given string
@@ -48,14 +55,5 @@ public interface PrefixSearchable {
     * @return the set of matching prefixes
     */
    Set<String> prefixes(String string);
-
-
-   /**
-    * Check if a prefix matches the given String
-    *
-    * @param hString the String to check for a prefix match
-    * @return True if a prefix matches, False otherwise
-    */
-   boolean isPrefixMatch(String hString);
 
 }//END OF PrefixSearchable

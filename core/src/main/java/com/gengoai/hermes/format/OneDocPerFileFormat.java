@@ -27,6 +27,11 @@ import com.gengoai.string.Strings;
 import java.io.IOException;
 import java.io.Serializable;
 
+/**
+ * <p>Defines a format in which only one document is written per file. These formats require the output resource to be
+ * a directory and create individual files named "part-#####" where "####" ranges from 0 to the number of documents in
+ * the corpus.</p>
+ */
 public interface OneDocPerFileFormat extends DocFormat, Serializable {
 
    @Override

@@ -27,25 +27,29 @@ import com.gengoai.hermes.AnnotatableType;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.ResourceType;
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.ml.BIOTagger;
+import com.gengoai.hermes.ml.IOBTagger;
 
-import java.io.Serializable;
 import java.util.Collections;
 import java.util.Set;
 
 /**
- * The type Default phrase chunk annotator.
+ * Default Phrase Chunk annotator that use an IOBTagger.
  *
  * @author David B. Bracewell
  */
-public class DefaultPhraseChunkAnnotator extends SentenceLevelAnnotator implements Serializable {
+public class DefaultPhraseChunkAnnotator extends SentenceLevelAnnotator {
    private static final long serialVersionUID = 1L;
-   private static final Cache<Language, BIOTagger> cache = ResourceType.MODEL.createCache("Annotation.PHRASE_CHUNK",
+   private static final Cache<Language, IOBTagger> cache = ResourceType.MODEL.createCache("Annotation.PHRASE_CHUNK",
                                                                                           "phrase_chunk");
 
    @Override
-   public void annotate(Annotation sentence) {
+   protected void annotate(Annotation sentence) {
       cache.get(sentence.getLanguage()).tag(sentence);
+   }
+
+   @Override
+   public String getProvider(Language language) {
+      return "IOBTagger v" + cache.get(language).getVersion();
    }
 
    @Override

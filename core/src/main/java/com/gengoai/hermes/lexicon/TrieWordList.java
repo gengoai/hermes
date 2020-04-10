@@ -26,6 +26,7 @@ import com.gengoai.collection.tree.Trie;
 import com.gengoai.hermes.HString;
 import com.gengoai.io.resource.Resource;
 import com.gengoai.stream.MStream;
+import lombok.NonNull;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -45,7 +46,7 @@ public class TrieWordList implements WordList, PrefixSearchable, Serializable {
    private final Trie<Boolean> words;
 
    /**
-    * Instantiates a new {@link TrieWordList}
+    * Instantiates a new TrieWordList
     *
     * @param words the words
     */
@@ -58,27 +59,38 @@ public class TrieWordList implements WordList, PrefixSearchable, Serializable {
    }
 
    /**
-    * Read trie word list.
+    * <p>
+    * Reads the word list from the given resource where each term is on its own line and "#" represents comments.
+    * </p>
+    * <p>
+    * Note that convention states that if the first line of a word list is a comment stating "case-insensitive" then
+    * loading of that word list will result in all words being lower-cased.
+    * </p>
     *
-    * @param resource  the resource
-    * @param lowerCase the lower case
+    * @param resource the resource
     * @return the trie word list
     * @throws IOException the io exception
     */
-   public static TrieWordList read(Resource resource, boolean lowerCase) throws IOException {
+   public static TrieWordList read(@NonNull Resource resource) throws IOException {
       TrieWordList twl = new TrieWordList();
-      try (MStream<String> lines = resource.lines()) {
-         lines.forEach(line -> {
-            line = line.trim();
-            if (!line.startsWith("#")) {
-               if (lowerCase) {
+      boolean firstLine = true;
+      boolean isLowerCase = false;
+      try(MStream<String> lines = resource.lines()) {
+         for(String line : lines) {
+            line = line.strip();
+            if(firstLine && line.startsWith("#")) {
+               isLowerCase = line.contains("case-insensitive");
+            }
+            firstLine = false;
+            if(!line.startsWith("#")) {
+               if(isLowerCase) {
                   twl.words.put(line.toLowerCase(), true);
                } else {
                   twl.words.put(line, true);
                }
             }
-         });
-      } catch (Exception e) {
+         }
+      } catch(Exception e) {
          throw new IOException(e);
       }
       return twl;

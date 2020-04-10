@@ -26,6 +26,10 @@ import com.gengoai.stream.StreamingContext;
 
 import java.util.stream.Stream;
 
+/**
+ * <p>Defines a format in which files need to be completely read in order to generate documents. Most formats will us
+ * this as a base class.</p>
+ */
 public abstract class WholeFileTextFormat implements DocFormat {
 
    @Override
@@ -39,6 +43,12 @@ public abstract class WholeFileTextFormat implements DocFormat {
       return stream;
    }
 
+   /**
+    * Converts the content of an entire file into one ore more documents.
+    *
+    * @param content the content
+    * @return the stream of documents.
+    */
    protected abstract Stream<Document> readSingleFile(String content);
 
 }//END OF WholeFileTextFormat

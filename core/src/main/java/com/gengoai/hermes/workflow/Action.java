@@ -24,11 +24,18 @@ package com.gengoai.hermes.workflow;
 
 import com.gengoai.config.Config;
 import com.gengoai.hermes.corpus.Corpus;
+import com.gengoai.hermes.corpus.DocumentCollection;
 
 import java.io.Serializable;
 
 /**
- * The interface Action.
+ * <p>An action defines a processing step to perform on a {@link Corpus} with a given {@link Context} which results in
+ * either modifying the corpus or the context. Action implementations can persist their state to be reused at a later
+ * time including across jvm instances & runs. This is done by implementing the {@link
+ * #loadPreviousState(DocumentCollection, Context)} method. An action can ignore its state and reprocess the corpus when
+ * either the config setting  <code>processing.override.all</code> is set to true or the config setting
+ * <code>className.override</code> is set tp true.
+ * </p>
  *
  * @author David B. Bracewell
  */
@@ -44,8 +51,7 @@ public interface Action extends Serializable {
     */
    default boolean getOverrideStatus() {
       return Config.get("processing.override.all")
-                   .asBooleanValue(Config.get(this.getClass(), "override")
-                                         .asBooleanValue(false));
+                   .asBooleanValue(Config.get(this.getClass(), "override").asBooleanValue(false));
    }
 
    /**
@@ -55,8 +61,8 @@ public interface Action extends Serializable {
     * @param context the context of the processor
     * @return the processing state (NOT_LOADED by default meaning there is no previous state).
     */
-   default State loadPreviousState(Corpus corpus, Context context) {
-      return State.NOT_LOADED();
+   default State loadPreviousState(DocumentCollection corpus, Context context) {
+      return State.NOT_LOADED;
    }
 
    /**
@@ -64,10 +70,8 @@ public interface Action extends Serializable {
     *
     * @param corpus  the corpus
     * @param context the context
-    * @return the corpus
     * @throws Exception the exception
     */
-   Corpus process(Corpus corpus, Context context) throws Exception;
-
+   DocumentCollection process(DocumentCollection corpus, Context context) throws Exception;
 
 }//END OF Action

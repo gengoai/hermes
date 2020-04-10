@@ -21,12 +21,9 @@
 
 package com.gengoai.hermes.annotator;
 
-import com.gengoai.hermes.AnnotatableType;
-import com.gengoai.hermes.Annotation;
-import com.gengoai.hermes.Types;
+import com.gengoai.Language;
+import com.gengoai.hermes.*;
 import com.gengoai.hermes.morphology.TokenType;
-import com.gengoai.hermes.Entities;
-import com.gengoai.hermes.EntityType;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -34,7 +31,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * The type Default token type entity annotator.
+ * Default annotator for {@link TokenType} entities that maps <code>TokenType</code>s to {@link EntityType}. All
+ * TokenType entities have a confidence of <code>0.6</code>
  *
  * @author David B. Bracewell
  */
@@ -55,15 +53,15 @@ public class DefaultTokenTypeEntityAnnotator extends SentenceLevelAnnotator {
    private static final long serialVersionUID = 1L;
 
    @Override
-   public void annotate(Annotation sentence) {
+   protected void annotate(Annotation sentence) {
       sentence.tokens().forEach(token -> {
          TokenType type = token.attribute(Types.TOKEN_TYPE, TokenType.UNKNOWN);
-         if (mapping.containsKey(type)) {
+         if(mapping.containsKey(type)) {
             sentence.document()
                     .annotationBuilder(Types.TOKEN_TYPE_ENTITY)
                     .bounds(token)
                     .attribute(Types.ENTITY_TYPE, mapping.get(type))
-                    .attribute(Types.CONFIDENCE, 1.0)
+                    .attribute(Types.CONFIDENCE, 0.6)
                     .createAttached();
          }
       });
@@ -72,6 +70,11 @@ public class DefaultTokenTypeEntityAnnotator extends SentenceLevelAnnotator {
    @Override
    protected Set<AnnotatableType> furtherRequires() {
       return Collections.singleton(Types.TOKEN);
+   }
+
+   @Override
+   public String getProvider(Language language) {
+      return "TokenType";
    }
 
    @Override

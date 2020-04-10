@@ -32,7 +32,8 @@ import com.gengoai.json.JsonEntry;
 import java.lang.reflect.Type;
 
 /**
- * The type Extractor.
+ * Combines an {@link Extractor} with an Apollo <code>Featurizer</code> allowing for the output of the extractor to be
+ * directly used as features for machine learning.
  *
  * @author David B. Bracewell
  */

@@ -22,14 +22,14 @@
 package com.gengoai.hermes.lexicon;
 
 import com.gengoai.io.resource.Resource;
-import com.gengoai.string.Strings;
+import com.gengoai.stream.MStream;
+import lombok.NonNull;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Simple implementation of a {@link WordList} backed by a HashSet
@@ -45,28 +45,46 @@ public class SimpleWordList implements WordList, Serializable {
     *
     * @param words the words
     */
-   public SimpleWordList(Set<String> words) {
+   public SimpleWordList(@NonNull Set<String> words) {
       this.words = new HashSet<>(words);
    }
 
    /**
-    * Read word list.
+    * <p>
+    * Reads the word list from the given resource where each term is on its own line and "#" represents comments.
+    * </p>
+    * <p>
+    * Note that convention states that if the first line of a word list is a comment stating "case-insensitive" then
+    * loading of that word list will result in all words being lower-cased.
+    * </p>
     *
-    * @param resource  the resource
-    * @param lowerCase the lower case
+    * @param resource the resource
     * @return the word list
     * @throws IOException the io exception
     */
-   public static WordList read(Resource resource, boolean lowerCase) throws IOException {
-      return new SimpleWordList(resource.readLines().stream()
-                                        .map(line -> {
-                                           if (lowerCase) {
-                                              return line.trim().toLowerCase();
-                                           }
-                                           return line.trim();
-                                        })
-                                        .filter(line -> Strings.isNotNullOrBlank(line) && !line.startsWith("#"))
-                                        .collect(Collectors.toSet()));
+   public static WordList read(Resource resource) throws IOException {
+      final Set<String> words = new HashSet<>();
+      boolean firstLine = true;
+      boolean isLowerCase = false;
+      try(MStream<String> lines = resource.lines()) {
+         for(String line : lines) {
+            line = line.strip();
+            if(firstLine && line.startsWith("#")) {
+               isLowerCase = line.contains("case-insensitive");
+            }
+            firstLine = false;
+            if(!line.startsWith("#")) {
+               if(isLowerCase) {
+                  words.add(line.toLowerCase());
+               } else {
+                  words.add(line);
+               }
+            }
+         }
+      } catch(Exception e) {
+         throw new IOException(e);
+      }
+      return new SimpleWordList(words);
    }
 
    @Override

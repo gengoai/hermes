@@ -21,35 +21,24 @@
 
 package com.gengoai.hermes.lexicon;
 
-import com.gengoai.Tag;
 import com.gengoai.hermes.HString;
+import lombok.NonNull;
+import lombok.Value;
 
 import java.io.Serializable;
-import java.util.Objects;
 
 /**
  * Value class for matches made by lexicons
  *
  * @author David B. Bracewell
  */
-public final class LexiconMatch implements Serializable {
+@Value
+public class LexiconMatch implements Serializable {
    private static final long serialVersionUID = 1L;
-   /**
-    * The Matched string.
-    */
-   public final String matchedString;
-   /**
-    * The Score associated with the match
-    */
-   public final double score;
-   /**
-    * The span on the HString passed to the lexicon that was matched
-    */
-   public final HString span;
-   /**
-    * The Tag of the matched string
-    */
-   public final Tag tag;
+   String matchedString;
+   double score;
+   HString span;
+   String tag;
 
    /**
     * Instantiates a new Lexicon match.
@@ -57,7 +46,7 @@ public final class LexiconMatch implements Serializable {
     * @param span  the span
     * @param entry the entry
     */
-   public LexiconMatch(HString span, LexiconEntry entry) {
+   public LexiconMatch(@NonNull HString span, @NonNull LexiconEntry entry) {
       this.span = span;
       this.score = entry.getProbability();
       this.matchedString = entry.getLemma();
@@ -72,72 +61,10 @@ public final class LexiconMatch implements Serializable {
     * @param matchedString the matched string
     * @param tag           the tag
     */
-   public LexiconMatch(HString span, double score, String matchedString, Tag tag) {
+   public LexiconMatch(@NonNull HString span, double score, @NonNull String matchedString, String tag) {
       this.span = span;
       this.score = score;
       this.matchedString = matchedString;
       this.tag = tag;
-   }
-
-   @Override
-   public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof LexiconMatch)) return false;
-      LexiconMatch that = (LexiconMatch) o;
-      return Double.compare(that.score, score) == 0 &&
-                span.equals(that.span) &&
-                matchedString.equals(that.matchedString) &&
-                tag.equals(that.tag);
-   }
-
-   /**
-    * Gets the matched string.
-    *
-    * @return the matched string
-    */
-   public String getMatchedString() {
-      return matchedString;
-   }
-
-   /**
-    * Gets the score.
-    *
-    * @return the score
-    */
-   public double getScore() {
-      return score;
-   }
-
-   /**
-    * Gets the matched span.
-    *
-    * @return the span
-    */
-   public HString getSpan() {
-      return span;
-   }
-
-   /**
-    * Gets the tag.
-    *
-    * @return the tag
-    */
-   public Tag getTag() {
-      return tag;
-   }
-
-   @Override
-   public int hashCode() {
-      return Objects.hash(span, score, matchedString, tag);
-   }
-
-   @Override
-   public String toString() {
-      return "LexiconMatch{" +
-                "span=" + span +
-                ", score=" + score +
-                ", matchedString='" + matchedString + '\'' +
-                ", tag=" + tag +
-                '}';
    }
 }//END OF LexiconMatch

@@ -26,13 +26,16 @@ import com.gengoai.conversion.Cast;
 import com.gengoai.function.Unchecked;
 import com.gengoai.hermes.extraction.caduceus.CaduceusProgram;
 import com.gengoai.hermes.lexicon.LexiconManager;
+import com.gengoai.hermes.lexicon.TrieWordList;
 import com.gengoai.io.Resources;
 import com.gengoai.io.resource.Resource;
+import com.gengoai.json.Json;
 import com.gengoai.string.Strings;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.java.Log;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -51,6 +54,17 @@ public enum ResourceType {
       @Override
       public <T> T load(@NonNull String configKey, @NonNull String resourceName, @NonNull Language language) {
          return Cast.as(LexiconManager.getLexicon(resourceName, language));
+      }
+   },
+   WORD_LIST("lexicons", ".txt", ".dic") {
+      @Override
+      public <T> T load(@NonNull String configKey, @NonNull String resourceName, @NonNull Language language) {
+         try {
+            return Cast.as(TrieWordList.read(locate(configKey, resourceName, language)
+                                                   .orElseThrow(() -> new RuntimeException(resourceName + " does not exist."))));
+         } catch(IOException e) {
+            throw new RuntimeException(e);
+         }
       }
    },
    /**
@@ -74,6 +88,14 @@ public enum ResourceType {
                               .map(Unchecked.function(CaduceusProgram::read))
                               .orElseThrow(() -> new RuntimeException(resourceName + " does not exist.")));
       }
+   },
+   MORPHOLOGY_RULES("models", ".json") {
+      @Override
+      public <T> T load(@NonNull String configKey, @NonNull String resourceName, @NonNull Language language) {
+         return Cast.as(locate(configKey, resourceName, language)
+                              .map(Unchecked.function(Json::parse))
+                              .orElseThrow(() -> new RuntimeException(resourceName + " does not exist.")));
+      }
    };
 
    @Getter
@@ -86,8 +108,8 @@ public enum ResourceType {
    }
 
    /**
-    * Creates a Language-keyed cache for this resource type that loads the resource based on the given configKey
-    * and resourceName
+    * Creates a Language-keyed cache for this resource type that loads the resource based on the given configKey and
+    * resourceName
     *
     * @param <M>          the resource type parameter
     * @param size         the maximum size of the cache
@@ -101,8 +123,8 @@ public enum ResourceType {
    }
 
    /**
-    * Creates a Language-keyed cache for this resource type that loads the resource based on the given configKey
-    * and resourceName
+    * Creates a Language-keyed cache for this resource type that loads the resource based on the given configKey and
+    * resourceName
     *
     * @param <M>          the resource type parameter
     * @param configKey    the configuration key to use when looking for the location in Config

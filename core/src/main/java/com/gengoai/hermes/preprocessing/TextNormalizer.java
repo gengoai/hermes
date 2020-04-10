@@ -31,7 +31,7 @@ import java.io.Serializable;
 import java.lang.reflect.Type;
 
 /**
- * The type Text normalizer.
+ * Defines a methodology for normalizing a string.
  *
  * @author David B. Bracewell
  */

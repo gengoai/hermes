@@ -43,27 +43,30 @@ import static com.gengoai.tuple.Tuples.$;
  * @author David B. Bracewell
  */
 public final class Lemmatizers {
-
    private static volatile Map<Language, Lemmatizer> lemmatizerMap = new ConcurrentHashMap<>();
 
+   private Lemmatizers() {
+      throw new IllegalAccessError();
+   }
+
    /**
-    * Gets the Lemmatizer for the given language as defined in the config option <code>iknowledge.latte.morphology.Lemmatizer.LANGUAGE</code>.
+    * Gets the Lemmatizer for the given language as defined in the config option <code>hermes.Lemmatizer.LANGUAGE</code>.
     * if no lemmatizer is specified a no-op lemmatizer is returned.
     *
     * @param language The language
     * @return The Lemmatizer for the language
     */
    public static synchronized Lemmatizer getLemmatizer(@NonNull Language language) {
-      if (!lemmatizerMap.containsKey(language)) {
-         if (Config.hasProperty("hermes.Lemmatizer", language)) {
+      if(!lemmatizerMap.containsKey(language)) {
+         if(Config.hasProperty("hermes.Lemmatizer", language)) {
             Lemmatizer lemmatizer = Config.get("hermes.Lemmatizer", language).as(Lemmatizer.class);
             lemmatizerMap.put(language, lemmatizer);
          } else {
             Class<?> clazz = Hermes.defaultImplementation(language, "Lemmatizer");
-            if (clazz != null) {
+            if(clazz != null) {
                try {
                   lemmatizerMap.put(language, Reflect.onClass(clazz).create().get());
-               } catch (ReflectionException e) {
+               } catch(ReflectionException e) {
                   throw new RuntimeException(e);
                }
             } else {
@@ -98,7 +101,6 @@ public final class Lemmatizers {
          return false;
       }
 
+   }//END OF Lemmatizers$NoOptLemmatizer
 
-   }//END OF Stemmer$NoOptStemmer
-
-}//END OF Stemmers
+}//END OF Lemmatizers

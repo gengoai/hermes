@@ -295,24 +295,24 @@ public class HtmlEntityNormalizer extends TextNormalizer {
 
    @Override
    protected String performNormalization(String input, Language language) {
-      if (input == null) {
+      if(input == null) {
          return null;
       }
 
       String r = input;
-      for (String e : entityMap.keySet()) {
+      for(String e : entityMap.keySet()) {
          r = r.replaceAll(e, entityMap.get(e).toString());
       }
 
       Matcher m = decimalEntity.matcher(r);
-      while (m.find()) {
+      while(m.find()) {
          String num = m.group(1).trim();
          r = r.replaceAll("(?i)&#" + num + ";",
                           Matcher.quoteReplacement(Character.toString((char) Integer.parseInt(num))));
       }
 
       m = hexEntity.matcher(r);
-      while (m.find()) {
+      while(m.find()) {
          String num = m.group(1).trim();
          r = r.replaceAll("(?i)&#x" + num + ";",
                           Matcher.quoteReplacement(Character.toString((char) Integer.parseInt(num, 16))));

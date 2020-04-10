@@ -32,7 +32,7 @@ import java.util.Locale;
 import java.util.NoSuchElementException;
 
 /**
- * The type Break iterator tokenizer.
+ * <p>A tokenizer implementation based on Java's BreakIterator class</p>
  *
  * @author David B. Bracewell
  */
@@ -52,19 +52,15 @@ public class BreakIteratorTokenizer implements Tokenizer, Serializable {
    @Override
    public Iterable<Token> tokenize(Reader reader) {
       try {
-         return Iterables.asIterable(
-            new BreakIteratorStream(Resources.fromReader(reader).readToString(), locale)
-                                    );
-      } catch (IOException e) {
+         return Iterables.asIterable(new BreakIteratorStream(Resources.fromReader(reader).readToString(), locale));
+      } catch(IOException e) {
          throw new RuntimeException(e);
       }
    }
 
    @Override
    public Iterable<Token> tokenize(String input) {
-      return Iterables.asIterable(
-         new BreakIteratorStream(input, locale)
-                                 );
+      return Iterables.asIterable(new BreakIteratorStream(input, locale));
    }
 
    private static class BreakIteratorStream implements Iterator<Token> {
@@ -82,26 +78,29 @@ public class BreakIteratorTokenizer implements Tokenizer, Serializable {
       }
 
       private Token advance() {
-         while (nextToken == null && start >= 0) {
+         while(nextToken == null && start >= 0 && start < input.length()) {
             int end = this.iterator.next();
-            if (end < 0) {
+            if(end < 0) {
                start = -1;
                return null;
             }
-            if (!Strings.isNullOrBlank(input.substring(start, end))) {
-               nextToken = new Token(
-                  input.substring(start, end),
-                  determineType(input.substring(start, end)),
-                  start,
-                  end,
-                  index
-               );
-               index++;
-               while (end < input.length() && Character.isWhitespace(input.charAt(end))) {
-                  end++;
-               }
-               start = end;
+            while(start <= end && Character.isWhitespace(input.charAt(start))) {
+               start++;
             }
+            if(start < end) {
+               if(!Strings.isNullOrBlank(input.substring(start, end))) {
+                  nextToken = new Token(
+                        input.substring(start, end),
+                        determineType(input.substring(start, end)),
+                        start,
+                        end,
+                        index
+                  );
+                  index++;
+                  start = end;
+               }
+            }
+
          }
          return nextToken;
       }
@@ -111,17 +110,17 @@ public class BreakIteratorTokenizer implements Tokenizer, Serializable {
          boolean hasLetter = Strings.hasLetter(tokenString);
          boolean hasDigit = Strings.hasDigit(tokenString);
          TokenType tokenType = TokenType.UNKNOWN;
-         if (hasDigit && hasLetter) {
+         if(hasDigit && hasLetter) {
             tokenType = TokenType.ALPHA_NUMERIC;
-         } else if (hasDigit) {
+         } else if(hasDigit) {
             tokenType = TokenType.NUMBER;
-         } else if (hasLetter && tokenString.contains(".")) {
+         } else if(hasLetter && tokenString.contains(".")) {
             tokenType = TokenType.ACRONYM;
-         } else if (hasLetter && tokenString.contains("'")) {
+         } else if(hasLetter && tokenString.contains("'")) {
             tokenType = TokenType.CONTRACTION;
-         } else if (hasLetter) {
+         } else if(hasLetter) {
             tokenType = TokenType.ALPHA_NUMERIC;
-         } else if (Strings.isPunctuation(tokenString)) {
+         } else if(Strings.isPunctuation(tokenString)) {
             tokenType = TokenType.PUNCTUATION;
          }
          return tokenType;
@@ -135,7 +134,7 @@ public class BreakIteratorTokenizer implements Tokenizer, Serializable {
       @Override
       public Token next() {
          Token token = advance();
-         if (token == null) {
+         if(token == null) {
             throw new NoSuchElementException();
          }
          nextToken = null;

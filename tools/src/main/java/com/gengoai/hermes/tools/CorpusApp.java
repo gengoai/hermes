@@ -24,7 +24,6 @@ import com.gengoai.application.Application;
 import com.gengoai.application.Option;
 import com.gengoai.hermes.AnnotatableType;
 import com.gengoai.hermes.Document;
-import com.gengoai.hermes.application.HermesCLI;
 import com.gengoai.hermes.corpus.Corpus;
 import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.hermes.corpus.SearchResults;
@@ -107,7 +106,7 @@ public class CorpusApp extends HermesCLI {
    private void corpusInfo() throws Exception {
       try(Corpus corpus = getCorpus()) {
          final long size = corpus.size();
-         final Set<AnnotatableType> completedAnnotations = corpus.getCompletedAnnotations();
+         final Set<AnnotatableType> completedAnnotations = corpus.getCompleted();
          System.out.println("                 Corpus Information");
          System.out.println("========================================================");
          System.out.println("Corpus: " + documentCollectionSpec);

@@ -25,15 +25,15 @@ import com.gengoai.Language;
 import com.gengoai.StringTag;
 import com.gengoai.Tag;
 import com.gengoai.annotation.Preload;
+import com.gengoai.hermes.morphology.UniversalFeatureSet;
 import com.gengoai.hermes.morphology.PartOfSpeech;
 import com.gengoai.hermes.morphology.TokenType;
 import com.gengoai.string.Strings;
 import lombok.NonNull;
 
 import java.lang.reflect.Type;
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static com.gengoai.reflection.TypeUtils.parameterizedType;
@@ -46,30 +46,42 @@ import static com.gengoai.reflection.TypeUtils.parameterizedType;
 @Preload
 public interface Types {
    /**
-    * Document author
+    * Attribute type defining the name (String) of the document's author
     */
    AttributeType<String> AUTHOR = AttributeType.make("AUTHOR", String.class);
    /**
-    * The constant CADUCEUS_RULE.
+    * Attribute added to extractions created by Caduceus to identify the name of the rule that created the extraction.
     */
    AttributeType<String> CADUCEUS_RULE = AttributeType.make("CADUCEUS_RULE", String.class);
    /**
-    * Document CATEGORY
+    * Attribute defining the basic categories for a word/phrase.
     */
    AttributeType<Set<BasicCategories>> CATEGORY = AttributeType.make("CATEGORY",
                                                                      parameterizedType(Set.class,
                                                                                        BasicCategories.class));
+   /**
+    * Special Attribute for loading BasicCategories lexicons
+    */
    AttributeType<BasicCategories> CATEGORY_TAG = AttributeType.make("CATEGORY_TAG", BasicCategories.class);
    /**
-    * Confidence value associated with an annotation
+    * Attribute defining the numeric confidence of an extraction.
     */
    AttributeType<Double> CONFIDENCE = AttributeType.make("CONFIDENCE", double.class);
    /**
-    * The constant DEPENDENCY.
+    * AnnotationType denoting that a constituent parse has be performed. Note that no annotations of this type are
+    * added, but instead NON_TERMINAL_NODE annotation and, SYNTACTIC_HEAD relations are.
+    */
+   AnnotationType CONSTITUENT_PARSE = AnnotationType.make("CONSTITUENT_PARSE");
+   /**
+    * The functional part of a syntactic pos tag
+    */
+   AttributeType<String> SYNTACTIC_FUNCTION = AttributeType.make("SYNTACTIC_FUNCTION");
+   /**
+    * RelationType defining dependency relations.
     */
    RelationType DEPENDENCY = RelationType.make("DEPENDENCY");
    /**
-    * The constant ENTITY_TYPE.
+    * Attribute defining the type of entity for Entity annotations
     */
    AttributeType<EntityType> ENTITY_TYPE = AttributeType.make("ENTITY_TYPE", EntityType.class);
    /**
@@ -77,108 +89,120 @@ public interface Types {
     */
    AnnotationType ENTITY = AnnotationType.make("ENTITY", ENTITY_TYPE);
    /**
-    * File used to make the document
+    * Attribute defining the file from which the document was created
     */
    AttributeType<String> FILE = AttributeType.make("FILE", String.class);
    /**
     * The index of a span with regards to a document
     */
    AttributeType<Integer> INDEX = AttributeType.make("INDEX", int.class);
+   /**
+    * Attributed specifying if a word/phrase is negated or not.
+    */
    AttributeType<Boolean> IS_NEGATED = AttributeType.make("NEGATION", Boolean.class);
    /**
-    *
+    * List of String attribute for defining a collection of keywords/phrases
     */
    AttributeType<List<String>> KEYWORDS = AttributeType.make("KEYWORDS", parameterizedType(List.class, String.class));
    /**
-    * The Language associated with a span
+    * Language attribute defining the language a specific span is written in
     */
    AttributeType<Language> LANGUAGE = AttributeType.make("LANGUAGE", Language.class);
    /**
-    * The lemma version of a span
+    * Attribute defining the lemma of a word/phrase
     */
    AttributeType<String> LEMMA = AttributeType.make("LEMMA", String.class);
    /**
-    * lexicon match annotation type
+    * AnnotationType for lexicon matches
     */
    AnnotationType LEXICON_MATCH = AnnotationType.make("LEXICON_MATCH");
    /**
-    * The constant MATCHED_STRING.
+    * String attribute defining what was matched in a lexicon
     */
    AttributeType<String> MATCHED_STRING = AttributeType.make("MATCHED_STRING", String.class);
    /**
-    * The constant ML_ENTITY.
+    * String attribute defining what tag was matched in a lexicon
+    */
+   AttributeType<String> MATCHED_TAG = AttributeType.make("MATCHED_TAG", String.class);
+   /**
+    * Machine learning provided Entities
     */
    AnnotationType ML_ENTITY = AnnotationType.make(ENTITY, "ML_ENTITY");
    /**
-    * The part-of-speech assocaited with a span
+    * Attribute defining the Morphological Features for a given span of text.
+    */
+   AttributeType<UniversalFeatureSet> MORPHOLOGICAL_FEATURES = AttributeType.make("MORPHO_FEATURES",
+                                                                                  UniversalFeatureSet.class);
+   /**
+    * The part-of-speech associated with a span
     */
    AttributeType<PartOfSpeech> PART_OF_SPEECH = AttributeType.make("PART_OF_SPEECH", PartOfSpeech.class);
    /**
-    * phrase chunk annotation type
+    * Non-Terminal node in a constituency parse
+    */
+   AnnotationType NON_TERMINAL_NODE = AnnotationType.make("NON_TERMINAL", PART_OF_SPEECH);
+   /**
+    * Phrase Chunk annotation type
     */
    AnnotationType PHRASE_CHUNK = AnnotationType.make("PHRASE_CHUNK", PART_OF_SPEECH);
    /**
-    * Date content was published
+    * LocalDateTime attributed defining when a piece of content was published
     */
-   AttributeType<Date> PUBLICATION_DATE = AttributeType.make("PUBLICATION_DATE", Date.class);
+   AttributeType<LocalDateTime> PUBLICATION_DATE = AttributeType.make("PUBLICATION_DATE", LocalDateTime.class);
    /**
-    * The constant SENSE.
-    */
-   AttributeType<String> SENSE = AttributeType.make("SENSE", String.class);
-   /**
-    * sentence annotation type
+    * Sentence annotation type
     */
    AnnotationType SENTENCE = AnnotationType.make("SENTENCE");
    /**
-    * Document source
+    * String attribute defining the source of a document (e.g. url, name of news agency, etc.)
     */
    AttributeType<String> SOURCE = AttributeType.make("SOURCE", String.class);
    /**
-    * The type of token
+    * String attribute defining a correction to the spelling of the associated word/phrase.
     */
    AttributeType<String> SPELLING_CORRECTION = AttributeType.make("SPELLING", String.class);
    /**
-    * The STEM.
+    * String attribute denoting the stemmed version of the word/phrase.
     */
    AttributeType<String> STEM = AttributeType.make("STEM", String.class);
    /**
-    * The tag associated with a span
+    * Relation type denoting that the target is the syntactic head of the source
+    */
+   RelationType SYNTACTIC_HEAD = RelationType.make("HEAD");
+   /**
+    * Tag attribute associated with the span.
     */
    AttributeType<Tag> TAG = AttributeType.make("TAG", StringTag.class);
    /**
-    * The constant MWE.
+    * Multi-word expression annotations
     */
    AnnotationType MWE = AnnotationType.make("MWE", TAG);
    /**
-    * Document title
+    * String attribute defining the title of the document.
     */
    AttributeType<String> TITLE = AttributeType.make("TITLE", String.class);
    /**
-    * token annotation type
+    * Token annotation type
     */
    AnnotationType TOKEN = AnnotationType.make("TOKEN", PART_OF_SPEECH);
+   AnnotatableType[] BASE_ANNOTATIONS = {Types.TOKEN, Types.SENTENCE, Types.PART_OF_SPEECH, Types.CATEGORY, Types.PHRASE_CHUNK, Types.ENTITY};
    /**
-    * The type of token
+    * TokenType attribute defining the type of token.
     */
    AttributeType<TokenType> TOKEN_TYPE = AttributeType.make("TOKEN_TYPE", TokenType.class);
    /**
-    * The constant TOKEN_TYPE_ENTITY.
+    * AnnotationType for Entities identified using TokenTypes.
     */
    AnnotationType TOKEN_TYPE_ENTITY = AnnotationType.make(ENTITY, "TOKEN_TYPE_ENTITY");
    /**
-    * The TRANSLITERATION.
+    * String attribute defining a transliteration for a given word/phrase.
     */
    AttributeType<String> TRANSLITERATION = AttributeType.make("TRANSLITERATION", String.class);
+   /**
+    * Set of String attribute defining the associated Wikipedia categories for a document or span of text.
+    */
    AttributeType<Set<String>> WIKI_CATEGORIES = AttributeType.make("WIKI_CATEGORIES",
                                                                    parameterizedType(Set.class, String.class));
-   AttributeType<Map<String, String>> WIKI_LINKS = AttributeType.make("WIKI_LINKS",
-                                                                      parameterizedType(Map.class,
-                                                                                        String.class,
-                                                                                        String.class));
-   /**
-    * The constant WORD_SENSE.
-    */
-   AnnotationType WORD_SENSE = AnnotationType.make("WORD_SENSE", PART_OF_SPEECH);
 
    /**
     * Annotation annotation type.

@@ -21,12 +21,10 @@
 
 package com.gengoai.hermes.lexicon;
 
-import com.gengoai.Tag;
 import com.gengoai.collection.Iterables;
 import com.gengoai.collection.Sets;
 import com.gengoai.collection.tree.Trie;
 import com.gengoai.conversion.Cast;
-import com.gengoai.hermes.AttributeType;
 import com.gengoai.hermes.HString;
 import com.gengoai.string.Strings;
 import lombok.NonNull;
@@ -41,34 +39,42 @@ import java.util.stream.Collectors;
  */
 public class TrieLexicon extends Lexicon {
    private static final long serialVersionUID = 1L;
+   private final String name;
    private final boolean caseSensitive;
-   private final int maxLemmaLength;
-   private final int maxTokenLength;
-   private final boolean probabilistic;
-   private final AttributeType<Tag> tagAttributeType;
-   private final Trie<List<LexiconEntry<?>>> trie = new Trie<>();
+   private final Trie<List<LexiconEntry>> trie = new Trie<>();
+   private int maxLemmaLength = 0;
+   private int maxTokenLength = 0;
+   private boolean probabilistic = false;
 
    /**
-    * Instantiates a new Base lexicon.
+    * Instantiates a new TrieLexicon.
     *
-    * @param caseSensitive    True - if case matters, False case does not matter
-    * @param probabilistic    True - the lexicon provides probability information
-    * @param tagAttributeType Attribute to use when setting the tag
+    * @param name          the name
+    * @param caseSensitive True - if case matters, False case does not matter
     */
-   protected TrieLexicon(boolean caseSensitive,
-                         boolean probabilistic,
-                         AttributeType tagAttributeType,
-                         int maxTokenLength,
-                         int maxLemmaLength) {
+   public TrieLexicon(String name,
+                      boolean caseSensitive) {
+      this.name = name;
       this.caseSensitive = caseSensitive;
-      this.probabilistic = probabilistic;
-      this.tagAttributeType = tagAttributeType;
-      this.maxLemmaLength = maxLemmaLength;
-      this.maxTokenLength = maxTokenLength;
    }
 
-   public static LexiconBuilder builder(@NonNull AttributeType<?> attributeType, boolean isCaseSensitive) {
-      return new TrieLexiconBuilder(attributeType, isCaseSensitive);
+   public synchronized void add(@NonNull LexiconEntry lexiconEntry) {
+      if(Strings.isNotNullOrBlank(lexiconEntry.getLemma())) {
+         String norm = normalize(lexiconEntry.getLemma());
+         this.maxTokenLength = Math.max(maxTokenLength, lexiconEntry.getTokenLength());
+         this.maxLemmaLength = Math.max(maxLemmaLength, norm.length());
+         if(lexiconEntry.getProbability() > 0 && lexiconEntry.getProbability() <= 1) {
+            this.probabilistic = true;
+         } else {
+            lexiconEntry = LexiconEntry.of(lexiconEntry.getLemma(),
+                                           1.0,
+                                           lexiconEntry.getTag(),
+                                           lexiconEntry.getConstraint(),
+                                           lexiconEntry.getTokenLength());
+         }
+         trie.putIfAbsent(norm, new ArrayList<>());
+         trie.get(norm).add(lexiconEntry);
+      }
    }
 
    @Override
@@ -77,48 +83,17 @@ public class TrieLexicon extends Lexicon {
    }
 
    @Override
-   public Set<LexiconEntry<?>> entries(String lemma) {
-      lemma = normalize(lemma);
-      if(trie.containsKey(lemma)) {
-         return new HashSet<>(trie.get(lemma));
-      }
-      return Collections.emptySet();
-   }
-
-   @Override
-   public Set<LexiconEntry<?>> entries() {
+   public Set<LexiconEntry> entries() {
       return Sets.asHashSet(Iterables.flatten(trie.values()));
    }
 
    @Override
-   public List<LexiconEntry<?>> getEntries(HString hString) {
-      String str = normalize(hString);
-      if(!trie.containsKey(str)) {
-         if(isCaseSensitive() && Strings.isUpperCase(hString)) {
-            return Collections.emptyList();
-         }
-         str = normalize(hString.getLemma());
+   public Set<LexiconEntry> get(String word) {
+      word = normalize(word);
+      if(trie.containsKey(word)) {
+         return new HashSet<>(trie.get(word));
       }
-      if(trie.containsKey(str)) {
-         return Cast.as(trie.get(str)
-                            .stream()
-                            .filter(le -> le.getConstraint() == null || le.getConstraint().test(hString))
-                            .sorted()
-                            .collect(Collectors.toList()));
-      }
-      return Collections.emptyList();
-   }
-
-   @Override
-   public List<LexiconEntry<?>> getEntries(String hString) {
-      String str = normalize(hString);
-      if(trie.containsKey(str)) {
-         return Cast.as(trie.get(str)
-                            .stream()
-                            .sorted()
-                            .collect(Collectors.toList()));
-      }
-      return Collections.emptyList();
+      return Collections.emptySet();
    }
 
    @Override
@@ -131,9 +106,9 @@ public class TrieLexicon extends Lexicon {
       return maxTokenLength;
    }
 
-   @Override
-   public AttributeType<Tag> getTagAttributeType() {
-      return tagAttributeType;
+   @NonNull
+   public String getName() {
+      return name;
    }
 
    @Override
@@ -159,6 +134,37 @@ public class TrieLexicon extends Lexicon {
    @Override
    public Iterator<String> iterator() {
       return trie.keySet().iterator();
+   }
+
+   @Override
+   public List<LexiconEntry> match(HString string) {
+      String str = normalize(string);
+      if(!trie.containsKey(str)) {
+         if(isCaseSensitive() && Strings.isUpperCase(string)) {
+            return Collections.emptyList();
+         }
+         str = normalize(string.getLemma());
+      }
+      if(trie.containsKey(str)) {
+         return Cast.as(trie.get(str)
+                            .stream()
+                            .filter(le -> le.getConstraint() == null || le.getConstraint().test(string))
+                            .sorted()
+                            .collect(Collectors.toList()));
+      }
+      return Collections.emptyList();
+   }
+
+   @Override
+   public List<LexiconEntry> match(String hString) {
+      String str = normalize(hString);
+      if(trie.containsKey(str)) {
+         return Cast.as(trie.get(str)
+                            .stream()
+                            .sorted()
+                            .collect(Collectors.toList()));
+      }
+      return Collections.emptyList();
    }
 
    @Override
@@ -202,38 +208,6 @@ public class TrieLexicon extends Lexicon {
     */
    public Map<String, Integer> suggest(String element, int maxCost, int substitutionCost) {
       return trie.suggest(element, maxCost, substitutionCost);
-   }
-
-   private static class TrieLexiconBuilder extends LexiconBuilder {
-      private static final long serialVersionUID = 1L;
-      private final Trie<List<LexiconEntry<?>>> trie = new Trie<>();
-
-      private TrieLexiconBuilder(AttributeType<?> attributeType, boolean isCaseSensitive) {
-         super(attributeType, isCaseSensitive);
-      }
-
-      @Override
-      public LexiconBuilder add(LexiconEntry<?> entry) {
-         String norm = normalize(entry.getLemma());
-         if(!trie.containsKey(norm)) {
-            trie.put(norm, new LinkedList<>());
-         }
-         updateMax(norm, entry.getTokenLength());
-         trie.get(norm).add(entry);
-         return this;
-      }
-
-      @Override
-      public Lexicon build() {
-         TrieLexicon trieLexicon = new TrieLexicon(isCaseSensitive(),
-                                                   isProbabilistic(),
-                                                   getAttributeType(),
-                                                   getMaxTokenLength(),
-                                                   getMaxLemmaLength());
-         trieLexicon.trie.putAll(Cast.as(trie));
-         return trieLexicon;
-      }
-
    }
 
 }//END OF BaseTrieLexicon

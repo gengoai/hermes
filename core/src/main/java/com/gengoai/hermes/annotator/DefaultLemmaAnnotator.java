@@ -21,41 +21,47 @@
 
 package com.gengoai.hermes.annotator;
 
+import com.gengoai.Language;
 import com.gengoai.collection.Sets;
 import com.gengoai.hermes.AnnotatableType;
 import com.gengoai.hermes.Document;
 import com.gengoai.hermes.Types;
 import com.gengoai.hermes.morphology.Lemmatizers;
 
-import java.io.Serializable;
 import java.util.Collections;
 import java.util.Set;
 
 /**
- * <p>Sets the lemma attribute of each token in the document</p>
+ * Default Lemmatization annotator that uses the {@link com.gengoai.hermes.morphology.Lemmatizer} registered with the
+ * token's language to perform lemmatization.
  *
  * @author David B. Bracewell
  */
-public class DefaultLemmaAnnotator implements Annotator, Serializable {
-  private static final long serialVersionUID = 1L;
+public class DefaultLemmaAnnotator extends Annotator {
+   private static final long serialVersionUID = 1L;
 
-  @Override
-  public void annotate(Document document) {
-    document.tokens().forEach(token -> {
-      String lemma = Lemmatizers.getLemmatizer(token.getLanguage()).lemmatize(token);
-      token.put(Types.LEMMA, lemma.toLowerCase());
-    });
-  }
+   @Override
+   protected void annotateImpl(Document document) {
+      document.tokens().forEach(token -> {
+         String lemma = Lemmatizers.getLemmatizer(token.getLanguage()).lemmatize(token);
+         token.put(Types.LEMMA, lemma.toLowerCase());
+      });
+   }
 
-  @Override
-  public Set<AnnotatableType> satisfies() {
-    return Collections.singleton(Types.LEMMA);
-  }
+   @Override
+   public String getProvider(Language language) {
+      return Lemmatizers.getLemmatizer(language).getClass().getSimpleName();
+   }
 
-  @Override
-  public Set<AnnotatableType> requires() {
-    return Sets.hashSetOf(Types.TOKEN, Types.PART_OF_SPEECH);
-  }
+   @Override
+   public Set<AnnotatableType> requires() {
+      return Sets.hashSetOf(Types.TOKEN, Types.PART_OF_SPEECH);
+   }
 
-}//END OF LemmaAnnotator
+   @Override
+   public Set<AnnotatableType> satisfies() {
+      return Collections.singleton(Types.LEMMA);
+   }
+
+}//END OF DefaultLemmaAnnotator
 

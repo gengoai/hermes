@@ -24,7 +24,6 @@ import com.gengoai.collection.multimap.Multimap;
 import com.gengoai.collection.tree.Trie;
 import com.gengoai.hermes.morphology.Lemmatizer;
 import com.gengoai.hermes.morphology.PartOfSpeech;
-import com.gengoai.hermes.morphology.PartOfSpeech;
 import com.gengoai.io.CSV;
 import com.gengoai.io.CSVReader;
 import com.gengoai.io.Resources;
@@ -44,7 +43,7 @@ import java.util.stream.Collectors;
 import static com.gengoai.collection.Maps.asHashMap;
 
 /**
- * The type English lemmatizer.
+ * English language lemmatizer based on WordNet's Morphy
  *
  * @author David B. Bracewell
  */
@@ -58,9 +57,9 @@ public class ENLemmatizer implements Lemmatizer, Serializable {
    private final Trie<Set<PartOfSpeech>> lemmas;
 
    /**
-    * Instantiates a new English lemmatizer.
+    * Instantiates a new ENLemmatizer.
     */
-   protected ENLemmatizer() {
+   private ENLemmatizer() {
       rules.put(PartOfSpeech.NOUN, new DetachmentRule("s", ""));
       rules.put(PartOfSpeech.NOUN, new DetachmentRule("ses", "s"));
       rules.put(PartOfSpeech.NOUN, new DetachmentRule("xes", "x"));
@@ -109,9 +108,7 @@ public class ENLemmatizer implements Lemmatizer, Serializable {
    }
 
    /**
-    * Gets instance.
-    *
-    * @return the instance
+    * @return the singleton instance of the Lemmatizer
     */
    public static ENLemmatizer getInstance() {
       if(INSTANCE == null) {
@@ -155,7 +152,7 @@ public class ENLemmatizer implements Lemmatizer, Serializable {
 
    @Override
    public Trie<String> allPossibleLemmasAndPrefixes(@NonNull String string,
-                                                             @NonNull PartOfSpeech partOfSpeech) {
+                                                    @NonNull PartOfSpeech partOfSpeech) {
       Trie<String> lemmaSet = new Trie<>();
       for(String lemma : doLemmatization(string, true, partOfSpeech)) {
          lemmaSet.putAll(asHashMap(lemmas.prefix(lemma + " ").keySet(), k -> k));
@@ -172,14 +169,14 @@ public class ENLemmatizer implements Lemmatizer, Serializable {
                                      PartOfSpeech.VERB,
                                      PartOfSpeech.ADJECTIVE,
                                      PartOfSpeech.ADVERB) && doLemmatization(input,
-                                                                     false,
-                                                                     partOfSpeech
-                                                                    ).size() > 0;
+                                                                             false,
+                                                                             partOfSpeech
+                                                                            ).size() > 0;
    }
 
    private boolean contains(String string, PartOfSpeech PartOfSpeech) {
       return lemmas.containsKey(string) && (PartOfSpeech == PartOfSpeech.ANY || lemmas.get(string)
-                                                                              .contains(PartOfSpeech.getUniversalTag()));
+                                                                                      .contains(PartOfSpeech.getUniversalTag()));
    }
 
    private Set<String> doLemmatization(String word, boolean includeSelf, PartOfSpeech... tags) {

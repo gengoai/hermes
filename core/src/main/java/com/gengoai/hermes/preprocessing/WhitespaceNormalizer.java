@@ -25,7 +25,7 @@ import com.gengoai.Language;
 import com.gengoai.string.Re;
 
 /**
- * The type Whitespace normalizer.
+ * Handles normalizing whitespace.
  *
  * @author David B. Bracewell
  */

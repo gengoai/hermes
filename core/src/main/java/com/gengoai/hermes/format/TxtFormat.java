@@ -28,10 +28,19 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.stream.Stream;
 
+/**
+ * <p>Format Name: <b>text</b></p>
+ * <p>Format to read and write plain text files.</p>
+ */
 public class TxtFormat extends WholeFileTextFormat implements OneDocPerFileFormat, Serializable {
    private static final long serialVersionUID = 1L;
    private final DocFormatParameters parameters;
 
+   /**
+    * Instantiates a new Txt format.
+    *
+    * @param parameters the parameters
+    */
    public TxtFormat(@NonNull DocFormatParameters parameters) {
       this.parameters = parameters;
    }
@@ -51,6 +60,9 @@ public class TxtFormat extends WholeFileTextFormat implements OneDocPerFileForma
       outputResource.write(document.toString());
    }
 
+   /**
+    * The type Provider.
+    */
    @MetaInfServices
    public static class Provider implements DocFormatProvider {
 

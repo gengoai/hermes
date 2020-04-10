@@ -301,7 +301,7 @@ public final class DocumentFactory implements Serializable {
             content.append(" ");
          }
       }
-      Document doc = new DefaultDocumentImpl(null, content.toString().trim(), defaultLanguage);
+      Document doc = new DefaultDocumentImpl(null, content.toString().trim(), language);
       for(int idx = 0; idx < tokenSpans.size(); idx++) {
          doc.annotationBuilder(Types.TOKEN)
             .bounds(tokenSpans.get(idx))

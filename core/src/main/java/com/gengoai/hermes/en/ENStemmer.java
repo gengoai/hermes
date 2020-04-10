@@ -19,30 +19,28 @@
 
 package com.gengoai.hermes.en;
 
-import com.gengoai.hermes.morphology.PorterStemmer;
 import com.gengoai.hermes.morphology.Stemmer;
 import lombok.NonNull;
 
 import java.io.Serializable;
 
 /**
- * The type English stemmer.
+ * Default English language stemmer using Porter Stemmer.
  *
  * @author David B. Bracewell
  */
 public class ENStemmer implements Stemmer, Serializable {
-  private static final long serialVersionUID = -8723194306867645802L;
+   private static final long serialVersionUID = -8723194306867645802L;
 
-  @Override
-  public String stem(@NonNull String string) {
-    PorterStemmer stemmer = new PorterStemmer();
-    stemmer.add(string.toCharArray(), string.length());
-    stemmer.stem();
-    if (stemmer.getResultLength() > 0) {
-      return new String(stemmer.getResultBuffer(), 0, stemmer.getResultLength());
-    }
-    return string;
-  }
-
+   @Override
+   public String stem(@NonNull String string) {
+      PorterStemmer stemmer = new PorterStemmer();
+      stemmer.add(string.toCharArray(), string.length());
+      stemmer.stem();
+      if(stemmer.getResultLength() > 0) {
+         return new String(stemmer.getResultBuffer(), 0, stemmer.getResultLength());
+      }
+      return string;
+   }
 
 }//END OF EnglishStemmer

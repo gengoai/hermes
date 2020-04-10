@@ -34,6 +34,7 @@ import com.gengoai.kv.KeyValueStoreConnection;
 import com.gengoai.specification.*;
 import com.gengoai.string.Strings;
 import lombok.Data;
+import lombok.NonNull;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -44,7 +45,33 @@ import java.util.regex.Pattern;
 import static com.gengoai.string.Re.*;
 
 /**
- * The type Lexicon specification.
+ * <p>
+ * Lexicons are defined using a {@link LexiconSpecification} in the following format:
+ * </p>
+ * <pre>
+ * {@code
+ * lexicon:(mem|disk):name(:(csv|json))*::RESOURCE(;ARG=VALUE)*
+ * }**
+ * </pre>
+ * <p>
+ * The schema of the specification is "lexicon" and the currently supported protocols are: mem: An in-memory Trie-based
+ * lexicon. disk: A persistent on-disk based lexicon.The name of the lexicon is used during annotation to mark the
+ * provider. Additionally, a format (csv or json) can be specified, with json being the default if none is provided, to
+ * specify the lexicon format when creating in-memory lexicons. Finally, a number of query parameters (ARG=VALUE) can be
+ * given from the following choices:
+ * <ul>
+ * <li><code>caseSensitive=(true|false)</code>: Is the lexicon case-sensitive (</b>true<b>) or case-insensitive (</b>false<b>) (default </b>false<b>).</li>
+ * <li><code>defaultTag=TAG</code>: The default tag value for entry when one is not defined (default null).</li>
+ * <li><code>language=LANGUAGE</code>: The default language of entries in the lexicon (default Hermes.defaultLanguage()).</li>
+ * </p>
+ * and the following for CSV lexicons:
+ * <ul>
+ * <li><code>lemma=INDEX</code>: The index in the csv row containing the lemma (default 0).</li>
+ * <li><code>tag=INDEX</code>: The index in the csv row containing the tag (default 1).</li>
+ * <li><code>probability=INDEX</code>: The index in the csv row containing the probability (default 2).</li>
+ * <li><code>constraint=INDEX</code>: The index in the csv row containing the constraint (default 3).</li>
+ * </ul>
+ * </p>
  *
  * @author David B. Bracewell
  */
@@ -74,15 +101,17 @@ public class LexiconSpecification implements Specifiable, Serializable {
    @Path
    private Resource resource;
    @QueryParameter
+   private Language language = Hermes.defaultLanguage();
+   @QueryParameter
    private int tag = 1;
 
    /**
-    * Parse lexicon specification.
+    * Parse the given specification string constructing a LexiconSpecification
     *
     * @param specification the specification
-    * @return the lexicon specification
+    * @return the LexiconSpecification
     */
-   public static LexiconSpecification parse(String specification) {
+   public static LexiconSpecification parse(@NonNull String specification) {
       LexiconSpecification lex = Specification.parse(specification, LexiconSpecification.class);
       Validation.notNullOrBlank(lex.name, "Invalid lexicon specification no name given: " + specification);
       Validation.notNullOrBlank(lex.protocol, "Invalid lexicon specification no protocol given: " + specification);
@@ -103,18 +132,23 @@ public class LexiconSpecification implements Specifiable, Serializable {
    }
 
    /**
-    * Create lexicon.
+    * Create the lexicon from this specification
     *
     * @return the lexicon
-    * @throws IOException the io exception
+    * @throws IOException Something went wrong during the construction
     */
    public Lexicon create() throws IOException {
       if(protocol.equals("mem")) {
          if(format == null || format.equals("json")) {
-            return LexiconIO.read(resource);
+            if(Strings.isNullOrBlank(name)) {
+               return LexiconIO.read(resource);
+            }
+            return LexiconIO.read(name, resource);
          } else if(format.equals("csv")) {
-            return LexiconIO.importCSV(resource, c -> {
-               c.tagAttribute = Cast.as(tagAttribute);
+            String lexName = Strings.isNotNullOrBlank(name)
+                             ? name
+                             : resource.baseName();
+            return LexiconIO.importCSV(lexName, resource, c -> {
                c.defaultTag = defaultTag == null
                               ? null
                               : Cast.as(tagAttribute.decode(defaultTag));
@@ -123,6 +157,7 @@ public class LexiconSpecification implements Specifiable, Serializable {
                c.probability = probability;
                c.constraint = constraint;
                c.isCaseSensitive = caseSensitive;
+               c.language = language;
             });
          }
          throw new IllegalStateException("Invalid lexicon format: " + format);
@@ -133,7 +168,7 @@ public class LexiconSpecification implements Specifiable, Serializable {
          connection.setNamespace(name);
          connection.setNavigable(true);
          connection.setType("disk");
-         return new DiskLexicon(connection);
+         return new DiskLexicon(connection, isCaseSensitive());
       }
       throw new IllegalStateException("Invalid Lexicon Protocol: " + protocol);
    }

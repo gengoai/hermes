@@ -78,7 +78,7 @@ public class SpellChecker implements Action, Serializable {
    public SpellChecker(@NonNull Embedding spellingEmbedding, @NonNull Resource dictionary, int maxCost) {
       this.spellingEmbedding = spellingEmbedding;
       try {
-         this.dictionary = TrieWordList.read(dictionary, true);
+         this.dictionary = TrieWordList.read(dictionary);
       } catch(IOException e) {
          throw new RuntimeException(e);
       }
@@ -86,7 +86,7 @@ public class SpellChecker implements Action, Serializable {
    }
 
    @Override
-   public Corpus process(@NonNull Corpus corpus, @NonNull Context context) throws Exception {
+   public void process(@NonNull Corpus corpus, @NonNull Context context) throws Exception {
       final WordList wordList = new SimpleWordList(spellingEmbedding.getAlphabet());
       final Counter<String> unigrams = corpus.documentCount(TermExtractor
                                                                   .builder()
@@ -128,8 +128,7 @@ public class SpellChecker implements Action, Serializable {
             })
             .collectAsMap();
 
-
-      return corpus.update(document -> document
+      corpus.update("SpellChecker", document -> document
             .tokenStream()
             .forEach(token -> {
                if(spelling.containsKey(token.getLemma())) {

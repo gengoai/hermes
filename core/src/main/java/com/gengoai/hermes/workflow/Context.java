@@ -36,33 +36,23 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * The type Context.
+ * Contexts are a specialized map that act as a shared memory for a Workflow. The context will retrieve values from its
+ * internal storage and also fallback to checking for values in the global configuration.
  */
 @EqualsAndHashCode(callSuper = false)
 @JsonHandler(Context.JsonMarshaller.class)
 public class Context implements Serializable, Copyable<Context> {
    private final Map<String, Object> properties = new HashMap<>();
 
-
    /**
-    * Instantiates a new Processor context.
+    * Instantiates a new Context.
     */
    public Context() {
 
    }
 
    /**
-    * Get object.
-    *
-    * @param name the name
-    * @return the object
-    */
-   public Object get(String name){
-      return properties.get(name);
-   }
-
-   /**
-    * Instantiates a new Processor context.
+    * Instantiates a new Context
     *
     * @param properties the properties
     */
@@ -77,15 +67,25 @@ public class Context implements Serializable, Copyable<Context> {
    }
 
    /**
-    * Gets as.
+    * Gets the value for the given property name
+    *
+    * @param name the name
+    * @return the value
+    */
+   public Object get(String name) {
+      return properties.get(name);
+   }
+
+   /**
+    * Gets the value of the given property name as the given class type
     *
     * @param <T>   the type parameter
     * @param name  the name
     * @param clazz the clazz
-    * @return the as
+    * @return the value
     */
    public <T> T getAs(String name, @NonNull Class<T> clazz) {
-      if (properties.containsKey(name)) {
+      if(properties.containsKey(name)) {
          return Cast.as(properties.get(name), clazz);
       }
       return Config.get(name).as(clazz);
@@ -93,15 +93,15 @@ public class Context implements Serializable, Copyable<Context> {
    }
 
    /**
-    * Gets as.
+    * Gets the value of the given property name as the given type
     *
     * @param <T>  the type parameter
     * @param name the name
-    * @param type the clazz
-    * @return the as
+    * @param type the type
+    * @return the value
     */
    public <T> T getAs(String name, @NonNull Type type) {
-      if (properties.containsKey(name)) {
+      if(properties.containsKey(name)) {
          return Converter.convertSilently(properties.get(name), type);
       }
       return Config.get(name).as(type);
@@ -109,95 +109,96 @@ public class Context implements Serializable, Copyable<Context> {
    }
 
    /**
-    * Gets as.
+    * Gets the value of the given property name as the given class type returning the default value if no value is
+    * currently set.
     *
     * @param <T>          the type parameter
     * @param name         the name
     * @param clazz        the clazz
-    * @param defaultValue the default value
-    * @return the as
+    * @param defaultValue the default value if none is set.
+    * @return the value
     */
    public <T> T getAs(String name, @NonNull Class<T> clazz, T defaultValue) {
-      if (properties.containsKey(name)) {
+      if(properties.containsKey(name)) {
          return Cast.as(properties.getOrDefault(name, defaultValue), clazz);
       }
       return Config.get(name).as(clazz, defaultValue);
    }
 
    /**
-    * Gets double.
+    * Gets the value of the given property name as a double
     *
     * @param name the name
-    * @return the double
+    * @return the value
     */
    public Double getDouble(String name) {
       return getAs(name, Double.class);
    }
 
    /**
-    * Gets double.
+    * Gets the value of the given property name as a double or the default value if not defined.
     *
     * @param name         the name
     * @param defaultValue the default value
-    * @return the double
+    * @return the value
     */
    public Double getDouble(String name, double defaultValue) {
       return getAs(name, Double.class, defaultValue);
    }
 
    /**
-    * Gets integer.
+    * Gets the value of the given property name as an integer
     *
     * @param name the name
-    * @return the integer
+    * @return the value
     */
    public Integer getInteger(String name) {
       return getAs(name, Integer.class);
    }
 
    /**
-    * Gets integer.
+    * Gets the value of the given property name as an integer or the default value if not defined.
     *
     * @param name         the name
     * @param defaultValue the default value
-    * @return the integer
+    * @return the value
     */
    public Integer getInteger(String name, int defaultValue) {
       return getAs(name, Integer.class, defaultValue);
    }
 
    /**
-    * Gets string.
+    * Gets the value of the given property name as a String
     *
     * @param name the name
-    * @return the string
+    * @return the value
     */
    public String getString(String name) {
       return getAs(name, String.class);
    }
 
    /**
-    * Gets string.
+    * Gets the value of the given property name as a String or the default value if not defined.
     *
     * @param name         the name
     * @param defaultValue the default value
-    * @return the string
+    * @return the value
     */
    public String getString(String name, String defaultValue) {
       return getAs(name, String.class, defaultValue);
    }
 
    /**
-    * Merge.
+    * Merges the given context with this one overwriting this context values with those in the given context.
     *
-    * @param other the other
+    * @param other the context to merge
     */
    public void merge(@NonNull Context other) {
       this.properties.putAll(other.properties);
    }
 
    /**
-    * Property.
+    * Defines a property in the context.
     *
     * @param name  the name
     * @param value the value
@@ -208,7 +209,7 @@ public class Context implements Serializable, Copyable<Context> {
 
    @Override
    public String toString() {
-      return "Context" + properties.toString() + "";
+      return properties.toString();
    }
 
    /**
@@ -228,11 +229,11 @@ public class Context implements Serializable, Copyable<Context> {
       protected JsonEntry serialize(Context context, Type type) {
          JsonEntry entry = JsonEntry.object();
          context.properties
-            .forEach((k, v) -> {
-               if (v != null) {
-                  entry.addProperty(k, JsonEntry.object(v.getClass(), v));
-               }
-            });
+               .forEach((k, v) -> {
+                  if(v != null) {
+                     entry.addProperty(k, JsonEntry.object(v.getClass(), v));
+                  }
+               });
          return entry;
       }
    }

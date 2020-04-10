@@ -32,7 +32,6 @@ import lombok.NonNull;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-
 /**
  * <p>Factory class for creating/retrieving stemmers for a given language</p>
  *
@@ -41,25 +40,28 @@ import java.util.concurrent.ConcurrentMap;
 public final class Stemmers {
    private static volatile ConcurrentMap<Language, Stemmer> stemmerMap = new ConcurrentHashMap<>();
 
+   private Stemmers() {
+      throw new IllegalAccessError();
+   }
+
    /**
-    * Gets the stemmer for the given language as defined in the config option
-    * <code>iknowledge.latte.morphology.Stemmer.LANGUAGE</code>. if no stemmer is specified a no-op stemmer is
-    * returned.
+    * Gets the stemmer for the given language as defined in the config option <code>hermes.Stemmer.LANGUAGE</code>. if
+    * no stemmer is specified a no-op stemmer is returned.
     *
     * @param language The language
     * @return The stemmer for the language
     */
    public static Stemmer getStemmer(@NonNull Language language) {
-      if (!stemmerMap.containsKey(language)) {
-         if (Config.hasProperty("hermes.Stemmer", language)) {
+      if(!stemmerMap.containsKey(language)) {
+         if(Config.hasProperty("hermes.Stemmer", language)) {
             Stemmer stemmer = Config.get("hermes.Stemmer", language).as(Stemmer.class);
             stemmerMap.putIfAbsent(language, stemmer);
          } else {
             Class<?> clazz = Hermes.defaultImplementation(language, "Stemmer");
-            if (clazz != null) {
+            if(clazz != null) {
                try {
                   stemmerMap.put(language, Reflect.onClass(clazz).create().get());
-               } catch (ReflectionException e) {
+               } catch(ReflectionException e) {
                   throw new RuntimeException(e);
                }
             } else {

@@ -32,42 +32,57 @@ import lombok.ToString;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * The type Caduceus program.
+ * <p>Caduceus, pronounced <b>ca·du·ceus</b>, is a rule-based information extraction system. Caduceus programs consist
+ * of a list of rules for extracting arbitrary spans of text to define annotations (e.g. entities and events) and
+ * relations (e.g. event roles). Each rule starts with a unique name declared in square brackets, e.g.
+ * <code>[my_rule]</code>. Following the rule name is the <i>trigger</i>, which is a {@link
+ * com.gengoai.hermes.extraction.regex.TokenRegex} that captures the text causing the rule to fire.</p>
+ *
+ * <p>
+ * Rules construct annotations and/or relations based on the matched trigger. A rule may have define zero or more
+ * annotations to be constructed. Each annotation is defined using <code>annotation:</code> and requires the following
+ * options to be specified:
+ * <pre>
+ * {@code
+ * `capture=(\*|GROUP_NAME)`: The text span which will make up the annotation, where `\*` represents the full trigger match and `GROUP_NAME` represents a named group from the trigger match.
+ * `type=ANNOTATION_TYPE`: The name of the annotation type to construct.
+ * }
+ * </pre>
+ * Additionally, attributes can be defined using as follows: <code>$ATTRIBUTE_NAME = VALUE</code>.
+ * </p>
  */
 @ToString
 @EqualsAndHashCode
 public final class CaduceusProgram implements Serializable, Extractor {
-   /**
-    * The Rules.
-    */
-   final List<Rule> rules = new ArrayList<>();
+   private final List<Rule> rules;
+
+   CaduceusProgram(List<Rule> rules) {
+      this.rules = rules;
+   }
 
    /**
-    * Read caduceus program.
+    * Reads a Caduceus program from the given resource.
     *
-    * @param resource the resource
-    * @return the caduceus program
-    * @throws IOException    the io exception
-    * @throws ParseException the parse exception
+    * @param resource the resource containing the Caduceus program
+    * @return the CaduceusProgram
+    * @throws IOException    Something went wrong reading from the resource
+    * @throws ParseException Something went wrong parsing the Caduceus program
     */
    public static CaduceusProgram read(@NonNull Resource resource) throws IOException, ParseException {
       return CaduceusParser.parse(resource);
    }
 
    /**
-    * Execute.
+    * Executes the program over the given document.
     *
-    * @param document the document
+    * @param document the document to execute the program on
     */
    public void execute(@NonNull Document document) {
-      for(Rule rule : rules) {
-         rule.execute(document);
-      }
+      rules.forEach(r -> r.execute(document));
    }
 
    @Override

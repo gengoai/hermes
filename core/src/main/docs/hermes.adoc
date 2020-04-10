@@ -150,13 +150,13 @@ RelationType AGENT = RelationType.make("AGENT");
      +-----+       +-------+
 ....
 
-Annotating for RelationType adds a <<#relation,Relation>> object on the source and target annotation as an _outgoing_ and _incoming_ annotation respectively.
+Annotating for RelationType adds a <<#relations,Relation>> object on the source and target annotation as an _outgoing_ and _incoming_ annotation respectively.
 For example, if we had a token _Jim_ as the agent of the verb _moved_, and annotated for the _AGENT_ RelationType we would add an outgoing _AGENT_ relation on _JIM_ with _moved_ as the target and an incoming _AGENT_ relation on _moved_ with _JIM_ as the source.
 Pictorial this would be represented as follows:
 
 ==== Annotators
 
-Annotator(s) satisfy, i.e. provide, one or more AnnotatableType (<<#annotation_type,AnnotationType>>, <<#attribute_type,AttributeType>>, or <<#relation_Type,RelationType>>) by processing a document and adding a new or modifying an existing annotation.
+Annotator(s) satisfy, i.e. provide, one or more AnnotatableType (<<#annotation_type,AnnotationType>>, <<#attribute_type,AttributeType>>, or <<#relation_type,RelationType>>) by processing a document and adding a new or modifying an existing annotation.
 In order to provide the new AnnotatableType an annotator may require one or more AnnotatableType to be present on the document.
 For example, an annotator providing the PHRASE_CHUNK AnnotationType would require the presence of the TOKEN AnnotationType and PART_OF_SPEECH AttributeType.
 When annotation is complete, the AnnotatableType is marked as complete on the document and an annotator provided version is associated with the type.
@@ -494,6 +494,7 @@ In some cases it is easier to work with annotations and relations as a real grap
 For these cases, Hermes provides the `dependencyGraph` and `annotationGraph` methods on <<#hstring,HString>>.
 These methods construct a Mango Graph!footnote:[See the Mango User Guide for details on the Graph data structure.] with which you can render to an image, perform various clustering algorithms, find paths between annotations, and score the annotations using methods such as PageRank.
 
+[#document]
 === Document
 
 A Document is represented as a text (HString) and its associated attributes (metadata), annotations, and relations between annotations.
@@ -660,44 +661,57 @@ Both makes it easy to annotate documents with a desired set of annotations, attr
 
 ==== Document Formats
 
-Hermes provides a straightforward way of reading and writing Corpora in a number of formats, including plain text, csv, and json.
+Hermes provides a straightforward way of reading and writing documents in a number of formats, including plain text, csv, and json.
 In addition, many formats can be used in a "one-per-line" corpus where each line represents a single document in the given format.
 For example, a json one-per-line corpus has a single json object representing a document on each line of the file.
-Each corpus format has an associated set of _Corpus Parameters_ that define the various options for reading and writing in the format.
-Additionally, all readers have the following base parameters that can be set:
+Each document format has an associated set of _DocFormatParameters_ that define the various options for reading and writing in the format.
+By default the following parameters can be set:
 
 [cols="2m,6",stripes="odd"]
 |===
-|documentFactory| The _DocumentFactory_ object to use for creating new Documents.
-|isDistributed| Creates a distributed corpus when the value is set to *true*.
-|isParallel| Marks the corpus as processing in parallel when the value is set to *true*.
-|inMemory| Marks the corpus as being in-memory when the value is set to true.
-|saveMode| Whether to _overwrite_, _ignore_, or _throw an error_ when writing a corpus to an existing file/directory.
+|defaultLanguage| The default language for new documents. (default calls `Hermes.defaultLanguage()`)
+|normalizers| The class names of the text normalizes to use when constructing documents. (default calls `TextNormalization.configuredInstance().getPreprocessors()`)
+|distributed| Creates a distributed document collection when the value is set to *true* (default `false`).
+|saveMode| Whether to _overwrite_, _ignore_, or _throw an error_ when writing a corpus to an existing file/directory (default `ERROR`).
 |===
 
-The following table lists the included corpus formats with their added corpus parameters and read/write capabilities:
+The following table lists the included document formats with their added format parameters and read/write capabilities:
 
 [#formats]
-.Corpus formats included with Hermes
+.Document formats included with Hermes
 [cols="2m,^1,^1,^1,4",stripes="odd",options="header",header]
 |===
 ^.^|*Format Name*    ^.^| *Read*    ^.^| *Write* ^.^| *Support OPL* ^.^| *Description*
-|HCF| icon:check[] | icon:check[]  | | Hermes Corpus Format (based on Lucene)
+|TEXT | icon:check[] |  icon:check[] | icon:check[]  | Plain text documents.
 5.1+a|
-* Standard Corpus Parameters Only
-|TEXT | icon:check[] |   | icon:check[]  | Plain text documents.
+* Standard Document Format  Parameters Only
+|PTB | icon:check[] |  |   | Penn Treebank bracketed (.mrg) files
 5.1+a|
-* Standard Corpus Parameters Only
-|JSON | icon:check[] | icon:check[]  | icon:check[] | Hermes Json format.
+* Standard Document Format  Parameters Only
+|HJSON | icon:check[] | icon:check[]  | icon:check[] | Hermes Json format.
 5.1+a|
-* Standard Corpus Parameters Only
-|CONLL| icon:check[] |    |  | CONLL format.
+* Standard Document Format Parameters Only
+|CONLL| icon:check[] |  icon:check[]  |  | CONLL format.
 5.1+a|
 * `docPerSentence=[true\|false]`: One document per sentence when *true* (default: *true*).
 * `fields=<list of fields>`: list of string denoting the field names (default: ["WORD", "POS", "CHUNK")]).
 * `fs=<String>`: Field separator (default: "\\s+")
 * `overrideSentences=[true\|false]`: Override the CONLL sentence boundaries with Hermes boundaries when *true* (default: *false*)
-|CSV | icon:check[] | | | Delimited separated files (e.g. CSV and TSV) with each row representing a document.
+
+The following fields are supported:
+
+* INDEX - The index of the word in the sentence.
+* WORD  - The word.
+* LEMMA - The lemmatized form of the word.
+* UPOS  - The universal part-of-speech tag of the word.
+* POS   - The part-of-speech tag of the word.
+* CHUNK - IOB annotated Phrase Chunks.
+* ENTITY - IOB annotated Named Entities.
+* HEAD   - The index of this word's syntactic head in the sentence.
+* DEP_REL - The dependency relation of this word to its head.
+* IGNORE  - Ignores the field.
+
+|CSV | icon:check[] | icon:check[]| | Delimited separated files (e.g. CSV and TSV) with each row representing a document.
 5.1+a|
 * `columns=<list of column names>`: The list of column names when file does not have a header (default: empty).
 * `content=<String>`: Name of the content column (default: "content").
@@ -711,183 +725,85 @@ Note that columns name will be autogenerated as C0, C1, ..., CN when no column n
 
 |TWITTER_SEARCH| icon:check[] |   | | Twitter API Search result
 5.1+a|
-* Standard Corpus Parameters Only
-|POS| icon:check[] |   | icon:check[] | Format with words separated by whitespace and POS tags appended with an underscore, e.g. The_DT brown_JJ.
+* Standard Document Format  Parameters Only
+|POS| icon:check[] | icon:check[]  | icon:check[] | Format with words separated by whitespace and POS tags appended with an underscore, e.g. The_DT brown_JJ.
 5.1+a|
-* Standard Corpus Parameters Only
-|TAGGED| icon:check[] |   | icon:check[] | Format with words separated by whitespace and sequences labeled in SGML like tags, e.g. <TAG>My text</TAG>.
+* Standard Document Format  Parameters Only
+|TAGGED| icon:check[] | icon:check[]  | icon:check[] | Format with words separated by whitespace and sequences labeled in SGML like tags, e.g. <TAG>My text</TAG>.
 5.1+a|
 * `annotationType=<String>`: The annotation type that sequences are an instance of (default: ENTITY).
 |===
 
-The *Format Name* is used to identify the corpus to read and to use the format with one-per-line, you can append "_opl" to the format name.
+The *Format Name* is used to identify the document format to read and to use the format with one-per-line, you can append "_opl" to the format name.
 
-===== Defining a Custom Corpus Format
+====  Document Collection Creation
 
-There are four steps in creating a custom format which are:
-
-[start=1]
-. Implement CorpusFormat
-. Register your CorpusFormat as CorpusFormat service
-. Implement a CorpusReader [Optional]
-. Implement a CorpusWriter [Optional]
-
-Note that you only need to implement a reader or writer if that functionality is needed, i.e. if you only want to provide an output format then you only need to create a writer.
-
-The CorpusFormat interface defines the following methods that need to be overrode:
+The _DocumentCollection_ class provides the following methods to create a document collection from a series of documents:
 
 [cols="1m,>2m,4",options="header",stripes="odd"]
 |===
 ^.^|*Type*    ^.^| *Method* ^.^| *Description*
-|String| getName() | The unique name that identifies the format (e.g. json).
-|CorpusParameters| getFormatParameters() | Get the custom CorpusParameters for the format (defaults to the Standard Corpus Parameters).
-|CorpusReader| getCorpusReader() | Gets an instance of a CorpusReader for this format or throw an _UnsupportedOperationException_ if not available.
-|CorpusWriter| getCorpusWriter(Corpus) | Gets an instance of a CorpusWriter for this format and the given Corpus or throw an _UnsupportedOperationException_ if not available.
+|DocumentCollection| create(String) | creates a document collection from documents stored in the format and at the location specified by the given specification.
+|DocumentCollection| create(Specification) | creates a document collection from documents stored in the format and at the location specified by the given specification.
+|DocumentCollection| create(Document...) | Creates a document collection in memory containing the given documents.
+|DocumentCollection| create(List<Document>) | Creates a document collection in memory containing the given documents.
+|DocumentCollection| create(MStream<Document>) | Creates a document collection from the given Mango stream where the corpus will be distributed if the given Mango stream is also distributed and a streaming corpus otherwise.
+|DocumentCollection| create(Stream<Document>) | Creates a stream-based corpus containing the given documents.
 |===
 
-The custom format should be registered as a CorpusFormat service.
-We recommend using a maven plugin such as `org.kohsuke.metainf-services` to ease this process.
-Corpus readers need only overwrite the `Stream<Document> parse(String content)` method which takes in a document representation as a string and returns a Hermes document (Note that the method has access to the _CorpusParameters_ via the `getOptions` method).
-Similarly, Corpus readers need only overwrite the `String writeToString(Document document)` method which converts the document into a string representation.
+The following is an example of creating a document collection from Twitter data:
 
-==== Quick Corpus Creation
-
-The _Corpus_ class provides the following methods to quickly create a corpus from a series of documents:
-
-[cols="1m,>2m,4",options="header",stripes="odd"]
-|===
-^.^|*Type*    ^.^| *Method* ^.^| *Description*
-|Corpus| create(Document...) | Creates a corpus in memory containing the given documents.
-|Corpus| create(List<Document>) | Creates a corpus in memory containing the given documents.
-|Corpus| create(MStream<Document>) | Creates a corpus from the given Mango stream where the corpus will be distributed if the given Mango stream is also distributed and a streaming corpus otherwise.
-|Corpus| create(Stream<Document>) | Creates a stream-based corpus containing the given documents.
-|===
-
-==== Reading and Writing Corpora
-
-Reading of corpora starts with the `reader()` or `reader(CharSequence)` method on the Corpus, where the first method creates a reader for the default format defined in the configuration setting `hermes.defaultCorpusFormat` and the second creates a reader based on the given format name.
-The resulting _CorpusReader_ can have its _CorpusParameter_ set using the `option(String, Object)` and `option(ParameterDef<?>, Object)` methods, read from a json configuration using `options(Resource)`, or loaded from an existing _CorpusParameters_ or _Map_.
-Finally, to read a corpus at a specified location use the  `read(Resource)` or `read(String)` methods.
-
-The following example illustrates creating a reader for a json one-per-line corpus (denoted by adding "_opl" to the json corpus format name):
-
-[source,java]
+[code,java]
 ....
-Corpus corpus = Corpus.reader("json_opl")
-                      .option("isParallel", true)
-                      .read("/home/user/corpora/my_corpus.json_opl");
+DocumentCollection twitter = DocumentCollection.create("twitter_search::/data/twitter_search_results/");
 ....
 
-A more complex example is loading a custom CSV corpus as follows that includes a source and author attribute is as follows:
+A more complex example is creation from CSV files:
 
-[source,java]
+[code,java]
 ....
-Corpus corpus = Corpus.reader("csv")
-                      .option("inMemory", true) //Load the corpus in memory
-                      .option("columns", Arrays.asList("id","language","content", "source", "author"))
-                      .option("delimiter", "\t") // TSV format
-                      .read("/home/user/corpora/my_corpus.tsv");
+DocumentCollection csv = DocumentCollection.create("csv::/data/my_csv.csv;columns=id,content,language,author,source");
 ....
 
-The novelty of Hermes corpus class is that by adding `option("isDistributed", true)` to the reader, the constructed corpus is backed by an Apache Spark _RDD_ and now all processing will take place within Apache Spark.
-For local processing it is recommend converting your corpus into the Hermes Corpus Format (HCF).
-HCF provides performance benefits and facilitates in-place updating of documents (i.e. annotation, changing of properties).
-For distributed processing (i.e. multiple node Spark) it is recommended to use json lines format.
-An enum of common formats is provided in `com.gengoai.hermes.corpus.Formats`.
+==== Working with Document Collections and Corpora
 
-Writing corpora starts with the `writer()` or `writer(CharSequence)` method on the Corpus with the first method writing in the default format defined by the configuration setting `hermes.defaultCorpusFormat` and the second method taking a corpus format name.
-The resulting _CorpusWriter_ can have its _CorpusParameter_ set using the `option(String, Object)` and `option(ParameterDef<?>, Object)` methods, read from a json configuration using `options(Resource)`, or loaded from an existing _CorpusParameters_ or _Map_.
-Finally, to write the corpus at a specified location use the  `write(Resource)` or `write(String)` methods.
-Note that all writers have a _SaveMode_ option which determines what happens if a corpus already exists at the given location.
-The valid options are _OVERWRITE_, _ERROR_, and _IGNORE_.
-
-The following example illustrates creating a writer for a json one-per-line corpus (denoted by adding "_opl" to the json corpus format name) that will overwrite any existing corpus:
-
-[source,java]
-....
-Corpus corpus = ...;
-
-corpus.writer("json_opl")
-      .option("saveMode", SaveMode.OVERWRITE)
-      .write("/home/user/corpora/my_corpus.json_opl");
-....
-
-A shorthand for reading and writing corpora is by using a _Specification_ to define the format, location, and parameters of the corpus.
-This is done using `read(Specification)` or `read(String)` methods to read the corpus and `write(Specification)`, `write(String)`, or `write(String, SaveMode)` to write the corpus.
-Examples of doing this are as follows:
-
-[source,java]
-....
-//Read a json one-per-line corpus from /home/user/corpora/my_corpus.json_opl
-Corpus c1 = Corpus.read("json_opl::/home/user/corpora/my_corpus.json_opl")
-
-//Read a csv corpus from /home/user/corpora/my_corpus.csv where the file contains a header
-Corpus c2 = Corpus.read("csv::/home/user/corpora/my_corpus.tsv;columns=id,language,content,source,author;delimiter=\t;inMemory=true")
-
-//Write corpus c2 in default format to  /home/user/corpora/my_hcf_corpus
-c2.write(Resources.from("/home/user/corpora/my_hcf_corpus"));
-
-//Write corpus c2 in HCF format to  /home/user/corpora/my_hcf_corpus
-c2.write("hcf::/home/user/corpora/my_hcf_corpus");
-....
-
-To learn more about specifications, see the Mango documentation.
-Finally, the default corpus format can be used to read a corpus by calling the `read(Resource)` method and for writing by calling the `write(Resource)` or `write(Resource, SaveMode)` method.
-
-==== Working with Corpora
-
-The Hermes _Corpus_ class provides a variety of different methods for accessing, analyzing, and manipulating its documents.
+The Hermes _Corpus_ and _DocumentCollection_ class provides a variety of different methods for accessing, analyzing, and manipulating its documents.
 
 ===== Accessing Documents
 
-Accessing individual documents in the corpus id accomplished using the `get(long)` and `get(String)` methods where the first method provides list-like access to documents and the second returns the document with the given document id.
-Note that when accessing a document using by index, i.e. `get(long)`, it is not guaranteed that the same document will be returned between runs of your program.
-Additionally, Corpus implements the _Iterable_ interface allowing for for-each loops over the documents.
-The following set of methods allow for access to the document in the corpus.
+Document collections and corpora allow for the following access to their collection of documents:
 
 [cols="1m,>2m,2",options="header",stripes="odd"]
 |===
 ^.^|*Type*    ^.^| *Method*    ^.^| *Description*
-|Document| get(long) | Gets the document in the given index position (not guaranteed to be the same across runs of the program).
-|Document| get(String) | Gets the document with the given document id.
 |Iterator<Document>| iterator() | Gets an iterator over the documents in the corpus.
 |MStream<Document>| stream() | Returns a Mango stream over the documents in the corpus.
 |MStream<Document>| parallelStream() | Returns a parallel Mango stream over the documents in the corpus.
 |===
 
+In addition to the methods above, corpora allow for access to individual documents using `get(String)` method where the string parameter is the document id.
+
 ===== Manipulating the Corpus and its Documents
 
-Corpora can be represented in-memory, on-disk, streaming, or distributed and capabilities for manipulating corpora vary amongst the representations.
-The core method for manipulation, which is supported by all representations, is the `update(SerializableConsumer<Document>)` method, which processes each document using the given consumer.
-Note, however, that the depending on the corpus representation that this method may be persistent (i.e. update in-place) or may be temporary requiring the corpus to be written to disk to persist the changes.
+The main method for manipulation of a collection is through the `update(SerializableConsumer<Document>)` method, which processes each document using the given consumer.
+For document collections this method acts as a map whereas for corpora the update persists to the underlying storage.
 
-// Should there be some way to the capabilities of the corpus???
-
-Updating individual documents via the `update(Document)` method is currently only supported using in-memory and HCF on-disk corpora.
-The following set of methods are supported by in-memory, Hermes Corpus Format (loaded via the HCF format), and distributed corpora.
+Corpora also allow for individual documents to be udpated via the `update(Document)` method.
+Additionally, documents can be added and removed from corpora using the following set of methods:
 
 [cols="1m,>2m,2",options="header",stripes="odd"]
 |===
 ^.^|*Type*    ^.^| *Method*    ^.^| *Description*
 |void| add(Document) | Adds a document to the corpus.
 |void| addAll(Iterable<Document>) | Adds the given documents to the corpus.
+|void| importDocuments(String) | Imports documents from the given document collection specification.
 |boolean| remove(Document) | Returns *true* if the given Document was successfully removed from the corpus.
 |boolean| remove(String) | Returns *true* if the document with the given document id was successfully removed from the corpus.
 |===
 
-The corpus also has methods, listed in the table below, for caching changes and converting into other representations.
-
-[cols="1m,>2m,2",options="header",stripes="odd"]
-|===
-^.^|*Type*    ^.^| *Method*    ^.^| *Description*
-|Corpus| cache() | Caches the changes made to the corpus.
-|Corpus| toDistributed() | Converts the corpus to be distributed for use by Apache Spark.
-|Corpus| toInMemory() | Converts the corpus to be in-memory.
-|===
-
 ===== Querying
 
-Hermes provides a simple boolean query language to query documents in a corpus.
+Hermes provides a simple boolean query language to query documents.
 The query syntax is as follows:
 
 [cols="1m,4",options="header",stripes="odd"]
@@ -896,7 +812,7 @@ The query syntax is as follows:
 | AND | Requires the queries, phrases, or words on the left and right of the operator to both be present in the document. (AND is case insensitive)
 | OR  | Requires for one of the queries, phrases, or words on the left and right of the operator to be present in the document. (OR is case insensitive)
 |  -  | Requires the query, phrase, or word on its right hand side to *not* be in the document.
-| $ATTRIBUTE(VALUE) | Requires the value of the document attribute describe after the $ to equal the value in the parenthesis.
+| $ATTRIBUTE='VALUE' | Requires the value of the document attribute describe after the $ to equal the value in the parenthesis.
 | 'PHRASE' | Searches for the phrase defined between the single quotation marks. (note if the phrase includes a single quote it can be escaped using the backslash character.)
 | WORD | Searches for the word (note the word cannot start or end with parenthesis and cannot have whitespace)
 |===
@@ -909,14 +825,13 @@ The default operator when one is not specified is `OR`, i.e. `United States` wou
 Corpus corpus = ...;
 SearchResults results = corpus.query("'United States' AND 'holiday'");
 System.out.println("Query: " + results.getQuery());
-System.out.println("Total Hits: " + results.getTotalHits());
-for( Document document : results.asCorpus() ){
+System.out.println("Total Hits: " + results.size());
+for( Document document : results ){
     System.out.println(document.getTitle());
 }
 ....
 
-As shown in the code snippet above, querying a corpus results in a _SearchResults_ which retains the query that generated results, the total number of matching documents, and a method to treat the results as a Corpus.
-Note that the corpus returned via the _SearchResults_ object maybe a non-reusable Java stream and care should be taken when using the corpus.
+As shown in the code snippet above, querying a corpus results in a _SearchResults_ which retains the query that generated results and a document collection view of the results.
 
 [#fa]
 ===== Frequency Analysis
@@ -1082,13 +997,13 @@ Extractions can provide their results as an _Iterable_ of _HString_ or _String_ 
 |===
 
 Note that how the results are constructed are dependent on the extraction technique.
-For example, while some extractions only provide fragments (i.e. non-attached) _HString_ due to the way extraction is performed.
+For example, some extractions only provide fragments (i.e. non-attached) _HString_ due to the way extraction is performed.
 
 [#lexicons]
 === Lexicons
 
 A traditional approach to information extraction incorporates the use of lexicons, also called gazetteers, for finding specific lexical items in text.
-Hermes _Lexicon_ classes provide the ability to match lexical items using a greedy longest match first or maximum span probability strategy.
+Hermes's _Lexicon_ classes provide the ability to match lexical items using a greedy longest match first or maximum span probability strategy.
 Both matching strategies allow for case-sensitive or case-insensitive matching and the use of constraints (using the Lyre expression language), such as part-of-speech, on the match.
 
 Lexicons are managed using the _LexiconManager_, which acts as a cache associating lexicons with a name and a language.
@@ -1101,20 +1016,26 @@ Lexicons are defined using a _LexiconSpecification_ in the following format:
 lexicon:(mem|disk):name(:(csv|json))*::RESOURCE(;ARG=VALUE)*
 ....
 
-where the query parameters (ARG=VALUE) can be one of:
+The schema of the specification is "lexicon" and the currently supported protocols are:
+* mem: An in-memory Trie-based lexicon.
+* disk: A persistent on-disk based lexicon.
+
+The name of the lexicon is used during annotation to mark the provider.
+Additionally, a format (csv or json) can be specified, with json being the default if none is provided, to specify the lexicon format when creating in-memory lexicons.
+Finally, a number of query parameters (ARG=VALUE) can be given from the following choices:
 
 * `caseSensitive=(true|false)`: Is the lexicon case-sensitive (*true*) or case-insensitive (*false*) (default *false*).
-* `tagAttribute=AttributeType`: The attribute (of type extending tag) that will be set of a successful match with the lexicon (default TAG).
 * `defaultTag=TAG`: The default tag value for entry when one is not defined (default null).
+* `language=LANGUAGE`: The default language of entries in the lexicon (default `Hermes.defaultLanguage()`)
 
-and the following for CSV lexicons:
+CSV lexicons allow for the additionaly following parameters:
 
 * `lemma=INDEX`: The index in the csv row containing the lemma (default 0).
 * `tag=INDEX`: The index in the csv row containing the tag (default 1).
 * `probability=INDEX`: The index in the csv row containing the probability (default 2).
 * `constraint=INDEX`: The index in the csv row containing the constraint (default 3).
+* `language=LANGUAGE`: The default language of entries in the lexicon (default `Hermes.defaultLanguage()`)
 
-The lexicon in the example above can then be retrieved using the following code:
 
 As an example, we can define the following lexicons in our configuration:
 
@@ -1144,66 +1065,6 @@ In this case, it will try to find a json formatted lexicon with the named "undef
 
 The lexicon manager allows for lexicons to be manually registered using the register method, but please note that this registration will not carry over to each node in a distributed environment.
 
-==== Creating Lexicons
-
-Currently, there are two implementations of the _Lexicon_ interface: (1) _TrieLexicon_ and (2) _DiskLexicon_.
-The _TrieLexicon_ is an in-memory lexicon stored using a trie data structure.
-The _DiskLexicon_ provides a cached on-disk implementation suitable for a very large number of lexical items.
-Lexicons are immutable and can only have items added or removed during construction of the Lexicon.
-Both types of lexicons are are built using a _LexiconBuilder_ with both defining static `builder` methods for creation of the builder.
-
-The following snippet shows the construction of a simple _TrieLexicon_ through its builder.
-
-[source,java]
-....
-var lexicon = TrieLexicon.builder(Types.TAG, false) <1>
-                           .add("dog", new StringTag("ANIMAL"))  <2>
-                           .add(e -> {  <3>
-                                       e.lemma = "bank";
-                                       e.probability = 0.8;
-                                       e.constraint = "#NOUN";
-                                       e.tag = new StringTag("FINANCIAL INSTITUTION");
-                                     })
-                           .add("bank", 0.3, new StringTag("MOVE"))  <4>
-                           .build();  <5>
-....
-<1> Create a builder where matches will set the attribute TAG and matching is case-insensitive.
-<2> Add a simple lexical item "dog" when matched will set the tag attribute to "ANIMAL" and which will have a default probability of 1.0.
-<3> Create a complex entry where the lemma being matched is "bank" the probability of the match being correct is 0.8 with the constraint that the HString being matched has a part-of-speech of NOUN. On match the tag "FINANCIAL INSTITUTION" will be set.
-<4> Create a entry that will assign the tag "MOVE" to HStrings matching the lemma "bank" with a probability of 0.3.
-<5> Construct the lexicon.
-
-Using the lexicon shown above, the following matches would be made for the given sentences:
-
-* The dog entered the bank.
-** dog [ANIMAL, probability=1.0]
-** bank [FINANCIAL INSTITUTION, probability=0.8]
-
-* The dogs banked around the corner.
-** dog [ANIMAL, probability=1.0]
-** bank [MOVE, probability=0.3]
-
-Constructing a matching _DiskLexicon_ to the _TrieLexicon_ above is accomplished as follows:
-
-[source,java]
-....
-var lexicon = DiskLexicon.builder(Types.TAG, false, "my_lexicon", Resources.from("/data/lexicons/mylexicon.lexicon"))
-                           .add("dog", new StringTag("ANIMAL"))
-                           .add(e -> {
-                                       e.lemma = "bank";
-                                       e.probability = 0.8;
-                                       e.constraint = "#NOUN";
-                                       e.tag = new StringTag("FINANCIAL INSTITUTION");
-                                     })
-                           .add("bank", 0.3, new StringTag("MOVE"))
-                           .build();
-....
-
-Note that the only difference is in the call to the builder method.
-The _DiskLexicon_ requires a lexicon name ("my_lexicon") and a resource indicating where the lexicon files are to be saved.
-The _DiskLexicon_ can store multiple lexicons in one file where each lexicon is defined using a name.
-For example, the construct lexicon above is stored on disk at "/data/lexicons/mylexicon.lexicon" and has the name "my_lexicon", we can create "people", "animals", "insects" lexicons that are also stored in the same file.
-
 TIP: Take a look at *LexiconExample.java* in the Hermes examples project to see examples of constructing and using lexicons.
 
 ==== Reading and Writing Lexicons
@@ -1216,7 +1077,8 @@ The primary format of a Hermes lexicon is Json and is described as follows:
 {
   "@spec": { <1>
     "caseSensitive": false,
-    "tagAttribute": "ENTITY_TYPE"
+    "tagAttribute": "ENTITY_TYPE",
+    "language": "ENGLISH
   },
   "@entries": [ <2>
     {
@@ -1242,7 +1104,7 @@ The primary format of a Hermes lexicon is Json and is described as follows:
 As seen in the snippet the json file starts with a specification section, "@spec", in which the valid parameters are:
 
 * *caseSensitive*: Is the lexicon case-sensitive (*true*) or case-insensitive (*false*) (default *false*).
-* *tagAttribute*: The attribute (of type extending tag) that will be set of a successful match with the lexicon (default TAG).
+* *language*: The language of the entries in the lexicon (default `Hermes.defaultLanguage()`).
 * *tag*: The default tag value for entry when one is not defined (default null).
 
 The "@entries" section defines the individual lexicon entries in the lexicon with the following valid parameters:
@@ -1251,15 +1113,23 @@ The "@entries" section defines the individual lexicon entries in the lexicon wit
 * *tag*: The tag value associated with the lemma that the _tagAttribute_ will be set to (default lexicon default tag).
 * *probability*: The probability of the lexical item associated with its tag (default 1.0).
 * *constraint*: The constraint (using a Lyre expression) that must be satisfied for the lexical match to take place (default null).
+* *tokenLength"* Optional parameter the defines the number of tokens in the entry (default calculated based on the lexicon language).
 
 Additionally, csv based lexicons can be imported using `LexiconIO.importCSV(Resource, Consumer<CSVParameters>)` where the Resource defines the location of the CSV file and the Consumer is used to specify the lexicon parameters.
 The CSVParameters defines the columns for lemmas, tags, probabilities, and constraints as well as the standard lexicon information of case-sensitive or insensitive matching, tag attribute, and default tag.
-A command line application *csv2Lexicon* is described in <<#hermes_applications>> which can perform this conversion on the command line converting the csv into a disk based lexicon or into json format.
+
+==== Word Lists
+
+Word lists provide a set like interface to set of vocabulary items.
+Implementations of _WordList_ may implement the _PrefixSearchable_ interface allowing prefix matching.
+Word lists are loaded from plain text files with "#" at the beginning of a line denoting a comment.
+Whereas lexicons provide a robust way to match and label HStrings, _WordList_s provide a simple means of determining if a word/phrase is defined.
+Note that convention states that if the first line of a word list is a comment stating "case-insensitive" then loading of that word list will result in all words being lower-cased.
 
 [#lyre]
 === Lyre Expression Language
 
-Lyre (Linguistic querY and extRaction languagE) provides a means for querying, extracting, and transforming HStrings using.
+Lyre (Linguistic querY and extRaction languagE) provides a means for querying, extracting, and transforming HStrings.
 A _LyreExpression_ represents a series of steps to perform over an input HString which can be used for querying (i.e. acting as a Java _Predicate_) and extracting and transforming (i.e. like a Java _Function_) using the following methods:
 
 [cols="1m,>2m,2",options="header",stripes="odd"]
@@ -2206,13 +2076,91 @@ TIP: Take a look at *GettingStarted.java*, *CorpusExample.java*, *MLExample.java
 [#workflows]
 == Workflows
 
-Workflows in Hermes represent a set of _actions_ to perform on an input corpus.
-A workflow is made up of:
-* *Actions*: A process to perform on a corpus.
-* *Context*: A key-value pair containing context either required or generated by an action.
+A workflow represents a set of _actions_ to perform on an document collection.
+Actions fall into one or more of the following three categories:
+
+[start=1]
+. Modify - The action modifies the documents in the collection, e.g. adds new annotations or attributes.
+. Compute - The action generates information that is added to the _Context_ for use by downstream actions.
+. Output - The action generates an output for consumption by external processes and/or downstream actions.
+
+Actions share a common key-value memory store, called a _Context_, in which information they require or they generate can be added.
+
+[ditaa,seq-workflow,align="center",width="300px"]
+.Example of Sequential Workflow
+....
+
+ +-----+     <update>     <update>       <update>
+ |{s}  |--------+-------------+-------------+--------------+
+ +-----+        |             |             |              |
+                V             V             V              |
+ +-----+    +--------+    +--------+    +--------+         |
+ |{d}  |    |        |    |        |    |        | <final> |
+ |     |--->| Action |--->| Action |--->| Action |---------+->
+ |     |    |   1    |    |   2    |    |   3    |
+ +-----+    +--------+    +--------+    +--------+
+ Document       |            ^  |           ^
+ Collection     |            |  V           |
+                +------------+--------------+
+                   <update>       <update>
+....
+
+The figure illustrated above gives an example of a sequential workflow where an document collection is passed through a series of three actions each of which update (Modify) the collection and the context. The <<#workflow_runner,Workflow Runner>> the can save the final output to file.
+
+=== Contexts
+
+Contexts are a specialized map that act as a shared memory for a Workflow.
+The context will retrieve values from its internal storage and also fallback to checking for values in the global configuration.
+
+=== Actions
+
+An action defines a processing step to perform on a _DocumentCollection_ with a given _Context_ which results in either modifying the corpus or the context.
+Action implementations can persist their state to be reused at a later time including across jvm instances and runs.
+This is done by implementing the `loadPreviousState(DocumentCollection,Context)` method to modify the corpus and/or context based on its saved state.
+An action can ignore its state and reprocess the corpus when either the config setting `processing.override.all` is set to true or the config setting `className.override` is set tp true.
+
+
+=== Defining a Workflow
+Workflows are defined using Json.
+The follow is an example definition:
+
+[source,json]
+....
+{
+  "type"  : "Sequential",
+  "context": {
+    "alpha": {"@class": "double", "@value": 0.2}
+  },
+  "beans" : {
+    "ANNOTATOR" : {
+        "@singleton": true,
+        "@class": "com.gengoai.hermes.workflow.actions.Annotate",
+        "types": "${CORE_ANNOTATIONS}"
+      }
+  },
+  "actions": [
+      "@ANNOTATOR",
+      {
+        "@class": "com.gengoai.hermes.workflow.actions.TermCounts",
+        "extractor": "lower(filter(@TOKEN,isContentWord))",
+        "documentFrequencies": true
+      }
+  ]
+}
+....
+
+Each workflow json must specify the workflow type (currently only Sequential workflows are supported).
+An initial set of key-value pairs can be specified in the "context" section.
+Note that its require to specify values as json objects in the format `{"@class":"java class name", "@value": value}`.
+The json format allows for reusable beans to be defined in the "beans" section.
+The bean format uses the bean name as the key for a json object which is made up of a  "@class" property to define the fully qualified class name, "@singleton" to optionally define the object as a singleton, and all setters are defined as properties in the object, e.g. "types" relates to the `setTypes` method of the Annotate action.
+Finally the set of actions are defined as an array within the "actions" object.
 
 [#hermes_applications]
 == Hermes Applications
+
+[#workflow_runner]
+=== Workflow Runner
 
 === annotate
 

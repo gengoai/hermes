@@ -29,6 +29,8 @@ import com.gengoai.io.resource.Resource;
 import com.gengoai.parsing.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.gengoai.string.Re.*;
 import static com.gengoai.tuple.Tuples.$;
@@ -76,7 +78,6 @@ enum CaduceusParser implements TokenDef {
                                     zeroOrMore(chars("\r\n")))
                          )));
 
-
    final String pattern;
 
    CaduceusParser(String pattern) {
@@ -90,53 +91,53 @@ enum CaduceusParser implements TokenDef {
    public static CaduceusProgram parse(Resource resource) throws ParseException, IOException {
       Lexer lexer = Lexer.create(CaduceusParser.values());
       TokenStream ts = lexer.lex(resource);
-      final CaduceusProgram program = new CaduceusProgram();
+      final List<Rule> rules = new ArrayList<>();
       Rule.RuleBuilder rule = null;
-      while (ts.hasNext()) {
+      while(ts.hasNext()) {
          ParserToken token = ts.consume();
-         if (token.isInstance(RULE_NAME)) {
-            if (rule != null) {
-               program.rules.add(rule.build());
+         if(token.isInstance(RULE_NAME)) {
+            if(rule != null) {
+               rules.add(rule.build());
             }
             rule = Rule.builder();
             rule.name(token.getVariable(0));
             rule.programFile(resource.descriptor());
-         } else if (token.isInstance(TRIGGER)) {
-            if (rule == null) {
+         } else if(token.isInstance(TRIGGER)) {
+            if(rule == null) {
                throw new ParseException("Found a TRIGGER outside of a Rule");
             }
             rule.trigger(TokenRegex.compile(token.getVariable(0)));
-         } else if (token.isInstance(ANNOTATION)) {
-            if (rule == null) {
+         } else if(token.isInstance(ANNOTATION)) {
+            if(rule == null) {
                throw new ParseException("Found an ANNOTATION provider outside of a Rule");
             }
             rule.annotationProvider(processAnnotation(createComponents(token.getVariable(0))));
-         } else if (token.isInstance(RELATION)) {
-            if (rule == null) {
+         } else if(token.isInstance(RELATION)) {
+            if(rule == null) {
                throw new ParseException("Found a RELATION provider outside of a Rule");
             }
             rule.relationProvider(processRelation(token.getVariable(0).trim(),
                                                   createComponents(token.getVariable(1))));
          }
       }
-      if (rule != null) {
-         program.rules.add(rule.build());
+      if(rule != null) {
+         rules.add(rule.build());
       }
-      return program;
+      return new CaduceusProgram(rules);
    }
 
    private static AnnotationProvider processAnnotation(String[] components) {
       AnnotationProvider.AnnotationProviderBuilder builder = AnnotationProvider.builder();
       final AttributeMap attributeMap = new AttributeMap();
-      for (String component : components) {
+      for(String component : components) {
          String[] keyValue = component.split("\\s*=\\s*", 2);
-         if (keyValue[0].equals("capture")) {
+         if(keyValue[0].equals("capture")) {
             builder.capture(keyValue[1].trim());
-         } else if (keyValue[0].equals("type")) {
+         } else if(keyValue[0].equals("type")) {
             builder.type(Types.annotation(keyValue[1].trim()));
-         } else if (keyValue[0].equals("requires")) {
+         } else if(keyValue[0].equals("requires")) {
             builder.requires(keyValue[1].trim());
-         } else if (keyValue[0].startsWith("$")) {
+         } else if(keyValue[0].startsWith("$")) {
             AttributeType<?> attributeType = Types.attribute(keyValue[0].substring(1).trim());
             attributeMap.put(attributeType, attributeType.decode(keyValue[1].trim()));
          } else {
@@ -150,23 +151,23 @@ enum CaduceusParser implements TokenDef {
    private static RelationProvider processRelation(String name, String[] components) {
       RelationProvider.RelationProviderBuilder builder = RelationProvider.builder();
       builder.name(name);
-      for (String component : components) {
+      for(String component : components) {
          String[] keyValue = component.split("\\s*=\\s*", 2);
-         if (keyValue[0].equals("type")) {
+         if(keyValue[0].equals("type")) {
             builder.type(Types.relation(keyValue[1].trim()));
-         } else if (keyValue[0].equals("requires")) {
+         } else if(keyValue[0].equals("requires")) {
             builder.requires(keyValue[1].trim());
-         } else if (keyValue[0].equals("value")) {
+         } else if(keyValue[0].equals("value")) {
             builder.value(keyValue[1].trim());
-         } else if (keyValue[0].equals("bidirectional")) {
+         } else if(keyValue[0].equals("bidirectional")) {
             builder.bidirectional(Boolean.parseBoolean(keyValue[1].trim()));
-         } else if (keyValue[0].startsWith("@>") || keyValue[0].startsWith("@<")) {
+         } else if(keyValue[0].startsWith("@>") || keyValue[0].startsWith("@<")) {
             int index = keyValue[0].indexOf('{');
             String capture = "*";
-            if (index > 0) {
+            if(index > 0) {
                capture = keyValue[0].substring(index + 1, keyValue[0].length() - 1);
             }
-            if (keyValue[0].startsWith("@>")) {
+            if(keyValue[0].startsWith("@>")) {
                builder.source($(capture, Lyre.parse(keyValue[1])));
             } else {
                builder.target($(capture, Lyre.parse(keyValue[1])));

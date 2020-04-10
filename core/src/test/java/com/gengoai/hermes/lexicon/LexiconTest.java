@@ -3,11 +3,10 @@ package com.gengoai.hermes.lexicon;
 import com.gengoai.StringTag;
 import com.gengoai.collection.Lists;
 import com.gengoai.config.Config;
-import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.Document;
+import com.gengoai.hermes.Entities;
 import com.gengoai.hermes.Fragments;
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.Entities;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
@@ -17,18 +16,15 @@ import static org.junit.Assert.*;
  */
 public class LexiconTest {
 
-
    @Test
    public void test() {
       Config.initializeTest();
-      TrieLexicon lexicon = Cast.as(TrieLexicon.builder(Types.TAG, true)
-                                               .add("test") //Add an entry with no tag and no probability
-                                               .add("testing", 0.8, new StringTag("TEST"))
-                                               .add("bark", 0.8)
-                                               .add("barking", new StringTag("TEST"))
-                                               .add("barking skills", new StringTag("TEST"))
-                                               .build());
-
+      TrieLexicon lexicon = new TrieLexicon("TEST", true);
+      lexicon.add(LexiconEntry.of("test", 1));
+      lexicon.add(LexiconEntry.of("testing", 0.8, "TEST", 1));
+      lexicon.add(LexiconEntry.of("bark", 0.8, 1));
+      lexicon.add(LexiconEntry.of("barking", "TEST", 1));
+      lexicon.add(LexiconEntry.of("barking skills", "TEST", 2));
 
       Document document = Document.create("The dog was testing his barking skills on the wall.");
       document.annotate(Types.TOKEN);
@@ -46,8 +42,8 @@ public class LexiconTest {
       assertFalse(lexicon.test(Fragments.stringWrapper("missing")));
 
       //Tags
-      assertEquals(new StringTag("TEST"), lexicon.getTag("testing").get());
-      assertEquals(new StringTag("TEST"), lexicon.getTag("barking").get());
+      assertEquals("TEST", lexicon.getTag("testing").get());
+      assertEquals("TEST", lexicon.getTag("barking").get());
 
       //No Tags
       assertFalse(lexicon.getTag("test").isPresent());
@@ -65,8 +61,6 @@ public class LexiconTest {
       assertEquals(0d, lexicon.getProbability("missing"), 0d);
       assertEquals(0d, lexicon.getProbability("test", Entities.DATE), 0d);
 
-
    }
-
 
 }

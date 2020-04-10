@@ -29,41 +29,41 @@ import com.gengoai.hermes.HString;
 import com.gengoai.hermes.extraction.lyre.LyreExpression;
 import com.gengoai.hermes.ml.feature.ValueCalculator;
 import com.gengoai.json.JsonEntry;
-import lombok.NonNull;
+import lombok.EqualsAndHashCode;
 
 import java.lang.reflect.Type;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 /**
- * @author David B. Bracewell
+ * Implementation of the {@link MultiPhaseExtractor} for extracting terms where a term is a single annotation (TOKEN by
+ * default).
  */
 @JsonHandler(value = TermExtractor.Marshaller.class)
-public class TermExtractor extends MultiPhaseExtractor<TermExtractor> {
+@EqualsAndHashCode(callSuper = true)
+public class TermExtractor extends MultiPhaseExtractor {
    private static final long serialVersionUID = 1L;
 
-   public static TermExtractor termExtractor(@NonNull Consumer<Builder> consumer) {
-      Builder builder = builder();
-      consumer.accept(builder);
-      return builder.build();
-   }
-
-   protected TermExtractor(AnnotationType[] annotationTypes,
-                           LyreExpression filter,
-                           String prefix,
-                           LyreExpression toString,
-                           LyreExpression trim,
-                           ValueCalculator valueCalculator) {
+   private TermExtractor(AnnotationType[] annotationTypes,
+                         LyreExpression filter,
+                         String prefix,
+                         LyreExpression toString,
+                         LyreExpression trim,
+                         ValueCalculator valueCalculator) {
       super(annotationTypes, filter, prefix, toString, trim, valueCalculator);
    }
 
+   /**
+    * @return A term extractor builder
+    */
    public static Builder builder() {
       return new Builder();
    }
 
    @Override
    protected Stream<HString> createStream(HString hString) {
-      return hString.interleaved(getAnnotationTypes()).stream().map(Cast::as);
+      return hString.interleaved(getAnnotationTypes())
+                    .stream()
+                    .map(Cast::as);
    }
 
    @Override
@@ -71,16 +71,19 @@ public class TermExtractor extends MultiPhaseExtractor<TermExtractor> {
       return builder().fromExtractor(this);
    }
 
+   /**
+    * Builder Class for constructing {@link TermExtractor}
+    */
    public static class Builder extends MultiPhaseExtractorBuilder<TermExtractor, Builder> {
 
       @Override
       public TermExtractor build() {
          return new TermExtractor(annotationTypes, filter, prefix, toString, trim, valueCalculator);
       }
-   }
+   }//END OF Builder
 
    /**
-    * Marshaller for reading/writing LyreExpressions to and from json
+    * Marshaller for reading/writing TermExtractor to and from json
     */
    public static class Marshaller extends com.gengoai.json.JsonMarshaller<TermExtractor> {
 

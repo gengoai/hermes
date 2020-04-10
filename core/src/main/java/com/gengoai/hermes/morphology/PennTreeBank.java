@@ -21,27 +21,48 @@ package com.gengoai.hermes.morphology;
 
 import com.gengoai.annotation.Preload;
 
-import static com.gengoai.hermes.morphology.Feature.*;
-import static com.gengoai.hermes.morphology.Value.*;
+import static com.gengoai.hermes.morphology.UniversalFeature.*;
+import static com.gengoai.hermes.morphology.UniversalFeatureValue.*;
 import static com.gengoai.tuple.Tuples.$;
 import static com.gengoai.hermes.morphology.PartOfSpeech.*;
 
+/**
+ * Part-of-speech tags defined by Penn Treebank
+ */
 @Preload
 public final class PennTreeBank {
    //--------------------------------------------------------------------------------------------------------------
    // Phrase Tags
    //--------------------------------------------------------------------------------------------------------------
-   public static final PartOfSpeech VP = create("VP", "VP", VERB, true);
    public static final PartOfSpeech NP = create("NP", "NP", NOUN, true);
-   public static final PartOfSpeech ADJP = create("ADJP", "ADJP", ADJECTIVE, true);
    public static final PartOfSpeech PP = create("PP", "PP", ADPOSITION, true);
+   public static final PartOfSpeech VP = create("VP", "VP", VERB, true);
    public static final PartOfSpeech ADVP = create("ADVP", "ADVP", ADVERB, true);
+   public static final PartOfSpeech ADJP = create("ADJP", "ADJP", ADJECTIVE, true);
    public static final PartOfSpeech SBAR = create("SBAR", "SBAR", SCONJ, true);
-   public static final PartOfSpeech CONJP = create("CONJP", "CONJP", CCONJ, true);
    public static final PartOfSpeech PRT = create("PRT", "PRT", PARTICLE, true);
    public static final PartOfSpeech INTJ = create("INTJ", "INTJ", INTERJECTION, true);
+
+   //--------------------------------------------------------------------------------------------------------------
+   // Constituency Parse Tags
+   //--------------------------------------------------------------------------------------------------------------
+   public static final PartOfSpeech QP = create("QP", "QP", NOUN, true);
+   public static final PartOfSpeech WHADJP = create("WHADJP", "WHADJP", ADJECTIVE, true);
+   public static final PartOfSpeech WHADVP = create("WHADVP", "WHADVP", ADVERB, true);
+   public static final PartOfSpeech WHNP = create("WHNP", "WHNP", NOUN, true);
+   public static final PartOfSpeech WHPP = create("WHPP", "WHPP", ADPOSITION, true);
+   public static final PartOfSpeech PRN = create("PRN", "PRN", OTHER, true);
+   public static final PartOfSpeech FRAG = create("FRAG", "FRAG", OTHER, true);
+   public static final PartOfSpeech NAC = create("NAC", "NAC", OTHER, true);
+   public static final PartOfSpeech NX = create("NX", "NX", NOUN, true);
+   public static final PartOfSpeech RRC = create("RRC", "RRC", CCONJ, true);
+   public static final PartOfSpeech S = create("S", "S", OTHER, true);
    public static final PartOfSpeech LST = create("LST", "LST", OTHER, true);
    public static final PartOfSpeech UCP = create("UCP", "UCP", CCONJ, true);
+   public static final PartOfSpeech CONJP = create("CONJP", "CONJP", CCONJ, true);
+   public static final PartOfSpeech SBARQ = create("SBARQ", "SBARQ", SCONJ, true);
+   public static final PartOfSpeech SINV = create("SINV", "SINV", OTHER, true);
+   public static final PartOfSpeech SQ = create("SQ", "SQ", OTHER, true);
 
    //--------------------------------------------------------------------------------------------------------------
    // Symbols
@@ -55,58 +76,58 @@ public final class PennTreeBank {
    // Punctuation
    //--------------------------------------------------------------------------------------------------------------
    public static final PartOfSpeech QUOTE = create("QUOTE", "\"", PUNCTUATION, false,
-                                                   $(PunctType, PUNCTUATION_TYPE_QUOTE));
+                                                   $(PunctType, Quot));
    public static final PartOfSpeech COLON = create("COLON", ":", PUNCTUATION, false,
-                                                   $(PunctType, PUNCTUATION_TYPE_COLON));
+                                                   $(PunctType, Colo));
    public static final PartOfSpeech COMMA = create("COMMA", ",", PUNCTUATION, false,
-                                                   $(PunctType, PUNCTUATION_TYPE_COMMA));
+                                                   $(PunctType, Comm));
    public static final PartOfSpeech LCB = create("LCB", "-LCB-", PUNCTUATION, false,
-                                                 $(PunctType, PUNCTUATION_TYPE_BRACKET));
+                                                 $(PunctType, Brck));
    public static final PartOfSpeech LRB = create("LRB", "-LRB-", PUNCTUATION, false,
-                                                 $(PunctType, PUNCTUATION_TYPE_BRACKET));
+                                                 $(PunctType, Brck));
    public static final PartOfSpeech LSB = create("LSB", "-LSB-", PUNCTUATION, false,
-                                                 $(PunctType, PUNCTUATION_TYPE_BRACKET));
+                                                 $(PunctType, Brck));
    public static final PartOfSpeech RCB = create("RCB", "-RCB-", PUNCTUATION, false,
-                                                 $(PunctType, PUNCTUATION_TYPE_BRACKET));
+                                                 $(PunctType, Brck));
    public static final PartOfSpeech RRB = create("RRB", "-RRB-", PUNCTUATION, false,
-                                                 $(PunctType, PUNCTUATION_TYPE_BRACKET));
+                                                 $(PunctType, Brck));
    public static final PartOfSpeech RSB = create("RSB", "-RSB-", PUNCTUATION, false,
-                                                 $(PunctType, PUNCTUATION_TYPE_BRACKET));
+                                                 $(PunctType, Brck));
    public static final PartOfSpeech PERIOD = create("PERIOD", ".", PUNCTUATION, false,
-                                                    $(PunctType, PUNCTUATION_TYPE_PERIOD));
+                                                    $(PunctType, Peri));
    public static final PartOfSpeech HYPH = create("HYPH", "-", PUNCTUATION, false,
-                                                  $(PunctType, PUNCTUATION_TYPE_DASH));
+                                                  $(PunctType, Dash));
 
    //--------------------------------------------------------------------------------------------------------------
    // Adjectives
    //--------------------------------------------------------------------------------------------------------------
    public static final PartOfSpeech AFX = create("AFX", "AFX", ADJECTIVE, false,
-                                                 $(Hyphenated, YES));
+                                                 $(Hyph, Yes));
    public static final PartOfSpeech JJ = create("JJ", "JJ", ADJECTIVE, false,
-                                                $(Degree, DEGREE_POSITIVE)); // Adjective
+                                                $(Degree, Pos)); // Adjective
    public static final PartOfSpeech JJR = create("JJR", "JJR", ADJECTIVE, false,
-                                                 $(Degree, DEGREE_COMPARATIVE)); //Adjective, comparative
+                                                 $(Degree, Cmp)); //Adjective, comparative
    public static final PartOfSpeech JJS = create("JJS", "JJS", ADJECTIVE, false,
-                                                 $(Degree, DEGREE_SUPERLATIVE)); //Adjective, superlative
+                                                 $(Degree, Sup)); //Adjective, superlative
 
    //--------------------------------------------------------------------------------------------------------------
    // NOUNS
    //--------------------------------------------------------------------------------------------------------------
    public static final PartOfSpeech NN = create("NN", "NN", NOUN, false,
-                                                $(Number, NUMBER_SINGULAR));
-   public static final PartOfSpeech NNP = create("NNP", "NNP", NOUN, false,
-                                                 $(Number, NUMBER_SINGULAR)); //Proper noun, singular
-   public static final PartOfSpeech NNPS = create("NNPS", "NNPS", NOUN, false,
-                                                  $(Number, NUMBER_PLURAL)); //Proper noun, plural
+                                                $(Number, Sing));
+   public static final PartOfSpeech NNP = create("NNP", "NNP", PROPER_NOUN, false,
+                                                 $(Number, Sing)); //Proper noun, singular
+   public static final PartOfSpeech NNPS = create("NNPS", "NNPS", PROPER_NOUN, false,
+                                                  $(Number, Plur)); //Proper noun, plural
    public static final PartOfSpeech NNS = create("NNS", "NNS", NOUN, false,
-                                                 $(Number, NUMBER_PLURAL));
+                                                 $(Number, Plur));
 
 
    //--------------------------------------------------------------------------------------------------------------
    // NUMERALS
    //--------------------------------------------------------------------------------------------------------------
    public static final PartOfSpeech CD = create("CD", "CD", NUMERAL, false,
-                                                $(NumType, NUMBER_TYPE_CARDINAL));
+                                                $(NumType, Card));
 
 
    //--------------------------------------------------------------------------------------------------------------
@@ -123,27 +144,27 @@ public final class PennTreeBank {
    public static final PartOfSpeech DT = create("DT", "DT", DETERMINER, false);
    public static final PartOfSpeech PDT = create("PDT", "PDT", DETERMINER, false); //Predeterminer
    public static final PartOfSpeech WDT = create("WDT", "WDT", DETERMINER, false,
-                                                 $(PronType, PRONOUN_TYPE_INDEFINITE),
-                                                 $(PronType, PRONOUN_TYPE_RELATIVE));//Wh-determiner
+                                                 $(PronType, Ind),
+                                                 $(PronType, Rel));//Wh-determiner
    public static final PartOfSpeech WP$ = create("WP$", "WP$", DETERMINER, false,
-                                                 $(Poss, YES),
-                                                 $(PronType, PRONOUN_TYPE_INDEFINITE),
-                                                 $(PronType, PRONOUN_TYPE_RELATIVE)); //Possessive wh-pronoun
+                                                 $(Poss, Yes),
+                                                 $(PronType, Ind),
+                                                 $(PronType, Rel)); //Possessive wh-pronoun
    public static final PartOfSpeech PRP$ = create("PRP$", "PRP$", DETERMINER, false,
-                                                  $(Poss, YES),
-                                                  $(PronType, PRONOUN_TYPE_PERSONAL)); //Possessive pronoun
+                                                  $(Poss, Yes),
+                                                  $(PronType, Prs)); //Possessive pronoun
 
 
    //--------------------------------------------------------------------------------------------------------------
    // PRONOUNS
    //--------------------------------------------------------------------------------------------------------------
    public static final PartOfSpeech EX = create("EX", "EX", PRONOUN, false,
-                                                $(AdvType, ADVERB_TYPE_EXISTENTIAL));
+                                                $(AdvType, Ex));
    public static final PartOfSpeech PRP = create("PRP", "PRP", PRONOUN, false,
-                                                 $(PronType, PRONOUN_TYPE_PERSONAL)); //Personal pronoun
+                                                 $(PronType, Prs)); //Personal pronoun
    public static final PartOfSpeech WP = create("WP", "WP", PRONOUN, false,
-                                                $(PronType, PRONOUN_TYPE_INDEFINITE),
-                                                $(PronType, PRONOUN_TYPE_RELATIVE)); //Wh-pronoun
+                                                $(PronType, Ind),
+                                                $(PronType, Rel)); //Wh-pronoun
 
    //--------------------------------------------------------------------------------------------------------------
    // ADPOSITION
@@ -157,28 +178,28 @@ public final class PennTreeBank {
    // VERBS
    //--------------------------------------------------------------------------------------------------------------
    public static final PartOfSpeech MD = create("MD", "MD", VERB, false,
-                                                $(VerbType, VERB_TYPE_MODAL));
+                                                $(VerbType, Mod));
    public static final PartOfSpeech VB = create("VB", "VB", VERB, false,
-                                                $(VerbForm, VERB_FORM_INFINITIVE));
+                                                $(VerbForm, Inf));
    public static final PartOfSpeech VBD = create("VBD", "VBD", VERB, false,
-                                                 $(VerbForm, VERB_FORM_FINITE),
-                                                 $(Tense, TENSE_PAST));
+                                                 $(VerbForm, Fin),
+                                                 $(Tense, Past));
    public static final PartOfSpeech VBG = create("VBG", "VBG", VERB, false,
-                                                 $(Aspect, ASPECT_PROGRESSIVE),
-                                                 $(VerbForm, VERB_FORM_PARTICIPLE),
-                                                 $(Tense, TENSE_PRESENT));
+                                                 $(Aspect, Prog),
+                                                 $(VerbForm, Part),
+                                                 $(Tense, Pres));
    public static final PartOfSpeech VBN = create("VBN", "VBN", VERB, false,
-                                                 $(Aspect, ASPECT_PERFECT),
-                                                 $(VerbForm, VERB_FORM_PARTICIPLE),
-                                                 $(Tense, TENSE_PAST));
+                                                 $(Aspect, Perf),
+                                                 $(VerbForm, Part),
+                                                 $(Tense, Past));
    public static final PartOfSpeech VBP = create("VBP", "VBP", VERB, false,
-                                                 $(VerbForm, VERB_FORM_FINITE),
-                                                 $(Tense, TENSE_PRESENT));
+                                                 $(VerbForm, Fin),
+                                                 $(Tense, Pres));
    public static final PartOfSpeech VBZ = create("VBZ", "VBZ", VERB, false,
-                                                 $(Number, NUMBER_SINGULAR),
-                                                 $(Person, PERSON_3),
-                                                 $(VerbForm, VERB_FORM_FINITE),
-                                                 $(Tense, TENSE_PRESENT));
+                                                 $(Number, Sing),
+                                                 $(Person, Third),
+                                                 $(VerbForm, Fin),
+                                                 $(Tense, Pres));
 
 
 
@@ -187,35 +208,35 @@ public final class PennTreeBank {
    // OTHER
    //--------------------------------------------------------------------------------------------------------------
    public static final PartOfSpeech FW = create("FW", "FW", OTHER, false,
-                                                $(Foreign, YES));
+                                                $(Foreign, Yes));
    public static final PartOfSpeech NIL = create("NIL", "NIL", OTHER, false);
    public static final PartOfSpeech LS = create("LS", "LS", OTHER, false,
-                                                $(NumType, NUMBER_TYPE_ORDINAL));
+                                                $(NumType, Ord));
 
 
    //--------------------------------------------------------------------------------------------------------------
    // PARTICLES
    //--------------------------------------------------------------------------------------------------------------
    public static final PartOfSpeech POS = create("POS", "POS", PARTICLE, false,
-                                                 $(Poss, YES));
+                                                 $(Poss, Yes));
    public static final PartOfSpeech RP = create("RP", "RP", PARTICLE, false,
-                                                $(PartType, PARTICLE_TYPE_SEPARATED_VERB_PREFIX));
+                                                $(PartType, Vbp));
    public static final PartOfSpeech TO = create("TO", "TO", PARTICLE, false,
-                                                $(PartType, PARTICLE_TYPE_INFINITIVE),
-                                                $(VerbForm, VERB_FORM_INFINITIVE));
+                                                $(PartType, Inf),
+                                                $(VerbForm, Inf));
 
    //--------------------------------------------------------------------------------------------------------------
    // ADVERBS
    //--------------------------------------------------------------------------------------------------------------
    public static final PartOfSpeech RB = create("RB", "RB", ADVERB, false,
-                                                $(Degree, DEGREE_POSITIVE));
+                                                $(Degree, Pos));
    public static final PartOfSpeech RBR = create("RBR", "RBR", ADVERB, false,
-                                                 $(Degree, DEGREE_COMPARATIVE));
+                                                 $(Degree, Cmp));
    public static final PartOfSpeech RBS = create("RBS", "RBS", ADVERB, false,
-                                                 $(Degree, DEGREE_SUPERLATIVE));
+                                                 $(Degree, Sup));
    public static final PartOfSpeech WRB = create("WRB", "WRB", ADVERB, false,
-                                                 $(PronType, PRONOUN_TYPE_INDEFINITE),
-                                                 $(PronType, PRONOUN_TYPE_RELATIVE));
+                                                 $(PronType, Ind),
+                                                 $(PronType, Rel));
 
    //--------------------------------------------------------------------------------------------------------------
    // INTERJECTIONS

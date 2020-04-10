@@ -65,10 +65,10 @@ public class AnnotatorCacheTest {
     assertNotEquals(DummyTokenAnnotator.class, AnnotatorCache.getInstance().get(Types.TOKEN, Language.CHINESE).getClass());
   }
 
-  private static class DummyTokenAnnotator implements Annotator {
+  private static class DummyTokenAnnotator extends Annotator {
 
     @Override
-    public void annotate(Document document) {
+    public void annotateImpl(Document document) {
 
     }
 

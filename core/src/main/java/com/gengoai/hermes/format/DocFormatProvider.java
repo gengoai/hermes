@@ -19,16 +19,36 @@
 
 package com.gengoai.hermes.format;
 
+/**
+ * <p>A provider for {@link DocFormat} for use within Java's service loader framework. Each provider defines the
+ * name of the format to identify the document format to read and to use the format with one-per-line, you can append
+ * "_opl" to the format name.  </p>
+ */
 public interface DocFormatProvider {
 
+   /**
+    * Creates an instance of the provided {@link DocFormat} with the given set of {@link DocFormatParameters}
+    *
+    * @param parameters the format parameters
+    * @return the doc format
+    */
    DocFormat create(DocFormatParameters parameters);
 
+   /**
+    * @return the default DocFormatParameters
+    */
    default DocFormatParameters getDefaultFormatParameters() {
       return new DocFormatParameters();
    }
 
+   /**
+    * @return the format name used to identify it when constructing document collections.
+    */
    String getName();
 
+   /**
+    * @return True if this format supports writing, False if not.
+    */
    boolean isWriteable();
 
 }//END OF DocFormatProvider

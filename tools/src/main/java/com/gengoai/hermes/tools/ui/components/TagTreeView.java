@@ -19,246 +19,111 @@
 
 package com.gengoai.hermes.tools.ui.components;
 
-import com.gengoai.HierarchicalEnumValue;
 import com.gengoai.Tag;
 import com.gengoai.collection.Iterables;
 import com.gengoai.conversion.Cast;
 import com.gengoai.string.Strings;
-import com.gengoai.swing.ColorUtils;
-import com.gengoai.swing.components.FilterableTreeView;
+import com.gengoai.swing.Colors;
+import com.gengoai.swing.component.view.MangoFilteredTreeView;
+import lombok.Getter;
 import lombok.NonNull;
 
-import javax.swing.*;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.DefaultTreeCellRenderer;
-import javax.swing.tree.DefaultTreeModel;
-import javax.swing.tree.TreePath;
+import javax.swing.JTree;
+import javax.swing.SwingConstants;
+import javax.swing.UIManager;
+import javax.swing.tree.*;
 import java.awt.Component;
 import java.awt.Font;
-import java.awt.KeyboardFocusManager;
-import java.awt.image.BufferedImage;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import java.awt.event.MouseEvent;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import static com.gengoai.swing.component.listener.SwingListeners.mouseClicked;
 
 /**
  * The type Tag tree view.
  */
-public class TagTreeView extends FilterableTreeView {
+public class TagTreeView extends MangoFilteredTreeView {
    private final Map<Tag, DefaultMutableTreeNode> tag2View = new HashMap<>();
-   private TagModel tagModel = null;
-   private String[] nonRootTags;
-   @NonNull
-   private Vector<Consumer<TagInfo>> selectActions = new Vector<>();
-   @NonNull
-   private Supplier<Boolean> canPerformShortcut = () -> true;
+   @Getter
+   private AnnotationLayer annotationLayer;
 
    /**
     * Instantiates a new Tag tree view.
+    *
+    * @param annotationLayer the annotation layer
     */
-   public TagTreeView() {
+   public TagTreeView(@NonNull AnnotationLayer annotationLayer) {
       super((filter, tagInfo) -> {
-         return Cast.<TagInfo>as(tagInfo).getTag().name().toLowerCase().contains(filter.toLowerCase());
+         return Cast.<Tag>as(tagInfo).name().toLowerCase().contains(filter.toLowerCase());
       });
-      setCellRenderer(new CustomCellRenderer())
-            .singleSelectionModel()
-            .removeAllKeyListeners()
-            .onMouseClicked(($, e) -> {
-               if(e.isControlDown()) {
-                  TreePath tp = $.getSelectionPath();
-                  if(tp != null) {
-                     DefaultMutableTreeNode node = Cast.as(tp.getLastPathComponent());
-                     performSelectionTag(Cast.as(node.getUserObject()));
-                  }
-               }
-            });
+      setCellRenderer(new CustomCellRenderer());
+      getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
+      addMouseListener(mouseClicked(this::onMouseClick));
+      setAnnotationLayer(annotationLayer);
    }
 
-   private DefaultMutableTreeNode createTreeItem(TagInfo tagInfo) {
-      var treeItem = new DefaultMutableTreeNode(tagInfo);
-      if(tagInfo.getShortcut() != null) {
-         KeyboardFocusManager.getCurrentKeyboardFocusManager()
-                             .addKeyEventDispatcher(e -> {
-                                if(canPerformShortcut.get()) {
-                                   KeyStroke ks = KeyStroke.getKeyStrokeForEvent(e);
-                                   if(tagInfo.getShortcut().equals(ks)) {
-                                      final DefaultMutableTreeNode node = tag2View.get(tagInfo.getTag());
-                                      setSelectionPath(new TreePath(node.getPath()));
-                                      performSelectionTag(tagInfo);
-                                   }
-                                }
-                                return false;
-                             });
-      }
-      return treeItem;
-   }
-
-   /**
-    * Gets node for.
-    *
-    * @param tagInfo the tag info
-    * @return the node for
-    */
-   public DefaultMutableTreeNode getNodeFor(TagInfo tagInfo) {
-      return tag2View.get(tagInfo.getTag());
-   }
-
-   /**
-    * Gets node for.
-    *
-    * @param tag the tag
-    * @return the node for
-    */
-   public DefaultMutableTreeNode getNodeFor(Tag tag) {
-      return tag2View.get(tag);
-   }
-
-   /**
-    * Gets selected tag info.
-    *
-    * @return the selected tag info
-    */
-   public TagInfo getSelectedTagInfo() {
-      if(getSelectionPath() != null) {
-         return Cast.as(Cast.<DefaultMutableTreeNode>as(getSelectionPath().getLastPathComponent()).getUserObject());
-      }
-      return tagModel.getTagInfo(getFilterText());
-   }
-
-   /**
-    * Gets tag model.
-    *
-    * @return the tag model
-    */
-   public TagModel getTagModel() {
-      return tagModel;
-   }
-
-   /**
-    * Get tags string [ ].
-    *
-    * @return the string [ ]
-    */
-   public String[] getTags() {
-      return nonRootTags;
-   }
-
-   /**
-    * On tag select tag tree view.
-    *
-    * @param selectFunction the select function
-    * @return the tag tree view
-    */
-   public TagTreeView onTagSelect(@NonNull Consumer<TagInfo> selectFunction) {
-      selectActions.add(selectFunction);
-      return this;
-   }
-
-   private void performSelectionTag(TagInfo tagInfo) {
-      for(Consumer<TagInfo> selectAction : selectActions) {
-         selectAction.accept(tagInfo);
+   private void onMouseClick(MouseEvent e) {
+      if(e.getButton() == 1) {
+         TreePath tp = getSelectionPath();
+         if(tp != null) {
+            DefaultMutableTreeNode node = Cast.as(tp.getLastPathComponent());
+            fireItemSelection(node.getUserObject());
+         }
       }
    }
 
    /**
-    * Sets can perform shortcut.
+    * Sets annotation layer.
     *
-    * @param canPerformShortcut the can perform shortcut
+    * @param layer the layer
     */
-   public void setCanPerformShortcut(Supplier<Boolean> canPerformShortcut) {
-      this.canPerformShortcut = canPerformShortcut;
-   }
-
-   /**
-    * Sets tag model.
-    *
-    * @param newTagModel the new tag model
-    */
-   public void setTagModel(TagModel newTagModel) {
-      this.tagModel = newTagModel;
-      updateView();
-      setAutocomplete(Arrays.asList(nonRootTags));
-   }
-
-   private void updateView() {
-      DefaultMutableTreeNode ROOT;
+   public void setAnnotationLayer(@NonNull AnnotationLayer layer) {
+      this.annotationLayer = layer;
+      final Set<Tag> validTags = layer.getValidTags();
       tag2View.clear();
-      final DefaultTreeModel model = Cast.as(getModel());
-      if(tagModel.getRoots().size() == 1) {
-         TagInfo ti = Iterables.getFirst(tagModel.getRoots(), null);
-         ROOT = createTreeItem(ti);
-         tag2View.put(ti.getTag(), ROOT);
+      final Set<Tag> rootNodes = new HashSet<>();
+      for(Tag tag : validTags) {
+         tag2View.put(tag, new DefaultMutableTreeNode(tag));
+         if(tag.parent() == null || !validTags.contains(tag.parent())) {
+            rootNodes.add(tag);
+         }
+      }
+      for(Tag tag : validTags) {
+         if(tag.parent() != null && validTags.contains(tag.parent())) {
+            tag2View.get(tag.parent()).add(tag2View.get(tag));
+         }
+      }
+      final DefaultMutableTreeNode ROOT;
+      if(rootNodes.size() == 1) {
+         ROOT = tag2View.get(Iterables.getFirst(rootNodes, null));
       } else {
          ROOT = new DefaultMutableTreeNode();
-         for(TagInfo root : tagModel.getRoots()) {
-            DefaultMutableTreeNode node = createTreeItem(root);
-            tag2View.put(root.getTag(), node);
-            ROOT.add(node);
+         for(Tag rootNode : rootNodes) {
+            ROOT.add(tag2View.get(rootNode));
          }
       }
       setRoot(ROOT);
       setRootVisible(false);
-      final List<String> tags = new ArrayList<>();
-      for(TagInfo n : tagModel) {
-         if(tag2View.containsKey(n.getTag())) {
-            continue;
-         }
-         Tag p = n.parent();
-         while(!tag2View.containsKey(p)) {
-            p = Cast.<HierarchicalEnumValue<?>>as(p).parent();
-         }
-         DefaultMutableTreeNode ti = tag2View.get(p);
-         DefaultMutableTreeNode node = createTreeItem(n);
-         tag2View.put(n.getTag(), node);
-         ti.add(node);
-         if(node != ROOT) {
-            tags.add(n.toString());
-         }
-      }
+      final DefaultTreeModel model = Cast.as(getModel());
       model.nodeStructureChanged(ROOT);
       for(int i = 0; i < getRowCount(); i++) {
          expandRow(i);
       }
-      nonRootTags = tags.toArray(new String[0]);
+      setAutocomplete(annotationLayer.getValidTagLabels());
    }
 
-   /**
-    * The type Custom cell renderer.
-    */
-   static class CustomCellRenderer extends DefaultTreeCellRenderer {
-      private Icon createIcon(TagInfo ti) {
-         int w = 15;
-         int h = 15;
-         Font font = new Font(Font.DIALOG, Font.BOLD, 12);
-         String shortcut = null;
-         if(ti.getShortcut() != null) {
-            shortcut = ti.getShortcut().toString().replaceAll("pressed", "");
-            w = getFontMetrics(font).stringWidth(shortcut) + 6;
-            h = h + 5;
-         }
-
-         BufferedImage image = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
-         var g = image.getGraphics();
-         g.setColor(ti.getColor());
-         g.fillRect(0, 0, w, h);
-
-         if(Strings.isNotNullOrBlank(shortcut)) {
-            g.setFont(font);
-            g.setColor(ColorUtils.calculateBestFontColor(ti.getColor()));
-            int y = h - font.getSize() / 2 + 1;
-            g.drawString(shortcut, 2, y);
-         }
-
-         return new ImageIcon(image);
-      }
+   private class CustomCellRenderer extends DefaultTreeCellRenderer {
 
       public Component getTreeCellRendererComponent(JTree tree,
                                                     Object value, boolean sel, boolean expanded, boolean leaf,
                                                     int row, boolean hasFocus) {
          super.getTreeCellRendererComponent(tree, value, sel, expanded, leaf, row, hasFocus);
          DefaultMutableTreeNode node = Cast.as(value);
-         if(node.getUserObject() instanceof TagInfo) {
-            TagInfo nodeObj = Cast.as(node.getUserObject());
+         if(node.getUserObject() instanceof Tag) {
+            Tag nodeObj = Cast.as(node.getUserObject());
             if(nodeObj == null) {
                return this;
             }
@@ -267,9 +132,26 @@ public class TagTreeView extends FilterableTreeView {
                   Font.BOLD,
                   getFont().getSize()
             ));
-            setLeafIcon(null);
-            setIcon(createIcon(nodeObj));
-            setHorizontalAlignment(SwingConstants.CENTER);
+
+            setIcon(null);
+            setIconTextGap(4);
+            int indent = 0;
+            if(node.getParent() == tree.getModel().getRoot()) {
+               setIcon(expanded
+                       ? UIManager.getIcon("Tree.expandedIcon")
+                       : UIManager.getIcon("Tree.collapsedIcon"));
+            } else {
+               indent = 1;
+            }
+
+            setText("<html>" +
+                          Strings.repeat("&nbsp;", indent) +
+                          "<span style='background:" +
+                          Colors.toHexString(annotationLayer.getColor(nodeObj)) +
+                          "'>&nbsp;&nbsp;</span>&nbsp;" +
+                          nodeObj.label() +
+                          "</html>");
+            setHorizontalAlignment(SwingConstants.LEFT);
          }
          return this;
       }

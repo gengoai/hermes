@@ -27,36 +27,27 @@ import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.Document;
 import com.gengoai.hermes.Types;
 
-import java.io.Serializable;
 import java.util.Collections;
 import java.util.Set;
 
 /**
- * <p>
- * Annotates a document a sentence at a time.
- * </p>
+ * Base for annotators that work at the sentence level.
  *
  * @author David B. Bracewell
  */
-public abstract class SentenceLevelAnnotator implements Annotator, Serializable {
+public abstract class SentenceLevelAnnotator extends Annotator {
    private static final long serialVersionUID = 1L;
-
-   @Override
-   public final void annotate(Document document) {
-      document.sentences().forEach(this::annotate);
-   }
 
    /**
     * Annotates a single sentence.
     *
     * @param sentence The sentence to annotate
     */
-   public abstract void annotate(Annotation sentence);
-
+   protected abstract void annotate(Annotation sentence);
 
    @Override
-   public final Set<AnnotatableType> requires() {
-      return Sets.union(Sets.hashSetOf(Types.SENTENCE, Types.TOKEN), furtherRequires());
+   protected final void annotateImpl(Document document) {
+      document.sentences().forEach(this::annotate);
    }
 
    /**
@@ -66,6 +57,11 @@ public abstract class SentenceLevelAnnotator implements Annotator, Serializable 
     */
    protected Set<AnnotatableType> furtherRequires() {
       return Collections.emptySet();
+   }
+
+   @Override
+   public final Set<AnnotatableType> requires() {
+      return Sets.union(Sets.hashSetOf(Types.SENTENCE, Types.TOKEN), furtherRequires());
    }
 
 }//END OF SentenceLevelAnnotator

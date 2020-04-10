@@ -60,7 +60,6 @@ public class RakeKeywordExtractor implements KeywordExtractor {
       this(LyreDSL.lower);
    }
 
-
    /**
     * Instantiates a new Rake keyword extractor.
     *
@@ -83,14 +82,14 @@ public class RakeKeywordExtractor implements KeywordExtractor {
       source.sentenceStream().forEach(sentence -> {
          List<HString> buffer = new ArrayList<>();
          sentence.tokenStream().forEach(token -> {
-            if (stopWords.isStopWord(token) && !buffer.isEmpty()) {
+            if(stopWords.isStopWord(token) && !buffer.isEmpty()) {
                spans.add(HString.union(buffer));
                buffer.clear();
-            } else if (!stopWords.isStopWord(token)) {
+            } else if(!stopWords.isStopWord(token)) {
                buffer.add(token);
             }
          });
-         if (buffer.size() > 0) {
+         if(buffer.size() > 0) {
             spans.add(HString.union(buffer));
          }
       });
@@ -109,12 +108,11 @@ public class RakeKeywordExtractor implements KeywordExtractor {
       Counter<String> phraseScores = Counters.newCounter();
       spans.forEach(span -> {
          double score = 0;
-         for (Annotation word : span.tokens()) {
+         for(Annotation word : span.tokens()) {
             score += wordScores.get(toStringExpression.apply(word));
          }
          phraseScores.increment(toStringExpression.apply(span), score);
       });
-
 
       return Extraction.fromCounter(phraseScores);
    }
@@ -123,6 +121,5 @@ public class RakeKeywordExtractor implements KeywordExtractor {
    public void fit(Corpus corpus) {
 
    }
-
 
 }//END OF RakeKeywordExtractor

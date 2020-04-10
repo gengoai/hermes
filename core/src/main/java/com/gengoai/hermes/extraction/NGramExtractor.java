@@ -24,7 +24,6 @@ package com.gengoai.hermes.extraction;
 
 import com.gengoai.Validation;
 import com.gengoai.annotation.JsonHandler;
-import com.gengoai.stream.Streams;
 import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.AnnotationType;
@@ -32,6 +31,7 @@ import com.gengoai.hermes.HString;
 import com.gengoai.hermes.extraction.lyre.LyreExpression;
 import com.gengoai.hermes.ml.feature.ValueCalculator;
 import com.gengoai.json.JsonEntry;
+import com.gengoai.stream.Streams;
 import com.gengoai.tuple.Tuple;
 import com.gengoai.tuple.Tuple0;
 import lombok.Getter;
@@ -39,7 +39,6 @@ import lombok.NonNull;
 
 import java.lang.reflect.Type;
 import java.util.*;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -47,69 +46,70 @@ import java.util.stream.Stream;
 import static com.gengoai.tuple.Tuples.$;
 
 /**
+ * A {@link MultiPhaseExtractor} implementation that extracts n-grams over the desired annotation types. In addition to
+ * the standard extraction methods, this extractor provides the {@link #extractStringTuples(HString)} method for
+ * returning a list of String tuples of the extractions.
+ *
  * @author David B. Bracewell
  */
 @Getter
 @JsonHandler(value = NGramExtractor.Marshaller.class)
-public class NGramExtractor extends MultiPhaseExtractor<NGramExtractor> {
+public class NGramExtractor extends MultiPhaseExtractor {
    private static final long serialVersionUID = 1L;
-   private int maxOrder = 1;
-   private int minOrder = 1;
+   private int maxOrder;
+   private int minOrder;
 
-   public NGramExtractor(int minOrder,
-                         int maxOrder,
-                         AnnotationType[] annotationTypes,
-                         LyreExpression filter,
-                         String prefix,
-                         LyreExpression toString,
-                         LyreExpression trim,
-                         ValueCalculator valueCalculator) {
+   private NGramExtractor(int minOrder,
+                          int maxOrder,
+                          AnnotationType[] annotationTypes,
+                          LyreExpression filter,
+                          String prefix,
+                          LyreExpression toString,
+                          LyreExpression trim,
+                          ValueCalculator valueCalculator) {
       super(annotationTypes, filter, prefix, toString, trim, valueCalculator);
       this.minOrder = minOrder;
       this.maxOrder = maxOrder;
    }
 
-   public static NGramExtractor bigrams(Consumer<Builder> consumer) {
-      return nGramExtractor(builder(2), consumer);
-   }
-
+   /**
+    * @return @return An builder initialized for bigrams
+    */
    public static Builder bigrams() {
       return builder(2, 2);
    }
 
+   /**
+    * @return @return An builder initialized for unigrams
+    */
    public static Builder builder() {
       return new Builder();
    }
 
+   /**
+    * Creates a builder initialized to extract n-grams of the given order.
+    *
+    * @param n the n-gram order
+    * @return the builder
+    */
    public static Builder builder(int n) {
       return new Builder().minOrder(n);
    }
 
+   /**
+    * Creates a builder initialized to extract n-grams ranging from the given minimum to the given maximum order.
+    *
+    * @param minOrder the minimum order
+    * @param maxOrder the maximum order
+    * @return the builder
+    */
    public static Builder builder(int minOrder, int maxOrder) {
       return new Builder().minOrder(minOrder).maxOrder(maxOrder);
    }
 
-   public static NGramExtractor nGramExtractor(int n, Consumer<Builder> consumer) {
-      return nGramExtractor(builder(n), consumer);
-   }
-
-   public static NGramExtractor nGramExtractor(int minOrder, int maxOrder, Consumer<Builder> consumer) {
-      return nGramExtractor(builder(minOrder, maxOrder), consumer);
-   }
-
-   public static NGramExtractor nGramExtractor(Consumer<Builder> consumer) {
-      return nGramExtractor(builder(), consumer);
-   }
-
-   private static NGramExtractor nGramExtractor(Builder builder, @NonNull Consumer<Builder> consumer) {
-      consumer.accept(builder);
-      return builder.build();
-   }
-
-   public static NGramExtractor trigrams(Consumer<Builder> consumer) {
-      return nGramExtractor(builder(3), consumer);
-   }
-
+   /**
+    * @return An builder initialized for trigrams
+    */
    public static Builder trigrams() {
       return builder(3, 3);
    }
@@ -119,6 +119,12 @@ public class NGramExtractor extends MultiPhaseExtractor<NGramExtractor> {
       return Streams.asStream(new NGramHStringIterator(hString.interleaved(getAnnotationTypes())));
    }
 
+   /**
+    * Extracts NGrams as a List of String tuples.
+    *
+    * @param hString the input text
+    * @return the list of String tuples
+    */
    public List<Tuple> extractStringTuples(@NonNull HString hString) {
       return tupleStream(hString).map(t -> t.mapValues(getToString()::applyAsString))
                                  .collect(Collectors.toList());
@@ -130,7 +136,7 @@ public class NGramExtractor extends MultiPhaseExtractor<NGramExtractor> {
    }
 
    @Override
-   public JsonEntry toJson() {
+   protected JsonEntry toJson() {
       return super.toJson()
                   .addProperty("minOrder", minOrder)
                   .addProperty("maxOrder", maxOrder);
@@ -139,40 +145,42 @@ public class NGramExtractor extends MultiPhaseExtractor<NGramExtractor> {
    @Override
    public String toString() {
       return "NGramExtractor{" +
-         "maxOrder=" + maxOrder +
-         ", minOrder=" + minOrder +
-         ", annotationTypes=" + Arrays.toString(getAnnotationTypes()) +
-         ", toString=" + getToString() +
-         ", filter=" + getFilter() +
-         ", trim=" + getTrim() +
-         ", valueCalculator=" + getValueCalculator() +
-         '}';
+            "maxOrder=" + maxOrder +
+            ", minOrder=" + minOrder +
+            ", annotationTypes=" + Arrays.toString(getAnnotationTypes()) +
+            ", toString=" + getToString() +
+            ", filter=" + getFilter() +
+            ", trim=" + getTrim() +
+            ", valueCalculator=" + getValueCalculator() +
+            '}';
    }
 
    private Stream<Tuple> tupleStream(HString string) {
       List<Annotation> annotations;
-      if (getAnnotationTypes().length > 1) {
+      if(getAnnotationTypes().length > 1) {
          annotations = string.interleaved(getAnnotationTypes());
       } else {
          annotations = string.annotations(getAnnotationTypes()[0]);
       }
       Stream<Tuple> stream = Streams.asStream(new NGramTupleIterator(annotations));
-      if (getTrim() != null) {
+      if(getTrim() != null) {
          stream = stream.map(h -> {
             Tuple t = Tuple0.INSTANCE;
-            for (Object o : h) {
+            for(Object o : h) {
                HString anno = Cast.as(o);
-               if (!getTrim().test(anno)) {
+               if(!getTrim().test(anno)) {
                   t = t.appendRight(anno);
                }
             }
             return t;
          }).filter(t -> t.degree() > 0);
       }
-      if (getFilter() != null) {
+      if(getFilter() != null) {
          Predicate<HString> p = getFilter().negate();
          stream = stream.filter(t -> {
-            HString union = t.degree() == 1 ? t.get(0) : HString.union(t.get(0), t.get(t.degree() - 1));
+            HString union = t.degree() == 1
+                            ? t.get(0)
+                            : HString.union(t.get(0), t.get(t.degree() - 1));
             return p.test(union);
          });
       }
@@ -180,6 +188,9 @@ public class NGramExtractor extends MultiPhaseExtractor<NGramExtractor> {
       return stream;
    }
 
+   /**
+    * Builder Class for constructing {@link NGramExtractor}
+    */
    public static class Builder extends MultiPhaseExtractorBuilder<NGramExtractor, Builder> {
       private int maxOrder = 1;
       private int minOrder = 1;
@@ -193,7 +204,7 @@ public class NGramExtractor extends MultiPhaseExtractor<NGramExtractor> {
       }
 
       @Override
-      public Builder fromExtractor(@NonNull MultiPhaseExtractor<NGramExtractor> extractor) {
+      public Builder fromExtractor(@NonNull MultiPhaseExtractor extractor) {
          NGramExtractor nge = Cast.as(extractor);
          return super.fromExtractor(extractor)
                      .minOrder(nge.minOrder)
@@ -207,6 +218,12 @@ public class NGramExtractor extends MultiPhaseExtractor<NGramExtractor> {
                      .maxOrder(entry.getIntProperty("maxOrder"));
       }
 
+      /**
+       * Sets the maximum n-gram order.
+       *
+       * @param maxOrder the max order
+       * @return this builder
+       */
       public Builder maxOrder(int maxOrder) {
          Validation.checkArgument(maxOrder > 0, "Max Order must be greater than 0");
          this.maxOrder = maxOrder;
@@ -214,6 +231,12 @@ public class NGramExtractor extends MultiPhaseExtractor<NGramExtractor> {
          return this;
       }
 
+      /**
+       * Sets the minimum n-gram order.
+       *
+       * @param minOrder the min order
+       * @return this builder
+       */
       public Builder minOrder(int minOrder) {
          Validation.checkArgument(minOrder > 0, "Min Order must be greater than 0");
          this.minOrder = minOrder;
@@ -223,7 +246,7 @@ public class NGramExtractor extends MultiPhaseExtractor<NGramExtractor> {
    }
 
    /**
-    * Marshaller for reading/writing LyreExpressions to and from json
+    * Marshaller for reading/writing NGramExtractor to and from json
     */
    public static class Marshaller extends com.gengoai.json.JsonMarshaller<NGramExtractor> {
 
@@ -249,10 +272,10 @@ public class NGramExtractor extends MultiPhaseExtractor<NGramExtractor> {
       }
 
       private boolean advance() {
-         while (i < annotations.size() && buffer.isEmpty()) {
-            for (int j = i + getMinOrder() - 1; j < annotations.size() && j < i + getMaxOrder(); j++) {
+         while(i < annotations.size() && buffer.isEmpty()) {
+            for(int j = i + getMinOrder() - 1; j < annotations.size() && j < i + getMaxOrder(); j++) {
                HString union = annotations.get(i).union(annotations.get(j));
-               if (!union.isEmpty()) {
+               if(!union.isEmpty()) {
                   buffer.add(union);
                }
             }
@@ -268,7 +291,7 @@ public class NGramExtractor extends MultiPhaseExtractor<NGramExtractor> {
 
       @Override
       public HString next() {
-         if (!advance()) {
+         if(!advance()) {
             throw new NoSuchElementException();
          }
          return buffer.removeFirst();
@@ -286,16 +309,16 @@ public class NGramExtractor extends MultiPhaseExtractor<NGramExtractor> {
       }
 
       private Tuple add(Tuple tuple) {
-         if (tuple.degree() >= getMinOrder() && tuple.degree() <= getMaxOrder()) {
+         if(tuple.degree() >= getMinOrder() && tuple.degree() <= getMaxOrder()) {
             buffer.add(tuple.copy());
          }
          return tuple;
       }
 
       private boolean advance() {
-         while (i < annotations.size() && buffer.isEmpty()) {
+         while(i < annotations.size() && buffer.isEmpty()) {
             Tuple tuple = add($(annotations.get(i)));
-            for (int j = 1; j <= getMaxOrder() && j + i < annotations.size(); j++) {
+            for(int j = 1; j <= getMaxOrder() && j + i < annotations.size(); j++) {
                tuple = add(tuple.appendRight(annotations.get(j + i)));
             }
             i++;
@@ -310,7 +333,7 @@ public class NGramExtractor extends MultiPhaseExtractor<NGramExtractor> {
 
       @Override
       public Tuple next() {
-         if (!advance()) {
+         if(!advance()) {
             throw new NoSuchElementException();
          }
          return buffer.removeFirst();

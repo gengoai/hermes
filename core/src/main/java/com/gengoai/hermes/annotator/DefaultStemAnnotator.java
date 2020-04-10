@@ -21,28 +21,27 @@
 
 package com.gengoai.hermes.annotator;
 
+import com.gengoai.Language;
 import com.gengoai.collection.Sets;
 import com.gengoai.hermes.AnnotatableType;
 import com.gengoai.hermes.Document;
 import com.gengoai.hermes.Types;
 import com.gengoai.hermes.morphology.Stemmers;
 
-import java.io.Serializable;
 import java.util.Collections;
 import java.util.Set;
 
 /**
- * <p>
- * Sets the stem attribute of each token in the document
- * </p>
+ * Default Stem annotator that uses the {@link com.gengoai.hermes.morphology.Stemmer} registered with the
+ * token's language to perform stemming.
  *
  * @author David B. Bracewell
  */
-public class DefaultStemAnnotator implements Annotator, Serializable {
+public class DefaultStemAnnotator extends Annotator {
    private static final long serialVersionUID = 1L;
 
    @Override
-   public void annotate(Document document) {
+   protected void annotateImpl(Document document) {
       document.tokens().parallelStream()
               .forEach(token -> {
                  String stem = Stemmers.getStemmer(token.getLanguage()).stem(token);
@@ -51,8 +50,8 @@ public class DefaultStemAnnotator implements Annotator, Serializable {
    }
 
    @Override
-   public Set<AnnotatableType> satisfies() {
-      return Collections.singleton(Types.STEM);
+   public String getProvider(Language language) {
+      return Stemmers.getStemmer(language).getClass().getSimpleName();
    }
 
    @Override
@@ -60,5 +59,10 @@ public class DefaultStemAnnotator implements Annotator, Serializable {
       return Sets.hashSetOf(Types.TOKEN);
    }
 
-}//END OF StemAnnotator
+   @Override
+   public Set<AnnotatableType> satisfies() {
+      return Collections.singleton(Types.STEM);
+   }
+
+}//END OF DefaultStemAnnotator
 

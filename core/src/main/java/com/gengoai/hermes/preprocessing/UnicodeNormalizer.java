@@ -26,7 +26,7 @@ import com.gengoai.Language;
 import com.gengoai.string.Strings;
 
 /**
- * The type Unicode normalizer.
+ * <p>Converts unicode to canonical form and removes smart quotes.</p>
  *
  * @author David B. Bracewell
  */

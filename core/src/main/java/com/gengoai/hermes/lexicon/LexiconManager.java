@@ -22,13 +22,13 @@
 package com.gengoai.hermes.lexicon;
 
 import com.gengoai.Language;
-import com.gengoai.Tag;
 import com.gengoai.Validation;
 import com.gengoai.cache.Cache;
 import com.gengoai.cache.LRUCache;
-import com.gengoai.conversion.Cast;
 import com.gengoai.function.Unchecked;
-import com.gengoai.hermes.*;
+import com.gengoai.hermes.HString;
+import com.gengoai.hermes.Hermes;
+import com.gengoai.hermes.ResourceType;
 import lombok.NonNull;
 import lombok.extern.java.Log;
 
@@ -51,28 +51,23 @@ public final class LexiconManager implements Serializable {
    private static final Lexicon EmptyLexicon = new Lexicon() {
 
       @Override
+      public void add(LexiconEntry lexiconEntry) {
+
+      }
+
+      @Override
       public boolean contains(String string) {
          return false;
       }
 
       @Override
-      public Set<LexiconEntry<?>> entries(String lemma) {
+      public Set<LexiconEntry> entries() {
          return Collections.emptySet();
       }
 
       @Override
-      public Set<LexiconEntry<?>> entries() {
+      public Set<LexiconEntry> get(String word) {
          return Collections.emptySet();
-      }
-
-      @Override
-      public List<LexiconEntry<?>> getEntries(HString hString) {
-         return Collections.emptyList();
-      }
-
-      @Override
-      public List<LexiconEntry<?>> getEntries(String hString) {
-         return Collections.emptyList();
       }
 
       @Override
@@ -86,8 +81,8 @@ public final class LexiconManager implements Serializable {
       }
 
       @Override
-      public AttributeType<Tag> getTagAttributeType() {
-         return Cast.as(Types.TAG);
+      public String getName() {
+         return "EMPTY";
       }
 
       @Override
@@ -113,6 +108,16 @@ public final class LexiconManager implements Serializable {
       @Override
       public Iterator<String> iterator() {
          return Collections.emptyIterator();
+      }
+
+      @Override
+      public List<LexiconEntry> match(HString string) {
+         return Collections.emptyList();
+      }
+
+      @Override
+      public List<LexiconEntry> match(String hString) {
+         return Collections.emptyList();
       }
 
       @Override

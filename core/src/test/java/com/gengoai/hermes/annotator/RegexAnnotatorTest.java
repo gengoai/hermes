@@ -39,10 +39,10 @@ public class RegexAnnotatorTest {
     Config.initializeTest();
     Document document = DocumentProvider.getAnnotatedDocument();
     RegexAnnotator annotator = new RegexAnnotator("(?i)alice", Types.ENTITY);
-    annotator.annotate(document);
+    annotator.annotateImpl(document);
     assertEquals(4.0, document.annotations(Types.ENTITY).size(), 0d);
     annotator = new RegexAnnotator("(?i)alice", "PERSON");
-    annotator.annotate(document);
+    annotator.annotateImpl(document);
     assertEquals(4.0, document.annotations(AnnotationType.make("PERSON")).size(), 0d);
 
   }

@@ -21,7 +21,7 @@
 
 package com.gengoai.hermes.annotator;
 
-import com.gengoai.MultithreadedStopwatch;
+import com.gengoai.Language;
 import com.gengoai.hermes.AnnotatableType;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.Document;
@@ -29,34 +29,31 @@ import com.gengoai.hermes.Types;
 import com.gengoai.hermes.morphology.Tokenizer;
 import com.gengoai.hermes.morphology.Tokenizers;
 
-import java.io.Serializable;
 import java.util.Collections;
 import java.util.Set;
 
 /**
- * <p>
- * A <code>BreakIterator</code> backed token annotator. The locale used for the break iterator is based on the language
- * of the document.
- * </p>
+ * Default token annotator that uses the {@link com.gengoai.hermes.morphology.Tokenizer} registered with the
+ * token's language to perform tokenization.
  *
  * @author David B. Bracewell
  */
-public class DefaultTokenAnnotator implements Annotator, Serializable {
+public class DefaultTokenAnnotator extends Annotator {
    private static final long serialVersionUID = 1L;
-   private final MultithreadedStopwatch stopwatch = new MultithreadedStopwatch("Annotator.DefaultTokenAnnotator");
-
 
    @Override
-   public void annotate(Document document) {
-      stopwatch.start();
+   protected void annotateImpl(Document document) {
       Tokenizer tokenizer = Tokenizers.getTokenizer(document.getLanguage());
       for(Tokenizer.Token token : tokenizer.tokenize(document.toString())) {
          Annotation aToken = document.createAnnotation(Types.TOKEN, token.charStartIndex, token.charEndIndex,
                                                        token.properties);
          aToken.put(Types.TOKEN_TYPE, token.type);
       }
-      BaseWordCategorization.INSTANCE.categorize(document);
-      stopwatch.stop();
+   }
+
+   @Override
+   public String getProvider(Language language) {
+      return Tokenizers.getTokenizer(language).getClass().getSimpleName();
    }
 
    @Override

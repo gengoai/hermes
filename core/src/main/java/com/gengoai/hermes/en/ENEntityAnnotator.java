@@ -30,10 +30,16 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Set;
 
+/**
+ * Default Entity annotator for English
+ */
 public class ENEntityAnnotator extends SubTypeAnnotator implements Serializable {
    private static final long serialVersionUID = 1L;
    private final DefaultTokenTypeEntityAnnotator tokenTypeEntityAnnotator = new DefaultTokenTypeEntityAnnotator();
 
+   /**
+    * Instantiates a new ENEntityAnnotator.
+    */
    public ENEntityAnnotator() {
       super(Types.ENTITY, false, Arrays.asList(Types.TOKEN_TYPE_ENTITY, Types.ML_ENTITY));
    }

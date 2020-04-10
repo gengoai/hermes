@@ -21,20 +21,19 @@
 
 package com.gengoai.hermes.preprocessing;
 
-
 import com.gengoai.Language;
 import com.gengoai.string.Strings;
 
 /**
- * The type Diacritical mark normalizer.
+ * <p>Removes diacritics</p>
  *
  * @author David B. Bracewell
  */
 public class DiacriticalMarkNormalizer extends TextNormalizer {
-  private static final long serialVersionUID = 1L;
+   private static final long serialVersionUID = 1L;
 
-  @Override
-  public String performNormalization(String input, Language inputLanguage) {
-    return Strings.removeDiacritics(input);
-  }
+   @Override
+   public String performNormalization(String input, Language inputLanguage) {
+      return Strings.removeDiacritics(input);
+   }
 }//END OF DiacriticalMarkNormalizer

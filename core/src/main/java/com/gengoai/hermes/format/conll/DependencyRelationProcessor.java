@@ -46,7 +46,7 @@ public class DependencyRelationProcessor implements CoNLLColumnProcessor {
 
    @Override
    public String getFieldName() {
-      return "DEPENDENCY_RELATION";
+      return "DEP_REL";
    }
 
    @Override

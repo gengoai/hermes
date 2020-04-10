@@ -21,7 +21,6 @@
 
 package com.gengoai.hermes.annotator;
 
-
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.Document;
 import com.gengoai.hermes.HString;
@@ -52,29 +51,30 @@ public abstract class ViterbiAnnotator extends SentenceLevelAnnotator {
    }
 
    @Override
-   public final void annotate(Annotation sentence) {
+   protected final void annotate(Annotation sentence) {
       List<Annotation> tokens = sentence.tokens();
       int n = tokens.size();
-      int maxLen = maxSpanSize > 0 ? maxSpanSize : n;
+      int maxLen = maxSpanSize > 0
+                   ? maxSpanSize
+                   : n;
       LexiconMatch[] matches = new LexiconMatch[n + 1];
       double[] best = new double[n + 1];
       best[0] = 1.0;
 
-
-      for (int i = 1; i <= n; i++) {
-         for (int j = i - 1; j >= 0 && j >= (i - maxLen); j--) {
+      for(int i = 1; i <= n; i++) {
+         for(int j = i - 1; j >= 0 && j >= (i - maxLen); j--) {
             int w = i - j;
             HString span = HString.union(tokens.subList(j, i));
             LexiconEntry score = scoreSpan(span);
             double segmentScore = combineScore(best[i - w], score.getProbability());
-            if (segmentScore >= best[i]) {
+            if(segmentScore >= best[i]) {
                best[i] = segmentScore;
                matches[i] = new LexiconMatch(span, score);
             }
          }
       }
       int i = n;
-      while (i > 0) {
+      while(i > 0) {
          createAndAttachAnnotation(sentence.document(), matches[i]);
          i = i - matches[i].getSpan().tokenLength();
       }
@@ -107,6 +107,5 @@ public abstract class ViterbiAnnotator extends SentenceLevelAnnotator {
     * @return The score of the span
     */
    protected abstract LexiconEntry scoreSpan(HString span);
-
 
 }//END OF ViterbiAnnotator

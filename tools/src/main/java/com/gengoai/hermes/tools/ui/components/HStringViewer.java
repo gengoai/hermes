@@ -46,12 +46,11 @@ import com.gengoai.hermes.AnnotationType;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Types;
 import com.gengoai.string.Strings;
-import com.gengoai.swing.ColorUtils;
-import com.gengoai.swing.components.AutoExpandAction;
-import com.gengoai.swing.components.BaseHighlightedRangeViewer;
-import com.gengoai.swing.components.StyledSpan;
-import com.gengoai.swing.listeners.SwingListeners;
-import com.gengoai.tuple.IntPair;
+import com.gengoai.swing.Colors;
+import com.gengoai.swing.component.MangoStyledSpanTextPane;
+import com.gengoai.swing.component.StyledSpan;
+import com.gengoai.swing.component.listener.AutoExpandAction;
+import com.gengoai.swing.component.listener.SwingListeners;
 
 import javax.swing.Action;
 import javax.swing.InputMap;
@@ -66,39 +65,40 @@ import java.util.stream.Collectors;
 
 import static com.gengoai.tuple.Tuples.$;
 
-public class HStringViewer extends BaseHighlightedRangeViewer<HStringViewer> {
+public class HStringViewer extends MangoStyledSpanTextPane {
    private final HString context;
    private final Map<KeyStroke, Action> actions = Maps.hashMapOf(
          $(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
-           SwingListeners.action("SelectFirstToken", e -> setSelectionRange(getSelectionStart(), getSelectionStart()))),
+           SwingListeners.fluentAction("SelectFirstToken",
+                                       e -> setSelectionRange(getSelectionStart(), getSelectionStart()))),
          $(KeyStroke.getKeyStroke(KeyEvent.VK_HOME, 0),
-           SwingListeners.action("SelectFirstToken", e -> selectFirstToken())),
+           SwingListeners.fluentAction("SelectFirstToken", e -> selectFirstToken())),
          $(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, 0),
-           SwingListeners.action("SelectNextToken", e -> nextSelection())),
+           SwingListeners.fluentAction("SelectNextToken", e -> nextSelection())),
          $(KeyStroke.getKeyStroke(KeyEvent.VK_UP, 0),
-           SwingListeners.action("SelectPreviousToken", e -> selectUp())),
+           SwingListeners.fluentAction("SelectPreviousToken", e -> selectUp())),
          $(KeyStroke.getKeyStroke(KeyEvent.VK_DOWN, 0),
-           SwingListeners.action("SelectPreviousToken", e -> selectDown())),
+           SwingListeners.fluentAction("SelectPreviousToken", e -> selectDown())),
          $(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, 0),
-           SwingListeners.action("SelectPreviousToken", e -> prevSelection())),
+           SwingListeners.fluentAction("SelectPreviousToken", e -> prevSelection())),
          $(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, KeyEvent.SHIFT_DOWN_MASK),
-           SwingListeners.action("ExpandNextToken", e -> nextSelectionExpand())),
+           SwingListeners.fluentAction("ExpandNextToken", e -> nextSelectionExpand())),
          $(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, KeyEvent.SHIFT_DOWN_MASK),
-           SwingListeners.action("ExpandPreviousToken", e -> prevSelectionExpand())),
+           SwingListeners.fluentAction("ExpandPreviousToken", e -> prevSelectionExpand())),
          $(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, KeyEvent.CTRL_DOWN_MASK),
-           SwingListeners.action("ExpandNextAnnotation", e -> nextAnnotationSelection())),
+           SwingListeners.fluentAction("ExpandNextAnnotation", e -> nextAnnotationSelection())),
          $(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, KeyEvent.CTRL_DOWN_MASK),
-           SwingListeners.action("ExpandPreviousToken", e -> previousAnnotationSelection())),
+           SwingListeners.fluentAction("ExpandPreviousToken", e -> previousAnnotationSelection())),
          $(KeyStroke.getKeyStroke(KeyEvent.VK_LEFT, KeyEvent.CTRL_DOWN_MASK + KeyEvent.SHIFT_DOWN_MASK),
-           SwingListeners.action("ExpandPreviousToken", e -> shrinkRight())),
+           SwingListeners.fluentAction("ExpandPreviousToken", e -> shrinkRight())),
          $(KeyStroke.getKeyStroke(KeyEvent.VK_RIGHT, KeyEvent.CTRL_DOWN_MASK + KeyEvent.SHIFT_DOWN_MASK),
-           SwingListeners.action("ExpandPreviousToken", e -> shrinkLeft()))
+           SwingListeners.fluentAction("ExpandPreviousToken", e -> shrinkLeft()))
                                                                 );
 
    public HStringViewer(HString document) {
       this.context = document;
       setText(document.toString());
-      keepHighlightWhenFocusLost();
+      setAlwaysHighlight(true);
       defaultHighlightStyle.foreground(getBackground()).background(getForeground());
       var input = new InputMap();
       actions.forEach(input::put);
@@ -109,7 +109,7 @@ public class HStringViewer extends BaseHighlightedRangeViewer<HStringViewer> {
       for(Tag tag : annotationLayer.getValidTags()) {
          final Color color = annotationLayer.getColor(tag);
          addStyle(tag.label(),
-                  s -> s.foreground(ColorUtils.calculateBestFontColor(color))
+                  s -> s.foreground(Colors.calculateBestFontColor(color))
                         .background(color)
                         .bold(true));
       }
@@ -119,7 +119,7 @@ public class HStringViewer extends BaseHighlightedRangeViewer<HStringViewer> {
    public HStringViewer addStylesFrom(TagModel tagModel) {
       for(TagInfo t : tagModel) {
          addStyle(t.toString(),
-                  s -> s.foreground(ColorUtils.calculateBestFontColor(t.getColor()))
+                  s -> s.foreground(Colors.calculateBestFontColor(t.getColor()))
                         .background(t.getColor())
                         .bold(true));
       }
@@ -131,7 +131,7 @@ public class HStringViewer extends BaseHighlightedRangeViewer<HStringViewer> {
       if(event.isAltDown()) {
          return;
       }
-      IntPair span;
+      Span span;
       if(context.document().isCompleted(Types.TOKEN)) {
          span = expandOnTokens(getSelectionStart(),
                                getSelectionEnd(),
@@ -139,25 +139,25 @@ public class HStringViewer extends BaseHighlightedRangeViewer<HStringViewer> {
                                getBestMatchingSelectedStyledSpan(),
                                event);
       } else if(context.getLanguage().usesWhitespace()) {
-         span = AutoExpandAction.expandOnWhiteSpace.expand(getSelectionStart(),
-                                                           getSelectionEnd(),
-                                                           getText(),
-                                                           getBestMatchingSelectedStyledSpan());
+         span = AutoExpandAction.contiguousNonWhitespace.expand(getSelectionStart(),
+                                                                getSelectionEnd(),
+                                                                getText(),
+                                                                getBestMatchingSelectedStyledSpan());
       } else {
          return;
       }
-      setSelectionRange(span.v1, span.v2);
+      setSelectionRange(span.start(), span.end());
    }
 
-   private IntPair expandOnTokens(int start, int end, String text, StyledSpan span, MouseEvent event) {
+   private Span expandOnTokens(int start, int end, String text, StyledSpan span, MouseEvent event) {
       HString hSpan = HString.union(getAnnotations(Types.TOKEN, start, end));
       if(event.isControlDown() || hSpan.isEmpty()) {
-         return IntPair.of(start, end);
+         return Span.of(start, end);
       }
       if(span != null && span.encloses(hSpan)) {
-         return IntPair.of(span.start(), span.end());
+         return span;
       }
-      return IntPair.of(hSpan.start() - context.start(), hSpan.end() - context.start());
+      return Span.of(hSpan.start() - context.start(), hSpan.end() - context.start());
    }
 
    public List<Annotation> getAnnotations(AnnotationType annotationType, int start, int end) {

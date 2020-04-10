@@ -21,10 +21,9 @@
 
 package com.gengoai.hermes.extraction.regex;
 
-import com.gengoai.StringTag;
 import com.gengoai.config.Config;
 import com.gengoai.hermes.*;
-import com.gengoai.hermes.lexicon.Lexicon;
+import com.gengoai.hermes.lexicon.LexiconEntry;
 import com.gengoai.hermes.lexicon.LexiconManager;
 import com.gengoai.hermes.lexicon.TrieLexicon;
 import com.gengoai.hermes.morphology.PartOfSpeech;
@@ -80,9 +79,8 @@ public class TokenRegexTest {
               .attribute(Types.ENTITY_TYPE, Entities.LOCATION)
               .createAttached();
 
-      Lexicon lexicon = TrieLexicon.builder(AttributeType.make("DUMMY_TAG"), false)
-                                   .add("seashore", new StringTag("BY_THE_SEA"))
-                                   .build();
+      TrieLexicon lexicon = new TrieLexicon("TEST", false);
+      lexicon.add(LexiconEntry.of("seashore", "BY_THE_SEA", 1));
       LexiconManager.register("testing.lexicon", lexicon);
 
    }
@@ -154,7 +152,7 @@ public class TokenRegexTest {
    @Test
    public void testGroups() throws Exception {
       TokenMatcher matcher = TokenRegex.compile("(?<PERSON> #NOUN+) (?<ACTION> #VERB+) (?<PERSON> #NOUN+)").matcher(
-         document);
+            document);
       assertTrue(matcher.find());
       assertEquals(1.0, matcher.group("ACTION").size(), 0d);
       assertEquals("met", matcher.group("ACTION").get(0).toString());
@@ -178,7 +176,7 @@ public class TokenRegexTest {
    @Test
    public void testLogic() throws Exception {
       TokenMatcher matcher = TokenRegex.compile(
-         " (#NOUN & /^[JS]/) | ( '12:30pm' (?> 'yesterday') ) | @ENTITY( #PERSON )")
+            " (#NOUN & /^[JS]/) | ( '12:30pm' (?> 'yesterday') ) | @ENTITY( #PERSON )")
                                        .matcher(document);
       assertTrue(matcher.find());
       assertEquals("John", matcher.group().toString());
@@ -201,7 +199,7 @@ public class TokenRegexTest {
    public void testLookAhead() throws Exception {
       //Lookahead
       TokenMatcher matcher = TokenRegex.compile("( /^john$/i | /^sally$/i ) (?> (#VERB | #ADPOSITION))").matcher(
-         document);
+            document);
       assertTrue(matcher.find());
       assertEquals("John", matcher.group().toString());
       assertTrue(matcher.find());

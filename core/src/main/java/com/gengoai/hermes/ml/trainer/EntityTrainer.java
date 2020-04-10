@@ -28,16 +28,15 @@ import com.gengoai.apollo.ml.sequence.Crf;
 import com.gengoai.apollo.ml.sequence.SequenceLabeler;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.annotator.BaseWordCategorization;
 import com.gengoai.hermes.corpus.DocumentCollection;
-import com.gengoai.hermes.ml.BIOTaggerTrainer;
+import com.gengoai.hermes.ml.IOBTaggerTrainer;
 import lombok.NonNull;
 
 import static com.gengoai.hermes.ml.feature.Features.*;
 import static com.gengoai.hermes.ml.feature.PredefinedFeatures.lenientContext;
 import static com.gengoai.hermes.ml.feature.PredefinedFeatures.strictContext;
 
-public class EntityTrainer extends BIOTaggerTrainer {
+public class EntityTrainer extends IOBTaggerTrainer {
 
    public EntityTrainer() {
       super(Types.ML_ENTITY, Types.ENTITY);
@@ -45,8 +44,7 @@ public class EntityTrainer extends BIOTaggerTrainer {
 
    @Override
    public ExampleDataset createDataset(@NonNull DocumentCollection data) {
-      final BaseWordCategorization categorization = new BaseWordCategorization();
-      return data.update(categorization::categorize)
+      return data.annotate(Types.CATEGORY)
                  .asDataset(getSequenceGenerator(), DatasetType.InMemory);
    }
 

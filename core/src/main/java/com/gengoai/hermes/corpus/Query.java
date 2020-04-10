@@ -214,13 +214,10 @@ public abstract class Query implements Serializable {
 
       @Override
       public String toString() {
-         switch(field) {
-            case CONTENT_FIELD:
-               return targetValue.toString();
-            default:
-               return String.format("$%s(%s)", field, targetValue);
-
+         if(CONTENT_FIELD.equals(field)) {
+            return targetValue.toString();
          }
+         return String.format("$%s='%s'", field, targetValue);
       }
 
    }

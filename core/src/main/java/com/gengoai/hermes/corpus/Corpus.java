@@ -47,21 +47,43 @@ import java.util.Set;
 
 /**
  * <p>
- * Represents a collection of documents each having a unique document ID. Corpus formats are  defined via corresponding
- * <code>CorpusFormat</code> objects, which are registered using Java's service loader functionality. When constructing
- * a corpus the format can be appended with <code>_OPL</code> to denote that individual file will have one document per
- * line in the given format. For example, TEXT_OPL would relate to a format where every line of a file equates to a
- * document in plain text format.
+ * A persistent collection of documents each having a unique document ID. In addition to the functionality provided by
+ * {@link DocumentCollection}, corpora allow:
+ * <ul>
+ *    <li>Access to individual documents via {@link #getDocument(String)}, {@link #remove(String)},
+ *    {@link #remove(Document)}, and {@link #update(Document)} methods.</li>
+ *    <li>Ability to add new documents via the {@link #add(Document)}, {@link #addAll(Iterable)}, and
+ *    {@link #importDocuments(String)} methods.</li>
+ *    <li>Aggregation of document level metadata via {@link #getAttributeValueCount(AttributeType)}</li>
+ *    <li>AnnotatableType completed at the corpus level via {@link #getCompleted()}</li>
+ *    <li>Aggregation of the document ids in the corpus via {@link #getIds()}</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Corpora are opened using the {@link #open(String)} or {@link #open(Resource)} methods which will load the appropriate
+ * corpus implementation based on the resource type.
  * </p>
  *
  * @author David B. Bracewell
  */
 public interface Corpus extends DocumentCollection {
 
+   /**
+    * Opens the corpus at the given resource.
+    *
+    * @param resource the resource pertaining to the corpus
+    * @return the corpus
+    */
    static Corpus open(@NonNull Resource resource) {
       return new LuceneCorpus(resource.asFile().orElseThrow());
    }
 
+   /**
+    * Opens the corpus at the given resource.
+    *
+    * @param resource the resource pertaining to the corpus
+    * @return the corpus
+    */
    static Corpus open(@NonNull String resource) {
       return open(Resources.from(resource));
    }
@@ -86,9 +108,9 @@ public interface Corpus extends DocumentCollection {
    @Override
    default Corpus annotate(@NonNull AnnotatableType... annotatableTypes) {
       AnnotationPipeline pipeline = new AnnotationPipeline(Sets.difference(Arrays.asList(annotatableTypes),
-                                                                           getCompletedAnnotations()));
+                                                                           getCompleted()));
       if(pipeline.requiresUpdate()) {
-         return update(pipeline::annotate);
+         return update("Annotate", pipeline::annotate);
       }
       return this;
    }
@@ -104,39 +126,35 @@ public interface Corpus extends DocumentCollection {
    }
 
    /**
-    * Compact corpus.
+    * Compacts the storage used for the corpus.
     *
-    * @return the corpus
+    * @return This corpus
     */
    default Corpus compact() {
       return this;
    }
 
    /**
-    * Gets attribute count.
+    * Gets a count of the values for the given attribute across documents in the corpus.
     *
-    * @param <T>  the type parameter
-    * @param type the type
-    * @return the attribute count
+    * @param <T>  the attribute value type parameter
+    * @param type the AttributeType we want to count
+    * @return A Counter over the attribute values.
     */
-   <T> Counter<T> getAttributeCount(@NonNull AttributeType<T> type);
+   <T> Counter<T> getAttributeValueCount(@NonNull AttributeType<T> type);
 
    /**
-    * Gets attribute types.
-    *
-    * @return the attribute types
+    * @return the set of attribute types found across the documents in the corpus
     */
-   Set<AttributeType<?>> getAttributeTypes();
+   Set<AttributeType<?>> getAttributes();
 
    /**
-    * Gets completed annotations.
-    *
-    * @return the completed annotations
+    * @return the set of completed AnnotatableType where completed means completed by every document in the corpus.
     */
-   Set<AnnotatableType> getCompletedAnnotations();
+   Set<AnnotatableType> getCompleted();
 
    /**
-    * Gets a document by id
+    * Gets the document with the given document id
     *
     * @param id the id of the document
     * @return the document or null if it doesn't exist
@@ -145,12 +163,22 @@ public interface Corpus extends DocumentCollection {
       return parallelStream().filter(d -> d.getId().equals(id)).first().orElse(null);
    }
 
+   /**
+    * @return the document ids of all documents in the corpus
+    */
    default List<String> getIds() {
       return parallelStream().map(Document::getId).sorted(true).collect();
    }
 
-   default Corpus importDocuments(@NonNull String inputSpecification) throws IOException {
-      Specification inSpec = Specification.parse(inputSpecification);
+   /**
+    * Imports documents from the given document collection specification.
+    *
+    * @param specification the document format specification with path to documents.
+    * @return the corpus
+    * @throws IOException Something went wrong loading the documents
+    */
+   default Corpus importDocuments(@NonNull String specification) throws IOException {
+      Specification inSpec = Specification.parse(specification);
       DocFormat format = DocFormatService.create(inSpec);
       addAll(format.read(Resources.from(inSpec.getPath())));
       return this;
@@ -190,11 +218,11 @@ public interface Corpus extends DocumentCollection {
    }
 
    @Override
-   Corpus update(@NonNull SerializableConsumer<Document> documentProcessor);
+   Corpus update(@NonNull String operation, @NonNull SerializableConsumer<Document> documentProcessor);
 
    @Override
-   default DocumentCollection update(@NonNull CaduceusProgram program) {
-      return this.update(program::execute);
+   default Corpus update(@NonNull CaduceusProgram program) {
+      return Cast.as(DocumentCollection.super.update(program));
    }
 
    /**

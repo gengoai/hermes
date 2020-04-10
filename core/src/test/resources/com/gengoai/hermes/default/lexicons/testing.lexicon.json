@@ -1,7 +1,8 @@
 {
   "@spec": {
     "caseSensitive": false,
-    "tagAttribute": "ENTITY_TYPE"
+    "tagAttribute": "ENTITY_TYPE",
+    "language": "ENGLISH"
   },
   "@entries": [
     {

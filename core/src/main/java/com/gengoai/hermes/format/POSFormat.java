@@ -24,8 +24,6 @@ import com.gengoai.hermes.Document;
 import com.gengoai.hermes.DocumentFactory;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.annotator.BaseWordCategorization;
-import com.gengoai.hermes.morphology.PartOfSpeech;
 import com.gengoai.hermes.morphology.PartOfSpeech;
 import com.gengoai.io.resource.Resource;
 import com.gengoai.string.Strings;
@@ -41,11 +39,15 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * <p>Format Name: <b>pos</b></p>
+ * <p>Format with words separated by whitespace and POS tags appended with an underscore, e.g. The_DT brown_JJ.</p>
+ */
 public class POSFormat extends WholeFileTextFormat implements OneDocPerFileFormat, Serializable {
    private static final long serialVersionUID = 1L;
    private final DocFormatParameters parameters;
 
-   public POSFormat(@NonNull DocFormatParameters parameters) {
+   POSFormat(@NonNull DocFormatParameters parameters) {
       this.parameters = parameters;
    }
 
@@ -82,7 +84,7 @@ public class POSFormat extends WholeFileTextFormat implements OneDocPerFileForma
       document.setCompleted(Types.SENTENCE, "PROVIDED");
       document.setCompleted(Types.TOKEN, "PROVIDED");
       document.setCompleted(Types.PART_OF_SPEECH, "PROVIDED");
-      BaseWordCategorization.INSTANCE.categorize(document);
+      document.annotate(Types.CATEGORY);
       return Stream.of(document);
    }
 
@@ -91,6 +93,9 @@ public class POSFormat extends WholeFileTextFormat implements OneDocPerFileForma
       outputResource.write(document.tokenStream().map(HString::toPOSString).collect(Collectors.joining(" ")));
    }
 
+   /**
+    * The type Provider.
+    */
    @MetaInfServices
    public static class Provider implements DocFormatProvider {
 

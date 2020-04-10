@@ -25,6 +25,7 @@ import com.gengoai.hermes.lexicon.DiskLexicon;
 import com.gengoai.hermes.lexicon.Lexicon;
 import com.gengoai.hermes.lexicon.LexiconIO;
 import com.gengoai.hermes.lexicon.LexiconSpecification;
+import com.gengoai.kv.KeyValueStoreConnection;
 
 public class csv2Lexicon extends CommandLineApplication {
 
@@ -41,23 +42,25 @@ public class csv2Lexicon extends CommandLineApplication {
    @Override
    protected void programLogic() throws Exception {
       LexiconSpecification csvSpec = LexiconSpecification.parse(csv);
-      if (!csvSpec.getFormat().equals("csv")) {
+      if(!csvSpec.getFormat().equals("csv")) {
          throw new IllegalStateException("Expecting CSV format, but found " + csvSpec.getFormat());
       }
 
       LexiconSpecification outSpec = LexiconSpecification.parse(lexicon);
-      if (outSpec.getProtocol().equals("mem")) {
+      if(outSpec.getProtocol().equals("mem")) {
          Lexicon out = csvSpec.create();
          LexiconIO.write(out, outSpec.getResource(), null);
       } else {
          Lexicon out = csvSpec.create();
-         DiskLexicon.DiskLexiconBuilder builder = DiskLexicon.builder(out.getTagAttributeType(), out.isCaseSensitive(),
-                                                                      outSpec.getName(),
-                                                                      outSpec.getResource());
+         KeyValueStoreConnection connection = new KeyValueStoreConnection();
+         connection.setReadOnly(false);
+         connection.setType("disk");
+         connection.setNavigable(true);
+         connection.setNamespace(outSpec.getName());
+         connection.setPath(outSpec.getResource().descriptor());
+         DiskLexicon builder = new DiskLexicon(connection, csvSpec.isCaseSensitive());
          builder.addAll(out.entries());
-         builder.build();
       }
-
 
    }
 }//END OF csv2Lexicon

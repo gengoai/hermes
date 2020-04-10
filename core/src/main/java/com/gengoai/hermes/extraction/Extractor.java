@@ -27,21 +27,21 @@ import com.gengoai.hermes.HString;
 import lombok.NonNull;
 
 /**
- * The interface Extractor.
+ * Fundamental to text mining in Hermes is the concept of a <code>Extractor<code> and the {@link Extraction} it
+ * produces. Extractors are responsible for taking an {@link HString} as input and producing an
+ * <code>Extraction</code>.
  *
  * @author David B. Bracewell
  */
 @JsonHandler(value = ExtractorMarshaller.class, isHierarchical = false)
 public interface Extractor {
 
-
    /**
-    * Extract extraction.
+    * Generate an {@link Extraction} from the given {@link HString}.
     *
-    * @param hString the h string
-    * @return the extraction
+    * @param hString the source text from which we will generate an Extraction
+    * @return the Extraction
     */
    Extraction extract(@NonNull HString hString);
-
 
 }//END OF Extractor

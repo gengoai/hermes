@@ -22,7 +22,6 @@
 
 package com.gengoai.hermes.corpus;
 
-import com.gengoai.Stopwatch;
 import com.gengoai.collection.counter.Counter;
 import com.gengoai.collection.counter.Counters;
 import com.gengoai.collection.multimap.Multimap;
@@ -58,14 +57,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.logging.Level;
 
-import static com.gengoai.LogUtils.log;
-import static com.gengoai.LogUtils.logInfo;
 import static com.gengoai.collection.Maps.hashMapOf;
 import static com.gengoai.tuple.Tuples.$;
 
@@ -75,7 +69,7 @@ import static com.gengoai.tuple.Tuples.$;
  * @author David B. Bracewell
  */
 @Log
-public class LuceneCorpus implements Corpus {
+class LuceneCorpus implements Corpus {
    /**
     * The Lucene Field used to store the completed annotations
     */
@@ -178,12 +172,12 @@ public class LuceneCorpus implements Corpus {
    }
 
    @Override
-   public <T> Counter<T> getAttributeCount(@NonNull AttributeType<T> type) {
+   public <T> Counter<T> getAttributeValueCount(@NonNull AttributeType<T> type) {
       return Counters.newCounter(count(type.name(), type::decode));
    }
 
    @Override
-   public Set<AttributeType<?>> getAttributeTypes() {
+   public Set<AttributeType<?>> getAttributes() {
       try(IndexReader reader = getIndexReader()) {
          final Set<AttributeType<?>> fieldNames = new HashSet<>();
          for(LeafReaderContext leaf : reader.leaves()) {
@@ -202,7 +196,7 @@ public class LuceneCorpus implements Corpus {
    }
 
    @Override
-   public Set<AnnotatableType> getCompletedAnnotations() {
+   public Set<AnnotatableType> getCompleted() {
       final long size = size();
       return count(ANNOTATIONS_FIELD, AnnotatableType::valueOf).filterByValue(d -> d >= size).items();
    }
@@ -458,31 +452,27 @@ public class LuceneCorpus implements Corpus {
       }
    }
 
-   private Corpus update(SerializablePredicate<Document> processor) {
-      final Stopwatch timer = Stopwatch.createStopped();
-      final UpdateConsumer consumer = new UpdateConsumer(processor, timer);
+   private Corpus update(String operation, SerializablePredicate<Document> processor) {
+      ProgressLogger progressLogger = ProgressLogger.create(this, operation);
+      final UpdateConsumer consumer = new UpdateConsumer(processor, progressLogger);
       Broker<Document> broker = Broker.<Document>builder()
             .addProducer(new IterableProducer<>(this))
             .bufferSize(10_000)
             .addConsumer(consumer, Runtime.getRuntime().availableProcessors() * 2)
             .build();
-      timer.start();
       broker.run();
-      timer.stop();
       try {
          consumer.writer.close();
       } catch(IOException e) {
          e.printStackTrace();
       }
-      logInfo(log,
-              "Documents/Second: {0}",
-              consumer.documentCounter.get() / timer.elapsed(TimeUnit.SECONDS));
+      progressLogger.report();
       return this;
    }
 
    @Override
-   public Corpus update(SerializableConsumer<Document> documentProcessor) {
-      return update(d -> {
+   public Corpus update(@NonNull String operation, @NonNull SerializableConsumer<Document> documentProcessor) {
+      return update(operation, d -> {
          documentProcessor.accept(d);
          return true;
       });
@@ -631,12 +621,8 @@ public class LuceneCorpus implements Corpus {
    }
 
    private class UpdateConsumer implements Consumer<Document> {
-      final AtomicLong documentCounter = new AtomicLong();
       private final SerializablePredicate<Document> documentProcessor;
-      private final Level logLevel = Config.get("Corpus.reportLevel").as(Level.class, Level.INFO);
-      private final long reportInterval = Config.get("Corpus.reportInterval").asLongValue(5_000);
-      private final Stopwatch stopwatch;
-      private final AtomicLong wordCounter = new AtomicLong();
+      private final ProgressLogger progressLogger;
       private final IndexWriter writer;
 
       /**
@@ -644,9 +630,10 @@ public class LuceneCorpus implements Corpus {
        *
        * @param documentProcessor the document processor
        */
-      public UpdateConsumer(@NonNull SerializablePredicate<Document> documentProcessor, @NonNull Stopwatch stopwatch) {
+      public UpdateConsumer(@NonNull SerializablePredicate<Document> documentProcessor,
+                            @NonNull ProgressLogger progressLogger) {
          this.documentProcessor = documentProcessor;
-         this.stopwatch = stopwatch;
+         this.progressLogger = progressLogger;
          try {
             this.writer = getIndexWriter();
          } catch(IOException e) {
@@ -656,30 +643,15 @@ public class LuceneCorpus implements Corpus {
 
       @Override
       public void accept(Document document) {
+         progressLogger.start();
          if(documentProcessor.test(document)) {
             try {
                writer.updateDocument(new Term(ID_FIELD, document.getId()), toDocument(document));
-               long docCount;
-               long wrdCount = wordCounter.addAndGet(document.tokenLength());
-               if((docCount = documentCounter.incrementAndGet()) % reportInterval == 0) {
-                  log(LuceneCorpus.log, logLevel, "Documents Update: {0}", docCount);
-                  if(stopwatch != null) {
-                     log(LuceneCorpus.log,
-                         logLevel,
-                         "Updating at {0} documents/second",
-                         docCount / stopwatch.elapsed(TimeUnit.SECONDS));
-                     if(wrdCount > 0) {
-                        log(LuceneCorpus.log,
-                            logLevel,
-                            "Updating at {0} words/second",
-                            wrdCount / stopwatch.elapsed(TimeUnit.SECONDS));
-                     }
-                  }
-               }
             } catch(IOException e) {
                throw new RuntimeException(e);
             }
          }
+         progressLogger.stop(document.tokenLength());
       }
 
    }

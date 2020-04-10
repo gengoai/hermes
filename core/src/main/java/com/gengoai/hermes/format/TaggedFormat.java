@@ -23,7 +23,6 @@ import com.gengoai.ParameterDef;
 import com.gengoai.conversion.Cast;
 import com.gengoai.conversion.Val;
 import com.gengoai.hermes.*;
-import com.gengoai.hermes.annotator.BaseWordCategorization;
 import com.gengoai.io.resource.Resource;
 import lombok.NonNull;
 import org.kohsuke.MetaInfServices;
@@ -39,6 +38,11 @@ import java.util.stream.Stream;
 import static com.gengoai.collection.Maps.hashMapOf;
 import static com.gengoai.tuple.Tuples.$;
 
+/**
+ * <p>Format Name: <b>tagged</b></p>
+ * <p>Format with words separated by whitespace and sequences labeled in SGML like tags, e.g. &lt;TAG&gt;My
+ * text&lt;/TAG&gt;. The annotation type of the tagged spans is set via the "annotationType" parameter.</p>
+ */
 public class TaggedFormat extends WholeFileTextFormat implements OneDocPerFileFormat, Serializable {
    private static final long serialVersionUID = 1L;
    private static final Pattern TAG_PATTERN = Pattern.compile("<([a-z_]+)>([^<>]+)</\\1>", Pattern.CASE_INSENSITIVE);
@@ -49,7 +53,7 @@ public class TaggedFormat extends WholeFileTextFormat implements OneDocPerFileFo
                                                                                          AnnotationType.class);
    private final TaggedParameters parameters;
 
-   public TaggedFormat(TaggedParameters parameters) {
+   TaggedFormat(TaggedParameters parameters) {
       this.parameters = parameters;
    }
 
@@ -90,7 +94,6 @@ public class TaggedFormat extends WholeFileTextFormat implements OneDocPerFileFo
                                                   .as(annotationType.getTagAttribute().getValueType())))
                                   );
       }
-      BaseWordCategorization.INSTANCE.categorize(document);
       return Stream.of(document);
    }
 
@@ -113,6 +116,9 @@ public class TaggedFormat extends WholeFileTextFormat implements OneDocPerFileFo
       outputResource.write(output.toString());
    }
 
+   /**
+    * The type Provider.
+    */
    @MetaInfServices
    public static class Provider implements DocFormatProvider {
 

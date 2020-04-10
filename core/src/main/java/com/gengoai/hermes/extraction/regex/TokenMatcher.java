@@ -19,7 +19,6 @@
 
 package com.gengoai.hermes.extraction.regex;
 
-
 import com.gengoai.Validation;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.HString;
@@ -28,7 +27,11 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * A token equivalent of <code>java.util.regex.Matcher</code>
+ * <p>
+ * The TokenMatcher class allows for iterating of the matches, extracting the match or named-groups within the match,
+ * the starting and ending offset of the match, and conversion into a TokenMatch object which records the current state
+ * of the match.
+ * </p>
  *
  * @author David B. Bracewell
  */
@@ -40,25 +43,12 @@ public class TokenMatcher {
    private TokenMatch match;
    private int start = 0;
 
-   /**
-    * Instantiates a new Token matcher.
-    *
-    * @param automaton the automaton
-    * @param input     the input
-    */
    TokenMatcher(NFA automaton, HString input) {
       this.automaton = automaton;
       this.input = input;
       this.tokens = input.tokens();
    }
 
-   /**
-    * Instantiates a new Token matcher.
-    *
-    * @param automaton the automaton
-    * @param input     the input
-    * @param start     the start
-    */
    TokenMatcher(NFA automaton, HString input, int start) {
       this.automaton = automaton;
       this.input = input;
@@ -67,9 +57,7 @@ public class TokenMatcher {
    }
 
    /**
-    * As token match token match.
-    *
-    * @return the token match
+    * @return then current match as a {@link TokenMatch}
     */
    public TokenMatch asTokenMatch() {
       Validation.notNull(match, "No Match Found or find() not called");
@@ -77,9 +65,7 @@ public class TokenMatcher {
    }
 
    /**
-    * End int.
-    *
-    * @return The end end token of the match
+    * @return The index of the end token associated with the match
     */
    public int end() {
       Validation.checkState(match != null, "Have not called find()");
@@ -87,8 +73,6 @@ public class TokenMatcher {
    }
 
    /**
-    * Find boolean.
-    *
     * @return True if the pattern finds a next match
     */
    public boolean find() {
@@ -106,9 +90,7 @@ public class TokenMatcher {
    }
 
    /**
-    * Group span.
-    *
-    * @return the span
+    * @return the span of text covering the match
     */
    public HString group() {
       Validation.notNull(match, "No Match Found or find() not called");
@@ -116,10 +98,10 @@ public class TokenMatcher {
    }
 
    /**
-    * Group list.
+    * Gets the list of HString associated with a named group.
     *
     * @param groupName the group name
-    * @return the list
+    * @return the list of matches
     */
    public List<HString> group(String groupName) {
       Validation.notNull(match, "No Match Found or find() not called");
@@ -127,27 +109,19 @@ public class TokenMatcher {
    }
 
    /**
-    * Group names set.
-    *
-    * @return the set
+    * @return the named groups in the expression
     */
    public Set<String> groupNames() {
       Validation.notNull(match, "No Match Found or find() not called");
       return match.groupNames();
    }
 
-//   /**
-//    * Start int.
-//    *
-//    * @return The start token of the match
-//    */
-//   public int start() {
-//      Validation.checkState(match != null, "Have not called find()");
-//      if (start >= 0) {
-//         return tokens.get(start).start();
-//      }
-//      return -1;
-//   }
-
+   /**
+    * @return The index of the start token associated with the match
+    */
+   public int start() {
+      Validation.checkState(match != null, "Have not called find()");
+      return start;
+   }
 
 }//END OF TokenMatcher

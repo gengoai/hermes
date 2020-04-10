@@ -20,7 +20,6 @@
 package com.gengoai.hermes.en;
 
 import com.gengoai.collection.Iterables;
-import com.gengoai.hermes.lexicon.GlobalLexica;
 import com.gengoai.hermes.lexicon.TrieWordList;
 import com.gengoai.hermes.lexicon.WordList;
 import com.gengoai.hermes.morphology.StandardTokenizer;
@@ -38,7 +37,7 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 
 /**
- * The type English tokenizer.
+ * English language tokenizer
  *
  * @author David B. Bracewell
  */
@@ -52,9 +51,9 @@ public class ENTokenizer implements Tokenizer, Serializable {
     * Instantiates a new English tokenizer.
     */
    public ENTokenizer() {
-      this.abbreviations = GlobalLexica.getAbbreviations();
-      this.tlds = GlobalLexica.getTopLevelDomains();
-      this.emoticons = GlobalLexica.getEmoticons();
+      this.abbreviations = ENTokenizerLexicons.getAbbreviations();
+      this.tlds = ENTokenizerLexicons.getTopLevelDomains();
+      this.emoticons = ENTokenizerLexicons.getEmoticons();
    }
 
    @Override
@@ -72,46 +71,40 @@ public class ENTokenizer implements Tokenizer, Serializable {
       }
 
       private void addToBuffer(Token token) {
-         if (token != null && !Strings.isNullOrBlank(token.text)) {
+         if(token != null && !Strings.isNullOrBlank(token.text)) {
             buffer.addFirst(token);
          }
       }
 
       private Token checkURL(Token n) {
          //Ensure that the TLD is valid
-
-//         System.err.println(n);
-         if (n.text.contains("://")) {
+         if(n.text.contains("://")) {
             return n;
          }
          int slash = n.text.indexOf('/');
-         if (slash == -1) {
+         if(slash == -1) {
             slash = n.text.length();
          }
          int dot = n.text.substring(0, slash).lastIndexOf('.');
          String tld = n.text.substring(dot + 1, slash);
 
-         if (!tlds.contains(tld.toLowerCase())) {
+         if(!tlds.contains(tld.toLowerCase())) {
             Token nn = peek(0);
-            if (nn != null && nn.charStartIndex == n.charEndIndex) {
+            if(nn != null && nn.charStartIndex == n.charEndIndex) {
                consume();
                addToBuffer(new Token( //Add the bad tld
                                       tld + nn.text,
                                       TokenType.ALPHA_NUMERIC,
                                       n.charStartIndex + dot + 1,
                                       nn.charEndIndex,
-                                      n.index
-                           )
-                          );
+                                      n.index));
             } else {
                addToBuffer(new Token( //Add the bad tld
                                       tld,
                                       TokenType.ALPHA_NUMERIC,
                                       n.charStartIndex + dot + 1,
                                       n.charEndIndex,
-                                      n.index
-                           )
-                          );
+                                      n.index));
             }
 
             addToBuffer(new Token( //Add the dot to the buffer
@@ -119,17 +112,14 @@ public class ENTokenizer implements Tokenizer, Serializable {
                                    TokenType.PUNCTUATION,
                                    n.charStartIndex + dot,
                                    n.charStartIndex + dot + 1,
-                                   n.index
-                        )
-                       );
+                                   n.index));
 
             n = new Token( //Change the token to the first part of the bad url
                            n.text.substring(0, dot),
                            TokenType.ALPHA_NUMERIC,
                            n.charStartIndex,
                            n.charStartIndex + dot,
-                           n.index
-            );
+                           n.index);
 
          }
          return n;
@@ -137,7 +127,7 @@ public class ENTokenizer implements Tokenizer, Serializable {
 
       private Token consume(int number) {
          Token token = null;
-         while (number >= 0) {
+         while(number >= 0) {
             token = consume();
             number--;
          }
@@ -146,9 +136,9 @@ public class ENTokenizer implements Tokenizer, Serializable {
 
       private Token consume() {
          peek(0);
-         while (!buffer.isEmpty()) {
+         while(!buffer.isEmpty()) {
             Token token = buffer.remove();
-            if (token != null && !Strings.isNullOrBlank(token.text)) {
+            if(token != null && !Strings.isNullOrBlank(token.text)) {
                return token;
             }
          }
@@ -158,7 +148,7 @@ public class ENTokenizer implements Tokenizer, Serializable {
       private Token handleEmoticon(Token n) {
          String emo = n.text;
          String emoLower = n.text.toLowerCase();
-         if (!emoticons.isPrefixMatch(emoLower)) {
+         if(!emoticons.isPrefixMatch(emoLower)) {
             return n;
          }
 
@@ -166,24 +156,24 @@ public class ENTokenizer implements Tokenizer, Serializable {
          Token last = n;
          int end = n.charEndIndex;
          int peek = 0;
-         while ((nn = peek(peek)) != null) {
+         while((nn = peek(peek)) != null) {
             String tempLower = emoLower;
-            if (last.charEndIndex < nn.charStartIndex) {
+            if(last.charEndIndex < nn.charStartIndex) {
                tempLower += Strings.repeat(' ', nn.charStartIndex - last.charEndIndex);
             }
             tempLower += nn.text.toLowerCase();
             last = nn;
             Set<String> prefixes = emoticons.prefixes(tempLower);
-            if (emoticons.prefixes(tempLower).size() > 1 || (prefixes.size() == 1 && !prefixes.contains(tempLower))) {
+            if(emoticons.prefixes(tempLower).size() > 1 || (prefixes.size() == 1 && !prefixes.contains(tempLower))) {
                end = nn.charEndIndex;
                emo = emo + nn.text;
                emoLower = tempLower;
                peek++;
-            } else if (emoticons.contains(tempLower)) {
+            } else if(emoticons.contains(tempLower)) {
                consume(peek);
                lastIndex = n.index;
                return new Token(emo, TokenType.EMOTICON, n.charStartIndex, nn.charEndIndex, n.index);
-            } else if (emoticons.contains(emoLower)) {
+            } else if(emoticons.contains(emoLower)) {
                last = consume(peek - 1);
                lastIndex = n.index;
                return new Token(emo, TokenType.EMOTICON, n.charStartIndex, last.charEndIndex, n.index);
@@ -192,8 +182,8 @@ public class ENTokenizer implements Tokenizer, Serializable {
             }
          }
 
-         if (emoticons.contains(emoLower)) {
-            if (emoLower.length() > 1) {
+         if(emoticons.contains(emoLower)) {
+            if(emoLower.length() > 1) {
                nn = consume(peek - 1);
                return new Token(emo, TokenType.EMOTICON, n.charStartIndex, nn.charEndIndex, n.index);
             } else {
@@ -215,18 +205,18 @@ public class ENTokenizer implements Tokenizer, Serializable {
          int peek = 0;
          Token pn = n;
          Token nn;
-         while ((nn = peek(peek)) != null) {
+         while((nn = peek(peek)) != null) {
             String temp = abbreviation;
-            if (pn.charEndIndex < nn.charStartIndex) {
+            if(pn.charEndIndex < nn.charStartIndex) {
                temp += Strings.repeat(' ', nn.charStartIndex - pn.charEndIndex);
             }
             temp += nn.text;
-            if (nn.charStartIndex == pn.charEndIndex && abbreviations.contains(temp)) {
+            if(nn.charStartIndex == pn.charEndIndex && abbreviations.contains(temp)) {
                peek++;
                end = nn.charEndIndex;
                abbreviation = temp;
-            } else if (peek == 0) {
-               if (abbreviations.contains(n.text.toLowerCase())) {
+            } else if(peek == 0) {
+               if(abbreviations.contains(n.text.toLowerCase())) {
                   return new Token(n.text,
                                    TokenType.ACRONYM,
                                    n.charStartIndex,
@@ -245,16 +235,16 @@ public class ENTokenizer implements Tokenizer, Serializable {
 
       private Token mergeMoneyNumber(Token n) {
          Token nn = peek(0);
-         if (nn == null) {
+         if(nn == null) {
             return n;
          }
-         if (nn.type.isInstance(TokenType.NUMBER) && nn.charStartIndex == n.charEndIndex) {
+         if(nn.type.isInstance(TokenType.NUMBER) && nn.charStartIndex == n.charEndIndex) {
             Token token = new Token(
-               n.text + nn.text,
-               TokenType.MONEY,
-               n.charStartIndex,
-               nn.charEndIndex,
-               n.index
+                  n.text + nn.text,
+                  TokenType.MONEY,
+                  n.charStartIndex,
+                  nn.charEndIndex,
+                  n.index
             );
             consume();
             return token;
@@ -265,12 +255,12 @@ public class ENTokenizer implements Tokenizer, Serializable {
       private Token mergeMultiHyphens(Token n) {
          String text = n.text;
          int end = n.charEndIndex;
-         while (peekIsType(0, TokenType.HYPHEN)) {
+         while(peekIsType(0, TokenType.HYPHEN)) {
             Token nn = consume();
             end = nn.charEndIndex;
             text += nn.text;
          }
-         if (end != n.charEndIndex) {
+         if(end != n.charEndIndex) {
             return new Token(text, TokenType.HYPHEN, n.charStartIndex, end, 0);
          }
          return n;
@@ -278,29 +268,29 @@ public class ENTokenizer implements Tokenizer, Serializable {
 
       @Override
       public Token next() {
-         if (peek(0) == null) {
+         if(peek(0) == null) {
             throw new NoSuchElementException();
          }
 
          Token token = consume();
-         if (token == null) {
+         if(token == null) {
             throw new NoSuchElementException();
          }
 
          TokenType orig = token.type;
-         if (token.type.isInstance(TokenType.URL)) {
+         if(token.type.isInstance(TokenType.URL)) {
             token = checkURL(token);
-         } else if (abbreviations.isPrefixMatch(token.text)) {
+         } else if(abbreviations.isPrefixMatch(token.text)) {
             token = mergeAbbreviationAndAcronym(token);
-         } else if (token.type.isInstance(TokenType.PUNCTUATION, TokenType.HYPHEN, TokenType.EMOTICON)) {
+         } else if(token.type.isInstance(TokenType.PUNCTUATION, TokenType.HYPHEN, TokenType.EMOTICON)) {
             token = handleEmoticon(token);
-         } else if (token.type.isInstance(TokenType.MONEY) && peekIsType(0, TokenType.NUMBER)) {
+         } else if(token.type.isInstance(TokenType.MONEY) && peekIsType(0, TokenType.NUMBER)) {
             token = mergeMoneyNumber(token);
-         } else if (token.type.isInstance(TokenType.NUMBER) && peekIsType(0, TokenType.MONEY)) {
+         } else if(token.type.isInstance(TokenType.NUMBER) && peekIsType(0, TokenType.MONEY)) {
             token = mergeMoneyNumber(token);
          }
 
-         if (token.type.isInstance(TokenType.HYPHEN)) {
+         if(token.type.isInstance(TokenType.HYPHEN)) {
             token = mergeMultiHyphens(token);
          }
 
@@ -310,18 +300,18 @@ public class ENTokenizer implements Tokenizer, Serializable {
       }
 
       private Token peek(int distance) {
-         while (buffer.size() <= distance) {
+         while(buffer.size() <= distance) {
             try {
                Token token = tokenizer.next();
 
-               if (token == null) {
+               if(token == null) {
                   return null;
                }
 
-               if (!Strings.isNullOrBlank(token.text)) {
+               if(!Strings.isNullOrBlank(token.text)) {
                   buffer.add(token);
                }
-            } catch (IOException e) {
+            } catch(IOException e) {
                throw new RuntimeException(e);
             }
          }
@@ -330,7 +320,7 @@ public class ENTokenizer implements Tokenizer, Serializable {
 
       private boolean peekIsType(int distance, TokenType... types) {
          Token peeked = peek(distance);
-         if (peeked == null) {
+         if(peeked == null) {
             return false;
          }
          return peeked.type.isInstance(types);

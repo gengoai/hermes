@@ -19,7 +19,6 @@
 
 package com.gengoai.hermes.corpus;
 
-import com.gengoai.LogUtils;
 import com.gengoai.apollo.ml.data.DatasetType;
 import com.gengoai.apollo.ml.data.ExampleDataset;
 import com.gengoai.apollo.statistics.measure.Association;
@@ -29,7 +28,6 @@ import com.gengoai.collection.counter.Counter;
 import com.gengoai.collection.multimap.ArrayListMultimap;
 import com.gengoai.collection.multimap.ListMultimap;
 import com.gengoai.collection.multimap.Multimap;
-import com.gengoai.config.Config;
 import com.gengoai.function.SerializableConsumer;
 import com.gengoai.function.SerializableFunction;
 import com.gengoai.hermes.AnnotatableType;
@@ -51,7 +49,6 @@ import com.gengoai.io.Resources;
 import com.gengoai.parsing.ParseException;
 import com.gengoai.specification.Specification;
 import com.gengoai.stream.MCounterAccumulator;
-import com.gengoai.stream.MLongAccumulator;
 import com.gengoai.stream.MStream;
 import com.gengoai.stream.StreamingContext;
 import com.gengoai.tuple.Tuple;
@@ -62,43 +59,91 @@ import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.logging.Level;
 import java.util.stream.Stream;
 
-import static com.gengoai.LogUtils.log;
-import static com.gengoai.Validation.notNull;
 import static com.gengoai.collection.counter.Counters.newCounter;
 
+/**
+ * <p>
+ * A document collection represents a temporary collection of documents often used for ad-hoc analytics or to import
+ * documents into a corpus
+ * </p>
+ * <p>
+ * Hermes provides a straightforward way of reading and writing document collections in a number of formats, including
+ * plain text, csv, and json. In addition, many formats can be used in a "one-per-line" corpus where each line
+ * represents a single document in the given format. For example, a json one-per-line corpus has a single json object
+ * representing a document on each line of the file. Each document format has an associated set of _DocFormatParameters_
+ * that define the various options for reading and writing in the format.
+ * </p>
+ */
 public interface DocumentCollection extends Iterable<Document>, AutoCloseable {
    /**
-    * The constant REPORT_INTERVAL.
+    * Configuration option for setting the reporting interval for when updating a DocumentCollection or Corpus
     */
    String REPORT_INTERVAL = "Corpus.reportInterval";
    /**
-    * The constant REPORT_LEVEL.
+    * Configuration option for setting the reporting log level for when updating a DocumentCollection or Corpus
     */
    String REPORT_LEVEL = "Corpus.reportLevel";
 
+   /**
+    * Creates a document collection for one or more documents.
+    *
+    * @param documents the documents
+    * @return the document collection
+    */
    static DocumentCollection create(@NonNull Document... documents) {
       return new MStreamDocumentCollection(StreamingContext.local().stream(documents));
    }
 
+   /**
+    * Creates a document collection for one or more documents.
+    *
+    * @param documents the documents
+    * @return the document collection
+    */
    static DocumentCollection create(@NonNull Iterable<Document> documents) {
       return new MStreamDocumentCollection(StreamingContext.local().stream(documents));
    }
 
+   /**
+    * Creates a document collection for a stream of  documents.
+    *
+    * @param documents the documents
+    * @return the document collection
+    */
    static DocumentCollection create(@NonNull Stream<Document> documents) {
       return new MStreamDocumentCollection(StreamingContext.local().stream(documents));
    }
 
+   /**
+    * Creates a document collection for a stream of  documents.
+    *
+    * @param documents the documents
+    * @return the document collection
+    */
    static DocumentCollection create(@NonNull MStream<Document> documents) {
       return new MStreamDocumentCollection(documents);
    }
 
+   /**
+    * Creates a document collection from a specification detailing the document format and path of the documents. The
+    * specification should have the document format as the schema, e.g. <code>FORMAT::PATH;OPTIONS</code>
+    *
+    * @param specification the specification
+    * @return the document collection
+    */
    static DocumentCollection create(@NonNull String specification) {
       return create(Specification.parse(specification));
    }
 
+   /**
+    * Creates a document collection from a specification detailing the document format and path of the documents. The
+    * specification should have the document format as the schema, e.g. <code>FORMAT::PATH;OPTIONS</code>
+    *
+    * @param specification the specification
+    * @return the document collection
+    */
    static DocumentCollection create(@NonNull Specification specification) {
       if(specification.getSchema().equalsIgnoreCase("corpus")) {
          return Corpus.open(specification.getPath());
@@ -117,7 +162,7 @@ public interface DocumentCollection extends Iterable<Document>, AutoCloseable {
    default DocumentCollection annotate(@NonNull AnnotatableType... annotatableTypes) {
       AnnotationPipeline pipeline = new AnnotationPipeline(annotatableTypes);
       if(pipeline.requiresUpdate()) {
-         return update(pipeline::annotate);
+         return update("Annotate", pipeline::annotate);
       }
       return this;
    }
@@ -129,11 +174,8 @@ public interface DocumentCollection extends Iterable<Document>, AutoCloseable {
     * @param onMatch the on match
     * @return the corpus
     */
-   default DocumentCollection apply(Lexicon lexicon, SerializableConsumer<HString> onMatch) {
-      notNull(lexicon, "Lexicon must not be null");
-      notNull(onMatch, "OnMatch consumer must not be null");
-      update(doc -> lexicon.extract(doc).forEach(onMatch));
-      return this;
+   default DocumentCollection apply(@NonNull Lexicon lexicon, @NonNull SerializableConsumer<HString> onMatch) {
+      return update("ApplyLexicon", doc -> lexicon.extract(doc).forEach(onMatch));
    }
 
    /**
@@ -143,22 +185,20 @@ public interface DocumentCollection extends Iterable<Document>, AutoCloseable {
     * @param onMatch the on match
     * @return the corpus
     */
-   default DocumentCollection apply(TokenRegex pattern, SerializableConsumer<TokenMatch> onMatch) {
-      notNull(pattern, "Lexicon must not be null");
-      notNull(onMatch, "OnMatch consumer must not be null");
-      update(doc -> {
+   default DocumentCollection apply(@NonNull TokenRegex pattern, @NonNull SerializableConsumer<TokenMatch> onMatch) {
+      return update("ApplyTokenRegex", doc -> {
          TokenMatcher matcher = pattern.matcher(doc);
          while(matcher.find()) {
             onMatch.accept(matcher.asTokenMatch());
          }
       });
-      return this;
    }
 
    /**
     * Constructs a Dataset from the Corpus according to the {@link ExampleGenerator}
     *
     * @param exampleGenerator the example generator to use to construct the dataset
+    * @param datasetType      the dataset type
     * @return the dataset
     */
    default ExampleDataset asDataset(@NonNull ExampleGenerator exampleGenerator, @NonNull DatasetType datasetType) {
@@ -182,7 +222,8 @@ public interface DocumentCollection extends Iterable<Document>, AutoCloseable {
    /**
     * Constructs a Dataset of Instances from the Corpus according to an {@link InstanceGenerator}
     *
-    * @param updater the dataset definition
+    * @param updater     the dataset definition
+    * @param datasetType the dataset type
     * @return the dataset
     */
    default ExampleDataset asInstanceDataset(@NonNull Consumer<InstanceGenerator> updater,
@@ -213,7 +254,8 @@ public interface DocumentCollection extends Iterable<Document>, AutoCloseable {
    /**
     * Constructs a Dataset of Sequences from the Corpus according to an {@link SequenceGenerator}
     *
-    * @param updater the dataset definition
+    * @param updater     the dataset definition
+    * @param datasetType the dataset type
     * @return the dataset
     */
    default ExampleDataset asSequenceDataset(@NonNull Consumer<SequenceGenerator> updater,
@@ -229,22 +271,17 @@ public interface DocumentCollection extends Iterable<Document>, AutoCloseable {
     * @return A counter containing document frequencies of the given annotation type
     */
    default Counter<String> documentCount(@NonNull Extractor extractor) {
-      MStream<Document> stream = stream();
-      MLongAccumulator counter = stream.getContext().longAccumulator();
-      MCounterAccumulator<String> termCounts = stream.getContext().counterAccumulator();
-      final long reportInterval = Config.get(REPORT_INTERVAL).asLongValue(5_000);
-      final Level reportLevel = Config.get(REPORT_LEVEL).as(Level.class, Level.FINE);
-      stream.forEach(doc -> {
-         counter.add(1);
-         counter.report(count -> count % reportInterval == 0,
-                        count -> log(LogUtils.getLogger(getClass()),
-                                     reportLevel,
-                                     "documentFrequencies: Processed {0} documents", count));
+      ProgressLogger progressLogger = ProgressLogger.create(this, "documentCount");
+      MCounterAccumulator<String> documentCounts = getStreamingContext().counterAccumulator();
+      parallelStream().forEach(doc -> {
+         progressLogger.start();
          extractor.extract(doc)
                   .count()
-                  .forEach((term, count) -> termCounts.increment(term, 1.0));
+                  .forEach((term, count) -> documentCounts.increment(term, 1.0));
+         progressLogger.stop(doc.tokenLength());
       });
-      return termCounts.value();
+      progressLogger.report();
+      return documentCounts.value();
    }
 
    /**
@@ -268,9 +305,7 @@ public interface DocumentCollection extends Iterable<Document>, AutoCloseable {
    }
 
    /**
-    * Is empty boolean.
-    *
-    * @return the boolean
+    * @return True if this document collection has no documents.
     */
    default boolean isEmpty() {
       return stream().isEmpty();
@@ -289,20 +324,15 @@ public interface DocumentCollection extends Iterable<Document>, AutoCloseable {
     * @return the counter of string tuples representing the ngrams
     */
    default Counter<Tuple> nGramCount(@NonNull NGramExtractor nGramExtractor) {
-      MStream<Document> stream = parallelStream();
-      MLongAccumulator counter = stream.getContext().longAccumulator();
-      final long reportInterval = Config.get(REPORT_INTERVAL).asLongValue(5_000);
-      final Level reportLevel = Config.get(REPORT_LEVEL).as(Level.class, Level.FINE);
-      return newCounter(stream.flatMap(doc -> {
-         counter.add(1);
-         counter.report(
-               count -> count % reportInterval == 0,
-               count -> log(LogUtils.getLogger(getClass()),
-                            reportLevel,
-                            "documentFrequencies: Processed {0} documents",
-                            count));
-         return nGramExtractor.extractStringTuples(doc).stream();
+      ProgressLogger progressLogger = ProgressLogger.create(this, "nGramCount");
+      Counter<Tuple> counter = newCounter(parallelStream().flatMap(doc -> {
+         progressLogger.start();
+         Stream<Tuple> stream = nGramExtractor.extractStringTuples(doc).stream();
+         progressLogger.stop(doc.tokenLength());
+         return stream;
       }).countByValue());
+      progressLogger.report();
+      return counter;
    }
 
    /**
@@ -442,30 +472,26 @@ public interface DocumentCollection extends Iterable<Document>, AutoCloseable {
     * @return the counter of terms with frequencies
     */
    default Counter<String> termCount(@NonNull Extractor extractor) {
-      MStream<Document> stream = stream();
-      MLongAccumulator counter = stream.getContext().longAccumulator();
-      MCounterAccumulator<String> termCounts = stream.getContext().counterAccumulator();
-      final long reportInterval = Config.get(REPORT_INTERVAL).asLongValue(5_000);
-      final Level reportLevel = Config.get(REPORT_LEVEL).as(Level.class, Level.FINE);
-      stream.parallel()
-            .forEach(doc -> {
-               counter.add(1);
-               counter.report(count -> count % reportInterval == 0,
-                              count -> log(LogUtils.getLogger(getClass()),
-                                           reportLevel, "termCount: Processed {0} documents", count));
-               termCounts.merge(extractor.extract(doc)
-                                         .count());
-            });
+      ProgressLogger progressLogger = ProgressLogger.create(this, "termCount");
+      MCounterAccumulator<String> termCounts = getStreamingContext().counterAccumulator();
+      parallelStream().parallel()
+                      .forEach(doc -> {
+                         progressLogger.start();
+                         termCounts.merge(extractor.extract(doc).count());
+                         progressLogger.stop(doc.tokenLength());
+                      });
+      progressLogger.report();
       return termCounts.value();
    }
 
    /**
     * Updates all documents in the corpus using the given document processor
     *
+    * @param operationName     the name of the update operation being performed
     * @param documentProcessor the document processor
     * @return this corpus with updates
     */
-   DocumentCollection update(@NonNull SerializableConsumer<Document> documentProcessor);
+   DocumentCollection update(String operationName, @NonNull SerializableConsumer<Document> documentProcessor);
 
    /**
     * Updates all documents in the corpus using the given {@link CaduceusProgram}
@@ -474,6 +500,6 @@ public interface DocumentCollection extends Iterable<Document>, AutoCloseable {
     * @return this corpus with updates
     */
    default DocumentCollection update(@NonNull CaduceusProgram program) {
-      return this.update(program::execute);
+      return update("ExecuteCaduceusProgram", program::execute);
    }
 }//END OF DocumentCollection

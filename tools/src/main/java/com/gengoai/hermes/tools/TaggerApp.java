@@ -28,12 +28,11 @@ import com.gengoai.application.Option;
 import com.gengoai.config.Config;
 import com.gengoai.conversion.Converter;
 import com.gengoai.conversion.TypeConversionException;
-import com.gengoai.hermes.application.HermesCLI;
 import com.gengoai.hermes.corpus.DocumentCollection;
-import com.gengoai.hermes.ml.BIOEvaluation;
-import com.gengoai.hermes.ml.BIOTagger;
+import com.gengoai.hermes.en.ENPOSTrainer;
+import com.gengoai.hermes.ml.IOBEvaluation;
+import com.gengoai.hermes.ml.IOBTagger;
 import com.gengoai.hermes.ml.SequenceTagger;
-import com.gengoai.hermes.ml.trainer.EnPOSTrainer;
 import com.gengoai.hermes.ml.trainer.EntityTrainer;
 import com.gengoai.hermes.ml.trainer.PhraseChunkTrainer;
 import com.gengoai.hermes.ml.trainer.SequenceTaggerTrainer;
@@ -63,7 +62,7 @@ public class TaggerApp extends HermesCLI {
          Collections.unmodifiableMap(hashMapOf(
                $("PHRASE_CHUNK", new PhraseChunkTrainer()),
                $("ENTITY", new EntityTrainer()),
-               $("EN_POS", new EnPOSTrainer())
+               $("EN_POS", new ENPOSTrainer())
                                               ));
 
    @Option(description = "The specification or location the corpus or document collection to process.",
@@ -83,12 +82,8 @@ public class TaggerApp extends HermesCLI {
    }
 
    private DocumentCollection getDocumentCollection() {
-      Stopwatch sw = Stopwatch.createStarted();
-      DocumentCollection dc = DocumentCollection.create(notNullOrBlank(documentCollectionSpec,
-                                                                       "No Document Collection Specified!"));
-      sw.stop();
-      logInfo(log, "Loaded ''{0}'' in {1}", documentCollectionSpec, sw);
-      return dc;
+      return DocumentCollection.create(notNullOrBlank(documentCollectionSpec,
+                                                      "No Document Collection Specified!"));
    }
 
    private SequenceTaggerTrainer<?> getTrainer() {
@@ -147,8 +142,8 @@ public class TaggerApp extends HermesCLI {
       logInfo(log, "========================================================");
       ExampleDataset testingData = getTrainer().createDataset(testingCollection);
       SequenceLabelerEvaluation evaluation;
-      if(tagger instanceof BIOTagger) {
-         evaluation = new BIOEvaluation();
+      if(tagger instanceof IOBTagger) {
+         evaluation = new IOBEvaluation();
       } else {
          evaluation = new PerInstanceEvaluation();
       }
@@ -191,14 +186,14 @@ public class TaggerApp extends HermesCLI {
       logInfo(log, "========================================================");
       logInfo(log, "   Data: {0}", documentCollectionSpec);
       logInfo(log, "Trainer: {0}", sequenceTagger);
-      logInfo(log, "Model: {0}", model);
+      logInfo(log, "  Model: {0}", model);
       logInfo(log, "========================================================");
       logFitParameters(parameters);
       Stopwatch stopwatch = Stopwatch.createStarted();
       logInfo(log,
               "Training Started at {0}",
               LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")));
-      SequenceTagger tagger = trainer.fit(getDocumentCollection());
+      SequenceTagger tagger = trainer.fit(getDocumentCollection(), parameters);
       stopwatch.stop();
       logInfo(log, "Training Stopped at {0} ({1})",
               LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")),

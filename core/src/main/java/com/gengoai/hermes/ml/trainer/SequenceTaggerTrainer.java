@@ -34,9 +34,20 @@ import lombok.extern.java.Log;
 
 import static com.gengoai.LogUtils.logInfo;
 
+/**
+ * The type Sequence tagger trainer.
+ *
+ * @param <T> the type parameter
+ */
 @Log
 public abstract class SequenceTaggerTrainer<T extends SequenceTagger> {
 
+   /**
+    * Create dataset example dataset.
+    *
+    * @param data the data
+    * @return the example dataset
+    */
    public ExampleDataset createDataset(@NonNull DocumentCollection data) {
       Stopwatch sw = Stopwatch.createStarted();
       ExampleDataset dataset = data.asDataset(getSequenceGenerator(), DatasetType.InMemory);
@@ -45,20 +56,54 @@ public abstract class SequenceTaggerTrainer<T extends SequenceTagger> {
       return dataset;
    }
 
+   /**
+    * Create feature extractor feature extractor.
+    *
+    * @return the feature extractor
+    */
    public abstract FeatureExtractor<HString> createFeatureExtractor();
 
+   /**
+    * Create sequence labeler sequence labeler.
+    *
+    * @return the sequence labeler
+    */
    protected abstract SequenceLabeler createSequenceLabeler();
 
+   /**
+    * Create tagger t.
+    *
+    * @param labeler          the labeler
+    * @param featureExtractor the feature extractor
+    * @return the t
+    */
    protected abstract T createTagger(SequenceLabeler labeler, FeatureExtractor<HString> featureExtractor);
 
-   public T fit(DocumentCollection trainingData) {
+   /**
+    * Fit t.
+    *
+    * @param trainingData  the training data
+    * @param fitParameters the fit parameters
+    * @return the t
+    */
+   public T fit(DocumentCollection trainingData, FitParameters<?> fitParameters) {
       SequenceLabeler labeler = createSequenceLabeler();
-      labeler.fit(createDataset(trainingData), getDefaultFitParameters());
+      labeler.fit(createDataset(trainingData), fitParameters);
       return createTagger(labeler, createFeatureExtractor());
    }
 
+   /**
+    * Gets default fit parameters.
+    *
+    * @return the default fit parameters
+    */
    public abstract FitParameters<?> getDefaultFitParameters();
 
+   /**
+    * Gets sequence generator.
+    *
+    * @return the sequence generator
+    */
    protected abstract SequenceGenerator getSequenceGenerator();
 
 }//END OF SequenceTaggerTrainer

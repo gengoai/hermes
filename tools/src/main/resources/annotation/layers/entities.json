@@ -1,4 +1,5 @@
 {
+  "name": "Extended Entities",
   "annotationType": "ENTITY",
   "includeAllTags": true,
   "tags": {

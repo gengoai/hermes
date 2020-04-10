@@ -25,7 +25,6 @@ import com.gengoai.hermes.*;
 import com.gengoai.hermes.morphology.TokenType;
 import com.gengoai.string.Strings;
 
-import java.io.Serializable;
 import java.util.*;
 
 import static com.gengoai.collection.Maps.hashMapOf;
@@ -33,11 +32,11 @@ import static com.gengoai.hermes.annotator.DefaultSentenceAnnotator.InternalType
 import static com.gengoai.tuple.Tuples.$;
 
 /**
- * <p> A <code>BreakIterator</code> backed sentence annotator that has limited knowledge of abbreviations. </p>
+ * Default Sentence Annotator that works reasonably well on tokenized text.
  *
  * @author David B. Bracewell
  */
-public class DefaultSentenceAnnotator implements Annotator, Serializable {
+public class DefaultSentenceAnnotator extends Annotator {
    private static final long serialVersionUID = 1L;
 
    private final char[] endOfSentence = new char[]{
@@ -75,7 +74,6 @@ public class DefaultSentenceAnnotator implements Annotator, Serializable {
          '\uFF0E',
          '\uFF1F',
          '\uFF61',
-
    };
 
    private final char[] sContinue = new char[]{
@@ -261,7 +259,7 @@ public class DefaultSentenceAnnotator implements Annotator, Serializable {
    }
 
    @Override
-   public void annotate(Document doc) {
+   protected void annotateImpl(Document doc) {
       List<Annotation> tokens = doc.tokens();
       int start = -1;
       int sentenceIndex = 0;

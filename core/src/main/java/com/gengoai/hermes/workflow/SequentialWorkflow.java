@@ -28,7 +28,7 @@ import com.gengoai.annotation.JsonHandler;
 import com.gengoai.application.Option;
 import com.gengoai.collection.Lists;
 import com.gengoai.conversion.Cast;
-import com.gengoai.hermes.corpus.Corpus;
+import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.json.Json;
 import com.gengoai.json.JsonEntry;
 import lombok.NonNull;
@@ -65,7 +65,6 @@ public final class SequentialWorkflow implements Workflow {
    private SequentialWorkflow() {
    }
 
-
    /**
     * Instantiates a new Workflow.
     *
@@ -81,11 +80,6 @@ public final class SequentialWorkflow implements Workflow {
    }
 
    @Override
-   public void setStartingContext(Context context) {
-      this.startingContext = context.copy();
-   }
-
-   @Override
    public String getType() {
       return TYPE;
    }
@@ -98,8 +92,9 @@ public final class SequentialWorkflow implements Workflow {
     * @return the corpus
     * @throws Exception the exception
     */
-   public final Corpus process(@NonNull Corpus input, @NonNull Context context) throws Exception {
-      Corpus corpus = input;
+   public final DocumentCollection process(@NonNull DocumentCollection input, @NonNull Context context) throws
+                                                                                                        Exception {
+      DocumentCollection corpus = input;
       context.merge(startingContext);
       Stopwatch sw = Stopwatch.createStarted();
       for(Action processor : actions) {
@@ -113,13 +108,11 @@ public final class SequentialWorkflow implements Workflow {
                     processor.getClass().getSimpleName(),
                     actionTime);
          } else {
-            State temp = processor.loadPreviousState(corpus, context);
-            if(temp.isLoaded()) {
+            if(processor.loadPreviousState(corpus, context) == State.LOADED) {
                logInfo(LogUtils.getLogger(getClass()),
                        "Completed {0} [Loaded] ({1})",
                        processor.getClass().getSimpleName(),
                        actionTime);
-               corpus = temp.getCorpus();
             } else {
                corpus = processor.process(corpus, context);
                logInfo(LogUtils.getLogger(getClass()),
@@ -131,6 +124,11 @@ public final class SequentialWorkflow implements Workflow {
       }
       logInfo(LogUtils.getLogger(getClass()), "Completed Workflow in " + sw);
       return corpus;
+   }
+
+   @Override
+   public void setStartingContext(Context context) {
+      this.startingContext = context.copy();
    }
 
    public static class SequentialWorkflowMarshaller extends WorkflowMarshaller {

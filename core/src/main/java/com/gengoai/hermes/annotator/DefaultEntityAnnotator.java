@@ -26,7 +26,8 @@ import com.gengoai.hermes.AnnotationType;
 import com.gengoai.hermes.Types;
 
 /**
- * The type Entity annotator.
+ * Default Entity Annotator that realizes the Entity annotation through sub-annotators defined using the configuration
+ * setting: <code>com.gengoai.hermes.annotator.DefaultEntityAnnotator.subTypes</code>.
  *
  * @author David B. Bracewell
  */
@@ -40,4 +41,4 @@ public class DefaultEntityAnnotator extends SubTypeAnnotator {
       super(Types.ENTITY, true, Config.get(DefaultEntityAnnotator.class, "subTypes").asSet(AnnotationType.class));
    }
 
-}//END OF EntityAnnotator
+}//END OF DefaultEntityAnnotator

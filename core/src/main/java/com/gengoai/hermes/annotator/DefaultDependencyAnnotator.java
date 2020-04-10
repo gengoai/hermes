@@ -45,7 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import static com.gengoai.LogUtils.logFine;
 
 /**
- * The type Default dependency annotator.
+ * Default dependency annotator that uses MaltParser.
  *
  * @author David B. Bracewell
  */
@@ -55,7 +55,7 @@ public class DefaultDependencyAnnotator extends SentenceLevelAnnotator {
    private static volatile Map<Language, ConcurrentMaltParserModel> models = new ConcurrentHashMap<>();
 
    @Override
-   public void annotate(Annotation sentence) {
+   protected void annotate(Annotation sentence) {
       ConcurrentMaltParserModel model = getModel(sentence.getLanguage());
       List<Annotation> tokens = sentence.tokens();
       String[] input = new String[tokens.size()];
@@ -126,7 +126,12 @@ public class DefaultDependencyAnnotator extends SentenceLevelAnnotator {
    }
 
    @Override
+   public String getProvider(Language language) {
+      return "MaltParser";
+   }
+
+   @Override
    public Set<AnnotatableType> satisfies() {
       return Collections.singleton(Types.DEPENDENCY);
    }
-}//END OF MaltParserAnnotator
+}//END OF DefaultDependencyAnnotator

@@ -24,7 +24,6 @@ import com.gengoai.hermes.Types;
 import com.gengoai.hermes.morphology.PartOfSpeech;
 import com.gengoai.hermes.morphology.StopWords;
 import com.gengoai.hermes.morphology.TokenType;
-import com.gengoai.hermes.morphology.PartOfSpeech;
 import com.gengoai.io.Resources;
 import com.gengoai.stream.MStream;
 import com.gengoai.string.CharMatcher;
@@ -34,7 +33,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * The type English stop words.
+ * English StopWords
  *
  * @author David B. Bracewell
  */
@@ -57,9 +56,7 @@ public class ENStopWords extends StopWords {
    }
 
    /**
-    * Gets the instance.
-    *
-    * @return the instance
+    * @return the singleton instance of the ENStopWords class
     */
    public static StopWords getInstance() {
       if(INSTANCE == null) {

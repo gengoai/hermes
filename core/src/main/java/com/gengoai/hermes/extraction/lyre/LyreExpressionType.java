@@ -27,17 +27,28 @@ import lombok.NonNull;
 
 import java.util.Collection;
 
+/**
+ * Enumeration of the different types Lyre Expressions
+ */
 public enum LyreExpressionType implements Tag {
+   /**
+    * A predicate expression that returns true / false
+    */
    PREDICATE {
       @Override
       protected LyreExpressionType selectMostCommon(LyreExpressionType other) {
-         return other.isInstance(PREDICATE) ? PREDICATE : OBJECT;
+         return other.isInstance(PREDICATE)
+                ? PREDICATE
+                : OBJECT;
       }
    },
+   /**
+    * An expression that returns an HString as a result
+    */
    HSTRING {
       @Override
       protected LyreExpressionType selectMostCommon(LyreExpressionType other) {
-         switch (other) {
+         switch(other) {
             case HSTRING:
                return HSTRING;
             case STRING:
@@ -47,10 +58,13 @@ public enum LyreExpressionType implements Tag {
          }
       }
    },
+   /**
+    * An expression that returns an String as a result
+    */
    STRING {
       @Override
       protected LyreExpressionType selectMostCommon(LyreExpressionType other) {
-         switch (other) {
+         switch(other) {
             case HSTRING:
             case STRING:
             case OBJECT:
@@ -60,47 +74,66 @@ public enum LyreExpressionType implements Tag {
          }
       }
    },
+   /**
+    * An expression that returns a Feature as a result
+    */
    FEATURE {
       @Override
       protected LyreExpressionType selectMostCommon(LyreExpressionType other) {
-         return other.isInstance(FEATURE) ? FEATURE : OBJECT;
+         return other.isInstance(FEATURE)
+                ? FEATURE
+                : OBJECT;
       }
    },
+   /**
+    * An expression that returns an Object as a result
+    */
    OBJECT {
       @Override
       protected LyreExpressionType selectMostCommon(LyreExpressionType other) {
          return OBJECT;
       }
    },
+   /**
+    * An expression that returns a number as a result
+    */
    NUMERIC {
       @Override
       protected LyreExpressionType selectMostCommon(LyreExpressionType other) {
-         return other.isInstance(NUMERIC) ? NUMERIC : OBJECT;
+         return other.isInstance(NUMERIC)
+                ? NUMERIC
+                : OBJECT;
       }
    },
+   /**
+    * An expression that returns a Counter as a result
+    */
    COUNTER {
       @Override
       protected LyreExpressionType selectMostCommon(LyreExpressionType other) {
-         return other.isInstance(COUNTER) ? COUNTER : OBJECT;
+         return other.isInstance(COUNTER)
+                ? COUNTER
+                : OBJECT;
       }
    };
 
-   protected abstract LyreExpressionType selectMostCommon(LyreExpressionType other);
-
-   public static LyreExpressionType determineCommonType(@NonNull Collection<LyreExpression> expressions) {
+   protected static LyreExpressionType determineCommonType(@NonNull Collection<LyreExpression> expressions) {
       LyreExpressionType bestType = null;
-      for (LyreExpression expression : expressions) {
-         if (bestType == null) {
+      for(LyreExpression expression : expressions) {
+         if(bestType == null) {
             bestType = expression.getType();
          } else {
             bestType = bestType.selectMostCommon(expression.getType());
          }
-         if (bestType == OBJECT) {
+         if(bestType == OBJECT) {
             return OBJECT;
          }
       }
-      return bestType == null ? OBJECT : bestType;
+      return bestType == null
+             ? OBJECT
+             : bestType;
    }
 
+   protected abstract LyreExpressionType selectMostCommon(LyreExpressionType other);
 
 }//END OF LyreExpressionType

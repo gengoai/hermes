@@ -46,46 +46,15 @@ import static com.gengoai.string.Re.*;
  *
  * @author David B. Bracewell
  */
-public class QueryParser {
+public final class QueryParser {
    private static final Evaluator<Query> evaluator = new Evaluator<Query>() {
       {
          $(QueryExpression.class, p -> p.query);
       }
    };
-   private static final Grammar grammar = new Grammar() {
-      {
-         prefix(Types.WORD, (parser, token) -> new QueryExpression(Types.PHRASE,
-                                                                   new Query.PhraseQuery(token.getText().trim())));
-         prefix(Types.PHRASE, (parser, token) -> new QueryExpression(Types.PHRASE,
-                                                                     new Query.PhraseQuery(token.getVariable(0))));
-         postfix(Types.AND, (parser, token, left) -> {
-            final Query l = left.as(QueryExpression.class).query;
-            final Query r = parser.parseExpression(token, QueryExpression.class).query;
-            return new QueryExpression(Types.AND, new Query.And(l, r));
-         }, 2);
-         postfix(Types.OR, (parser, token, left) -> {
-            final Query l = left.as(QueryExpression.class).query;
-            final Query r = parser.parseExpression(token, QueryExpression.class).query;
-            return new QueryExpression(Types.OR, new Query.Or(l, r));
-         }, 1);
-         prefix(Types.NOT, (parser, token) -> {
-            final Query r = parser.parseExpression(QueryExpression.class).query;
-            return new QueryExpression(Types.NOT, new Query.Not(r));
-         });
-         prefix(Types.OP, (parser, token) -> {
-            QueryExpression pe = parser.parseExpression(QueryExpression.class);
-            parser.consume(Types.CP);
-            return pe;
-         });
-         prefix(Types.ATTRIBUTE, (parser, token) -> {
-            AttributeType<?> attributeType = AttributeType.make(token.getVariable(0));
-            Object value = attributeType.decode(token.getVariable(1));
-            return new QueryExpression(Types.ATTRIBUTE, new Query.TermQuery(attributeType.name(), value));
-         });
-      }
-   };
-   private static final ParserGenerator PARSER_GENERATOR = parserGenerator(grammar, Lexer.create(Types.values()));
 
+   private static final ParserGenerator PARSER_GENERATOR = parserGenerator(new Grammar(Types.values()),
+                                                                           Lexer.create(Types.values()));
 
    /**
     * Parses the given query in string form into a {@link Query} object.
@@ -96,7 +65,7 @@ public class QueryParser {
     */
    public static Query parse(String query) throws ParseException {
       List<Query> parts = PARSER_GENERATOR.create(query).evaluateAll(evaluator);
-      if (parts.size() == 1) {
+      if(parts.size() == 1) {
          return parts.get(0);
       }
       return parts.stream()
@@ -104,44 +73,107 @@ public class QueryParser {
                   .orElseThrow(ParseException::new);
    }
 
-
-   private enum Types implements TokenDef {
+   private enum Types implements TokenDef, GrammarRegistrable {
       /**
        * Op types.
        */
-      OP(e('(')),
+      OP(e('(')) {
+         @Override
+         public void register(Grammar grammar) {
+            grammar.prefix(Types.OP, (parser, token) -> {
+               QueryExpression pe = parser.parseExpression(QueryExpression.class);
+               parser.consume(Types.CP);
+               return pe;
+            });
+         }
+      },
       /**
        * Cp types.
        */
-      CP(e(')')),
+      CP(e(')')) {
+         @Override
+         public void register(Grammar grammar) {
+
+         }
+      },
       /**
        * And types.
        */
-      AND("\b[aA][nN][Dd]\b"),
+      AND("\b[aA][nN][Dd]\b") {
+         @Override
+         public void register(Grammar grammar) {
+            grammar.postfix(Types.AND, (parser, token, left) -> {
+               final Query l = left.as(QueryExpression.class).query;
+               final Query r = parser.parseExpression(token, QueryExpression.class).query;
+               return new QueryExpression(Types.AND, new Query.And(l, r));
+            }, 2);
+         }
+      },
       /**
        * Or types.
        */
-      OR("\b[oO][Rr]\b"),
+      OR("\b[oO][Rr]\b") {
+         @Override
+         public void register(Grammar grammar) {
+            grammar.postfix(Types.OR, (parser, token, left) -> {
+               final Query l = left.as(QueryExpression.class).query;
+               final Query r = parser.parseExpression(token, QueryExpression.class).query;
+               return new QueryExpression(Types.OR, new Query.Or(l, r));
+            }, 1);
+         }
+      },
       /**
        * Term types.
        */
-      PHRASE("\'(?<>(?:\\\\\'|[^\'])*)\'"),
+      PHRASE("'(?<>(?:\\\\'|[^'])*)'") {
+         @Override
+         public void register(Grammar grammar) {
+            grammar.prefix(Types.PHRASE, (parser, token) -> new QueryExpression(Types.PHRASE,
+                                                                                new Query.PhraseQuery(token.getVariable(
+                                                                                      0))));
+         }
+      },
       /**
        * Not types.
        */
-      NOT("-"),
+      NOT("-") {
+         @Override
+         public void register(Grammar grammar) {
+            grammar.prefix(Types.NOT, (parser, token) -> {
+               final Query r = parser.parseExpression(QueryExpression.class).query;
+               return new QueryExpression(Types.NOT, new Query.Not(r));
+            });
+         }
+      },
       /**
        * Attribute types.
        */
       ATTRIBUTE(re(e('$'),
                    namedGroup("", IDENTIFIER),
-                   e('('),
-                   namedGroup("", "[^\\)]*"),
-                   e(')')
-                  )),
+                   e('='),
+                   re("'",
+                      namedGroup("", oneOrMore(or(ESC_BACKSLASH + ".", notChars("'")))),
+                      "'")
+                  )) {
+         @Override
+         public void register(Grammar grammar) {
+            grammar.prefix(Types.ATTRIBUTE, (parser, token) -> {
+               AttributeType<?> attributeType = AttributeType.make(token.getVariable(0));
+               Object value = attributeType.decode(token.getVariable(1));
+               return new QueryExpression(Types.ATTRIBUTE, new Query.TermQuery(attributeType.name(), value));
+            });
+         }
+      },
       WORD(re(oneOrMore(chars(true, "()\\s")),
               zeroOrOne(or(NON_WHITESPACE, "\\(", "\\)"),
-                        oneOrMore(chars(true, "()\\s")))));
+                        oneOrMore(chars(true, "()\\s"))))) {
+         @Override
+         public void register(Grammar grammar) {
+            grammar.prefix(Types.WORD, (parser, token) -> new QueryExpression(Types.PHRASE,
+                                                                              new Query.PhraseQuery(token.getText()
+                                                                                                         .trim())));
+         }
+      };
       private final String pattern;
 
       Types(String pattern) {

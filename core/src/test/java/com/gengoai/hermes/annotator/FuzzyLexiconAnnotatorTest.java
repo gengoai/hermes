@@ -21,12 +21,13 @@
 
 package com.gengoai.hermes.annotator;
 
-import com.gengoai.StringTag;
+import com.gengoai.Language;
 import com.gengoai.config.Config;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.Document;
 import com.gengoai.hermes.Types;
 import com.gengoai.hermes.lexicon.Lexicon;
+import com.gengoai.hermes.lexicon.LexiconEntry;
 import com.gengoai.hermes.lexicon.LexiconManager;
 import com.gengoai.hermes.lexicon.TrieLexicon;
 import org.junit.Test;
@@ -46,25 +47,26 @@ public class FuzzyLexiconAnnotatorTest {
       Document document = DocumentProvider.getDocument();
       document.annotate(Types.TOKEN, Types.SENTENCE);
 
-      Lexicon lexicon = TrieLexicon.builder(Types.TAG, false)
-                                   .add("get tired", new StringTag("SLEEPY"))
-                                   .add("get very tired", new StringTag("VERY_SLEEPY"))
-                                   .add("feel sleepy", new StringTag("SLEEPY"))
-                                   .add("she peeped", new StringTag("ACTION"))
-                                   .add("sitting on the bank", new StringTag("ACTION"))
-                                   .add("rabbit took a watch", new StringTag("ACTION"))
-                                   .add("sitting on bank", new StringTag("ACTION"))
-                                   .build();
+      Lexicon lexicon = new TrieLexicon("TEST", false);
+      lexicon.add(LexiconEntry.of("get tired", "SLEEPY", 2));
+      lexicon.add(LexiconEntry.of("get very tired", "VERY_SLEEPY", 3));
+      lexicon.add(LexiconEntry.of("feel sleepy", "SLEEPY", 2));
+      lexicon.add(LexiconEntry.of("she peeped", "ACTION", 2));
+      lexicon.add(LexiconEntry.of("sitting on the bank", "ACTION", 4));
+      lexicon.add(LexiconEntry.of("rabbit took a watch", "ACTION", 4));
+      lexicon.add(LexiconEntry.of("sitting on bank", "ACTION", 3));
 
       LexiconManager.register("testing", lexicon);
 
       FuzzyLexiconAnnotator gappyLexiconAnnotator = new FuzzyLexiconAnnotator(
-         Types.LEXICON_MATCH,
-         "testing",
-         5
+            Types.LEXICON_MATCH,
+            Types.TAG,
+            "testing",
+            Language.ENGLISH,
+            5
       );
 
-      gappyLexiconAnnotator.annotate(document);
+      gappyLexiconAnnotator.annotateImpl(document);
       List<Annotation> annotationList = document.annotations(Types.LEXICON_MATCH);
       assertEquals(5, annotationList.size());
       assertEquals("get very tired", annotationList.get(0).toLowerCase());

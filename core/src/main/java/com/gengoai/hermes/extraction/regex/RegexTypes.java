@@ -237,7 +237,7 @@ enum RegexTypes implements TokenDef, GrammarRegistrable {
       @Override
       public void register(Grammar grammar) {
          grammar.prefix(this, (parser, token) -> new PredicateTransition(token.getText(),
-                                                                         StopWords.isNotStopWord(),
+                                                                         StopWords.isContentWord(),
                                                                          this));
       }
    },

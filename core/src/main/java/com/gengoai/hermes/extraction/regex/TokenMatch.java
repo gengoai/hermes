@@ -36,7 +36,9 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * The type Token match.
+ * <p>
+ * A match from a {@link TokenRegex} pattern on an input HString.
+ * </p>
  *
  * @author David B. Bracewell
  */
@@ -52,21 +54,13 @@ public final class TokenMatch extends SimpleSpan implements Serializable {
    @Getter
    private final int tokenStart;
 
-   /**
-    * Instantiates a new Token match.
-    *
-    * @param input    the input
-    * @param start    the start
-    * @param end      the end
-    * @param captures the captures
-    */
-   public TokenMatch(HString input,
-                     int start,
-                     int end,
-                     ListMultimap<String, HString> captures
-                    ) {
-      super(start >= 0 ? input.tokenAt(start).start() : -1,
-            end > 0 ? input.tokenAt(end - 1).end() : -1);
+   TokenMatch(HString input, int start, int end, ListMultimap<String, HString> captures) {
+      super(start >= 0
+            ? input.tokenAt(start).start()
+            : -1,
+            end > 0
+            ? input.tokenAt(end - 1).end()
+            : -1);
       this.tokenStart = start;
       this.tokenEnd = end;
       this.input = input;
@@ -74,37 +68,31 @@ public final class TokenMatch extends SimpleSpan implements Serializable {
    }
 
    /**
-    * Gets document.
-    *
-    * @return the document
+    * @return the document associated with the input text
     */
    public Document getDocument() {
       return input.document();
    }
 
    /**
-    * Group span.
-    *
-    * @return the span
+    * @return the span of text covering the match
     */
    public HString group() {
       return input.document().substring(start(), end());
    }
 
    /**
-    * Group list.
+    * Gets the list of HString associated with a named group.
     *
     * @param groupName the group name
-    * @return the list
+    * @return the list of matches
     */
    public List<HString> group(String groupName) {
       return Collections.unmodifiableList(captures.get(groupName));
    }
 
    /**
-    * Group names set.
-    *
-    * @return the set
+    * @return the named groups in the expression
     */
    public Set<String> groupNames() {
       return Collections.unmodifiableSet(captures.keySet());

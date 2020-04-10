@@ -37,11 +37,11 @@ import lombok.Setter;
  * @author David B. Bracewell
  */
 public class TermCounts implements Action {
+   private static final long serialVersionUID = 1L;
    /**
     * The constant EXTRACTED_TERMS.
     */
    public static final String EXTRACTED_TERMS = "EXTRACTED_TERMS";
-   private static final long serialVersionUID = 1L;
    @Getter
    @Setter
    private boolean documentFrequencies;
@@ -83,15 +83,15 @@ public class TermCounts implements Action {
    }
 
    @Override
-   public Corpus process(Corpus corpus, Context context) throws Exception {
+   public void process(Corpus corpus, Context context) throws Exception {
       Counter<String> counts;
-      if (documentFrequencies) {
+      if(documentFrequencies) {
          counts = corpus.documentCount(extractor);
       } else {
          counts = corpus.termCount(extractor);
       }
       context.property(EXTRACTED_TERMS, counts);
-      return onComplete(corpus, context, counts);
+      onComplete(corpus, context, counts);
    }
 
    /**
@@ -110,8 +110,8 @@ public class TermCounts implements Action {
    @Override
    public String toString() {
       return "TermExtractionProcessor{" +
-         "extractor=" + extractor +
-         ", documentFrequencies=" + documentFrequencies +
-         '}';
+            "extractor=" + extractor +
+            ", documentFrequencies=" + documentFrequencies +
+            '}';
    }
 }//END OF TermCounts

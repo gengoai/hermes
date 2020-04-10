@@ -22,10 +22,19 @@ package com.gengoai.hermes.format;
 import com.gengoai.specification.Specification;
 import lombok.NonNull;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * <p>Service for handling {@link DocFormat} and {@link DocFormatProvider}.</p>
+ */
 public final class DocFormatService {
+   /**
+    * The suffix to add to formats to indicate the input has one document per line.
+    */
    public static final String ONE_PER_LINE_SUFFIX = "_OPL";
    private static Map<String, DocFormatProvider> providerMap = new ConcurrentHashMap<>();
 
@@ -35,8 +44,19 @@ public final class DocFormatService {
       }
    }
 
-   public static DocFormat create(@NonNull Specification spec) {
-      String formatName = spec.getSchema().toUpperCase().strip();
+   private DocFormatService() {
+      throw new IllegalAccessError();
+   }
+
+   /**
+    * <p>Creates a {@link DocFormat} from the given specification, where the specification is in the form of:
+    * <code>format_name[_opl]::[RESOURCE];PARAMETERS</code></p>
+    *
+    * @param specification the specification
+    * @return the doc format
+    */
+   public static DocFormat create(@NonNull Specification specification) {
+      String formatName = specification.getSchema().toUpperCase().strip();
       boolean isOPL = false;
       if(formatName.endsWith(ONE_PER_LINE_SUFFIX)) {
          formatName = formatName.substring(0, formatName.length() - ONE_PER_LINE_SUFFIX.length());
@@ -44,7 +64,7 @@ public final class DocFormatService {
       }
       DocFormatProvider provider = getProvider(formatName);
       DocFormatParameters formatParameters = provider.getDefaultFormatParameters();
-      for(Map.Entry<String, String> e : spec.getQueryParameters()) {
+      for(Map.Entry<String, String> e : specification.getQueryParameters()) {
          formatParameters.set(e.getKey(), e.getValue());
       }
       DocFormat format = provider.create(formatParameters);
@@ -54,21 +74,36 @@ public final class DocFormatService {
       return format;
    }
 
-   public static DocFormat create(String specification) {
+   /**
+    * <p>Creates a {@link DocFormat} from the given specification, where the specification is in the form of:
+    * <code>format_name[_opl]::[RESOURCE];PARAMETERS</code></p>
+    *
+    * @param specification the specification
+    * @return the doc format
+    */
+   public static DocFormat create(@NonNull String specification) {
       return create(Specification.parse(specification));
    }
 
-
-   public static Collection<DocFormatProvider> getProviders(){
-      return Collections.unmodifiableCollection(providerMap.values());
-   }
-
+   /**
+    * Gets the {@link DocFormatProvider} for the given format name.
+    *
+    * @param name the format name
+    * @return the DocFormatProvider
+    */
    public static DocFormatProvider getProvider(@NonNull String name) {
       name = name.toUpperCase();
       if(providerMap.containsKey(name)) {
          return providerMap.get(name);
       }
       throw new IllegalArgumentException("Invalid DocFormat: '" + name + "'");
+   }
+
+   /**
+    * @return all registered {@link DocFormatProvider}s.
+    */
+   public static Collection<DocFormatProvider> getProviders() {
+      return Collections.unmodifiableCollection(providerMap.values());
    }
 
 }//END OF DocFormatService

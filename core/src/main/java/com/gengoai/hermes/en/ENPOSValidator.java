@@ -28,7 +28,7 @@ import com.gengoai.string.StringMatcher;
 import com.gengoai.string.Strings;
 
 /**
- * The type English pos validator.
+ * English language sequence labeling validator for part-of-speech tags.
  *
  * @author David B. Bracewell
  */
@@ -36,14 +36,19 @@ public class ENPOSValidator implements SequenceValidator {
    private static final long serialVersionUID = 1L;
 
    @Override
-   public boolean isValid(String label, String previousLabel, Example instance) {
+   public boolean isValid(String label,
+                          String previousLabel,
+                          Example instance) {
+
       Feature wordFeature = instance.getFeatureByPrefix("WORD", null);
       String word = wordFeature == null
                     ? Strings.EMPTY
                     : wordFeature.getSuffix();
+
       if(Strings.isNullOrBlank(word)) {
          return true;
       }
+
       PartOfSpeech pos = PartOfSpeech.valueOf(label);
       if(pos == null) {
          return true;

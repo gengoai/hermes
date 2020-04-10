@@ -52,7 +52,7 @@ public class LexiconAnnotatorTest {
 
       Lexicon lexicon = LexiconManager.getLexicon("testing.lexicon");
 
-      annotator.annotate(document);
+      annotator.annotateImpl(document);
       List<Annotation> entities = document.annotations(Types.ENTITY);
       assertFalse(entities.isEmpty());
       assertEquals("Alice", entities.get(0).toString());
@@ -63,7 +63,7 @@ public class LexiconAnnotatorTest {
 
       document = DocumentProvider.getAnnotatedDocument();
       annotator = new LexiconAnnotator(Types.ENTITY, "testing.lexicon2");
-      annotator.annotate(document);
+      annotator.annotateImpl(document);
       entities = document.annotations(Types.ENTITY);
       assertFalse(entities.isEmpty());
       assertEquals("Alice", entities.get(0).toString());

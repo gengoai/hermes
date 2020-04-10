@@ -29,22 +29,27 @@ import com.gengoai.hermes.ResourceType;
 import com.gengoai.hermes.Types;
 import com.gengoai.hermes.ml.POSTagger;
 
-import java.io.Serializable;
 import java.util.Collections;
 import java.util.Set;
 
 /**
- * The type Default part of speech annotator.
+ * Default Part-of-Speech annotator that uses a {@link POSTagger} machine learning model.
  *
  * @author David B. Bracewell
  */
-public class DefaultPartOfSpeechAnnotator extends SentenceLevelAnnotator implements Serializable {
+public class DefaultPartOfSpeechAnnotator extends SentenceLevelAnnotator {
    private static final long serialVersionUID = 1L;
    private static final Cache<Language, POSTagger> cache = ResourceType.MODEL.createCache("Attribute.PART_OF_SPEECH",
                                                                                           "pos");
 
+
    @Override
-   public void annotate(Annotation sentence) {
+   public String getProvider(Language language) {
+      return "POSTagger v" + cache.get(language).getVersion();
+   }
+
+   @Override
+   protected void annotate(Annotation sentence) {
       cache.get(sentence.getLanguage()).tag(sentence);
    }
 
@@ -53,4 +58,4 @@ public class DefaultPartOfSpeechAnnotator extends SentenceLevelAnnotator impleme
       return Collections.singleton(Types.PART_OF_SPEECH);
    }
 
-}//END OF DefaultPOSAnnotator
+}//END OF DefaultPartOfSpeechAnnotator

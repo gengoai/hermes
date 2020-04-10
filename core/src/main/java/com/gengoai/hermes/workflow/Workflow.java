@@ -20,13 +20,24 @@
 package com.gengoai.hermes.workflow;
 
 import com.gengoai.annotation.JsonHandler;
-import com.gengoai.hermes.corpus.Corpus;
+import com.gengoai.hermes.corpus.DocumentCollection;
 import lombok.NonNull;
 
 import java.io.Serializable;
 
 /**
- * The interface Workflow.
+ * <p>
+ * A workflow represents a set of _actions_ to perform on an document collection. Actions fall into one or more of the
+ * following three categories:
+ * </P>
+ * <p><ol>
+ * <li>Modify - The action modifies the documents in the collection, e.g. adds new annotations or attributes.</li>
+ * <li>Compute - The action generates information that is added to the {@link Context} for use by downstream
+ * actions.</li>
+ * <li>Output - The action generates an output for consumption by external processes and/or downstream actions.</li>
+ * </ol></p>
+ * <p>Actions share a common key-value memory store, called a {@link Context}, in which information they require or
+ * they generate can be added.</p>
  */
 @JsonHandler(WorkflowMarshaller.class)
 public interface Workflow extends Serializable {
@@ -37,13 +48,6 @@ public interface Workflow extends Serializable {
     * @return the starting context
     */
    Context getStartingContext();
-
-   /**
-    * Sets starting context.
-    *
-    * @param context the context
-    */
-   void setStartingContext(Context context);
 
    /**
     * Gets type.
@@ -60,6 +64,13 @@ public interface Workflow extends Serializable {
     * @return the corpus
     * @throws Exception the exception
     */
-   Corpus process(@NonNull Corpus input, @NonNull Context context) throws Exception;
+   DocumentCollection process(@NonNull DocumentCollection input, @NonNull Context context) throws Exception;
+
+   /**
+    * Sets starting context.
+    *
+    * @param context the context
+    */
+   void setStartingContext(Context context);
 
 }//END OF Workflow

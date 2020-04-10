@@ -48,7 +48,7 @@ import static com.gengoai.hermes.morphology.PennTreeBank.*;
 /**
  * <p>
  * Interface defining a part-of-speech. A part-of-speech has an associated name representing a human-readable label,
- * a tag which is used in annotated corpora, and a {@link MorphologicalFeatures} set relating to the features the
+ * a tag which is used in annotated corpora, and a {@link UniversalFeatureSet} set relating to the features the
  * tag invokes.
  * </p>
  * <p>
@@ -90,7 +90,7 @@ public final class PartOfSpeech implements Tag, Serializable {
    //--------------------------------------------------------------------------------------------------------------
 
    @Getter
-   private final MorphologicalFeatures features;
+   private final UniversalFeatureSet features;
    private final PartOfSpeech parent;
    @Getter
    private final boolean isPhraseTag;
@@ -103,7 +103,7 @@ public final class PartOfSpeech implements Tag, Serializable {
                         PartOfSpeech parent,
                         boolean isPhraseTag,
                         boolean isUniversalTag,
-                        MorphologicalFeatures features) {
+                        UniversalFeatureSet features) {
       this.features = features;
       this.isPhraseTag = isPhraseTag;
       this.isUniversalTag = isUniversalTag;
@@ -117,7 +117,7 @@ public final class PartOfSpeech implements Tag, Serializable {
                                       PartOfSpeech parent,
                                       boolean isPhraseTag,
                                       boolean isUniversalTag,
-                                      MorphologicalFeatures features) {
+                                      UniversalFeatureSet features) {
       Validation.notNullOrBlank(name);
       Validation.notNullOrBlank(tag);
       name = name.toUpperCase();
@@ -151,8 +151,8 @@ public final class PartOfSpeech implements Tag, Serializable {
                                      String tag,
                                      @NonNull PartOfSpeech parent,
                                      boolean isPhraseTag,
-                                     Tuple2<Feature, Value>... features) {
-      return create(name, tag, parent, isPhraseTag, false, new MorphologicalFeatures(features));
+                                     Tuple2<UniversalFeature, UniversalFeatureValue>... features) {
+      return create(name, tag, parent, isPhraseTag, false, new UniversalFeatureSet(features));
    }
 
    /**
@@ -196,7 +196,7 @@ public final class PartOfSpeech implements Tag, Serializable {
    }
 
    private static PartOfSpeech upos(String name, String tag, PartOfSpeech parent) {
-      return create(name, tag, parent, false, true, new MorphologicalFeatures());
+      return create(name, tag, parent, false, true, new UniversalFeatureSet());
    }
 
    /**
@@ -209,6 +209,8 @@ public final class PartOfSpeech implements Tag, Serializable {
       nameOrTag = nameOrTag.toUpperCase();
       if(tags.containsKey(nameOrTag)) {
          return tags.get(nameOrTag);
+      } else if(nameOrTag.equalsIgnoreCase("X")) {
+         return ANY;
       } else if(nameOrTag.equals(";") || nameOrTag.equals("...") || nameOrTag.equals("-") || nameOrTag.equals("--")) {
          return COLON;
       } else if(nameOrTag.equals("?") || nameOrTag.equals("!")) {
@@ -429,6 +431,11 @@ public final class PartOfSpeech implements Tag, Serializable {
     */
    public String tag() {
       return tag;
+   }
+
+   @Override
+   public String toString() {
+      return name;
    }
 
    public static class Marshaller extends JsonMarshaller<PartOfSpeech> {

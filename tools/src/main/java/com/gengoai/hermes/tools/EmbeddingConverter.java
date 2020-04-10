@@ -21,7 +21,6 @@ package com.gengoai.hermes.tools;
 
 import com.gengoai.apollo.ml.embedding.Embedding;
 import com.gengoai.application.Option;
-import com.gengoai.hermes.application.HermesCLI;
 import com.gengoai.io.resource.Resource;
 
 /**

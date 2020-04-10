@@ -21,7 +21,7 @@ package com.gengoai.hermes.workflow.actions;
 
 import com.gengoai.hermes.AnnotatableType;
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.corpus.Corpus;
+import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.hermes.workflow.Action;
 import com.gengoai.hermes.workflow.Context;
 import lombok.NonNull;
@@ -50,6 +50,12 @@ public class Annotate implements Action {
       return Arrays.stream(types).map(AnnotatableType::canonicalName).toArray(String[]::new);
    }
 
+   @Override
+   public DocumentCollection process(@NonNull DocumentCollection corpus, @NonNull Context context) throws Exception {
+      logInfo(log, "Annotating corpus for {0}", Arrays.toString(types));
+      return corpus.annotate(types);
+   }
+
    /**
     * Sets types.
     *
@@ -59,12 +65,6 @@ public class Annotate implements Action {
       this.types = Arrays.stream(types)
                          .map(AnnotatableType::valueOf)
                          .toArray(AnnotatableType[]::new);
-   }
-
-   @Override
-   public Corpus process(@NonNull Corpus corpus, @NonNull Context context) throws Exception {
-      logInfo(log, "Annotating corpus for {0}", Arrays.toString(types));
-      return corpus.annotate(types);
    }
 
    @Override

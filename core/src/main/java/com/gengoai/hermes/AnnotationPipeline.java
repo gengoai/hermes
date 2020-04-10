@@ -81,7 +81,7 @@ public class AnnotationPipeline implements Serializable {
          annotator.annotate(document);
          updated.set(true);
          for(AnnotatableType type : annotator.satisfies()) {
-            document.setCompleted(type, annotator.getClass().getName() + "::" + annotator.getVersion());
+            document.setCompleted(type, annotator.getProvider(document.getLanguage()));
          }
       });
       return updated.get();

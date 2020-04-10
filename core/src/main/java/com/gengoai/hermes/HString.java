@@ -8,6 +8,7 @@ import com.gengoai.collection.Iterators;
 import com.gengoai.collection.tree.Span;
 import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.morphology.Lemmatizers;
+import com.gengoai.hermes.morphology.UniversalFeatureSet;
 import com.gengoai.hermes.morphology.PartOfSpeech;
 import com.gengoai.hermes.morphology.Stemmers;
 import com.gengoai.reflection.TypeUtils;
@@ -1494,6 +1495,15 @@ public interface HString extends Span, StringLike, Serializable {
             .stream()
             .map(t -> t.toString() + delimiter + t.attribute(Types.PART_OF_SPEECH, PartOfSpeech.ANY).tag())
             .collect(Collectors.joining(" "));
+   }
+
+   default UniversalFeatureSet getMorphologicalFeatures() {
+      if( tokenLength() < 1 ){
+         return new UniversalFeatureSet();
+      } else if (tokenLength() == 1){
+         return attribute(Types.MORPHOLOGICAL_FEATURES, pos().getFeatures());
+      }
+      return new UniversalFeatureSet(tokenStream().map(HString::getMorphologicalFeatures).collect(Collectors.toList()));
    }
 
    /**

@@ -36,7 +36,7 @@ import static com.gengoai.hermes.Hermes.IDENTIFIER;
 import static com.gengoai.string.Re.*;
 import static com.gengoai.tuple.Tuples.$;
 
-enum LyreType implements TokenDef {
+enum LyreType implements TokenDef, GrammarRegistrable {
    TAG(re(e('#'), namedGroup("", IDENTIFIER))) {
       @Override
       public void register(Grammar grammar) {

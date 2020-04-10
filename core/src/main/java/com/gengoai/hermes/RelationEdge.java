@@ -50,6 +50,13 @@ public class RelationEdge extends Edge<Annotation> {
       super(source, target);
    }
 
+   public static RelationEdge from(@NonNull Annotation source, @NonNull Relation relation){
+      RelationEdge e = new RelationEdge(source,relation.getTarget(source));
+      e.setRelation(relation.getValue());
+      e.setRelationType(relation.getType());
+      return e;
+   }
+
    @Override
    public boolean isDirected() {
       return true;

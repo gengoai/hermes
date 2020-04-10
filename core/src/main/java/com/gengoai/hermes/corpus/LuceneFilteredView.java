@@ -87,9 +87,13 @@ class LuceneFilteredView implements DocumentCollection {
    }
 
    @Override
-   public DocumentCollection update(@NonNull SerializableConsumer<Document> documentProcessor) {
+   public DocumentCollection update(@NonNull String operation,
+                                    @NonNull SerializableConsumer<Document> documentProcessor) {
+      ProgressLogger progressLogger = ProgressLogger.create(this, operation);
       return new MStreamDocumentCollection(stream().map(d -> {
+         progressLogger.start();
          documentProcessor.accept(d);
+         progressLogger.stop(d.tokenLength());
          return d;
       }));
    }

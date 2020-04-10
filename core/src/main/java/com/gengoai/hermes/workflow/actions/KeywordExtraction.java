@@ -58,22 +58,21 @@ public class KeywordExtraction implements Action {
    }
 
    @Override
-   public Corpus process(Corpus corpus, Context context) throws Exception {
+   public void process(Corpus corpus, Context context) throws Exception {
       extractor.fit(corpus);
       final MCounterAccumulator<String> globalKeywordCounts = keepGlobalCounts
                                                               ? corpus.getStreamingContext().counterAccumulator()
                                                               : null;
-      corpus.update(doc -> {
+      corpus.update("KeywordExtraction", doc -> {
          List<String> keywords = new ArrayList<>(extractor.extract(doc).count().topN(N).items());
          doc.put(Types.KEYWORDS, keywords);
-         if (keepGlobalCounts) {
+         if(keepGlobalCounts) {
             keywords.forEach(k -> globalKeywordCounts.increment(k, 1));
          }
       });
-      if (keepGlobalCounts) {
+      if(keepGlobalCounts) {
          context.property(Types.KEYWORDS.name(), globalKeywordCounts.value());
       }
-      return corpus;
    }
 
 }//END OF KeywordExtraction

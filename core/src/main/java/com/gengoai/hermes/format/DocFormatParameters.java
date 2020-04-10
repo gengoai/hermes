@@ -32,6 +32,9 @@ import java.util.List;
 
 import static com.gengoai.reflection.TypeUtils.parameterizedType;
 
+/**
+ * The type Doc format parameters.
+ */
 public class DocFormatParameters extends ParamMap<DocFormatParameters> {
    /**
     * Defines the default language for new documents
@@ -52,13 +55,30 @@ public class DocFormatParameters extends ParamMap<DocFormatParameters> {
     */
    public static final ParameterDef<SaveMode> SAVE_MODE = ParameterDef.param("saveMode", SaveMode.class);
 
+   /**
+    * Whether to overwrite, ignore, or throw an error when writing a corpus to an existing file/directory (default
+    * ERROR).
+    */
    public final Parameter<SaveMode> saveMode = parameter(SAVE_MODE, SaveMode.ERROR);
+   /**
+    * Creates a distributed document collection when the value is set to true (default false).
+    */
    public final Parameter<Boolean> distributed = parameter(DISTRIBUTED, false);
+   /**
+    * The default language for new documents. (default calls Hermes.defaultLanguage())
+    */
    public final Parameter<Language> defaultLanguage = parameter(DEFAULT_LANGUAGE, Hermes.defaultLanguage());
+   /**
+    * The class names of the text normalizes to use when constructing documents. (default calls
+    * TextNormalization.configuredInstance().getPreprocessors())
+    */
    public final Parameter<List<TextNormalizer>> normalizers = parameter(NORMALIZERS,
                                                                         TextNormalization.configuredInstance()
                                                                                          .getPreprocessors());
 
+   /**
+    * @return Creates a document factory based on the this set of parameters
+    */
    public DocumentFactory getDocumentFactory() {
       return DocumentFactory.builder()
                             .defaultLanguage(defaultLanguage.value())

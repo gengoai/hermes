@@ -33,11 +33,11 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.Serializable;
 
-public class OPLFormat implements DocFormat, Serializable {
+class OPLFormat implements DocFormat, Serializable {
    private static final long serialVersionUID = 1L;
    private final DocFormat subFormat;
 
-   public OPLFormat(DocFormat subFormat) {
+   OPLFormat(DocFormat subFormat) {
       this.subFormat = subFormat;
    }
 

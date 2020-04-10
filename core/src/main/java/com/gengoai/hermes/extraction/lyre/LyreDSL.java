@@ -56,8 +56,6 @@ import java.util.stream.Stream;
 
 import static com.gengoai.hermes.HString.toHString;
 import static com.gengoai.hermes.RelationDirection.OUTGOING;
-import static com.gengoai.hermes.extraction.lyre.Lyre.process;
-import static com.gengoai.hermes.extraction.lyre.Lyre.processPred;
 import static com.gengoai.hermes.extraction.lyre.LyreExpressionType.*;
 import static java.util.Comparator.comparingInt;
 
@@ -67,11 +65,10 @@ import static java.util.Comparator.comparingInt;
  * @author David B. Bracewell
  */
 public final class LyreDSL {
-
    private static final Pattern FLAGS = Pattern.compile("^\\(\\?[a-z]+\\)", Pattern.CASE_INSENSITIVE);
    /**
-    * Returns the current Object being processed.
-    * Note that one-argument methods in Lyre (e.g. lower, isUpper, etc.) have an implied `$_` argument if none is given.
+    * Returns the current Object being processed. Note that one-argument methods in Lyre (e.g. lower, isUpper, etc.)
+    * have an implied `$_` argument if none is given.
     * <pre>
     *    Usage:  $_
     * </pre>
@@ -1050,6 +1047,20 @@ public final class LyreDSL {
                                       Collectors.toList()));
    }
 
+   static Object filter(Object o, SerializablePredicate<Object> function) {
+      if(o instanceof Collection) {
+         return postProcess(Cast.<Collection<?>>as(o)
+                                  .stream()
+                                  .map(o2 -> filter(o2, function))
+                                  .filter(Objects::nonNull)
+                                  .collect(Collectors.toList())
+                           );
+      }
+      return function.test(o)
+             ? o
+             : null;
+   }
+
    /**
     * Return the first element of a list expression or null if none.
     * <pre>
@@ -1546,7 +1557,7 @@ public final class LyreDSL {
                                 o -> processPred(expression.applyAsObject(o),
                                                  a -> Optional.ofNullable(a)
                                                               .map(HString::toHString)
-                                                              .map(h -> StopWords.isNotStopWord().test(h))
+                                                              .map(h -> StopWords.isContentWord().test(h))
                                                               .orElse(false)));
    }
 
@@ -1888,8 +1899,8 @@ public final class LyreDSL {
    }
 
    /**
-    * Lyre allows for string literals to be specified using single quotes (').
-    * The backslash character can be use to escape a single quote if it is required in the literal.
+    * Lyre allows for string literals to be specified using single quotes ('). The backslash character can be use to
+    * escape a single quote if it is required in the literal.
     * <pre>
     *    usage: 'value'
     *    e.g.: 'now is the time...'
@@ -2276,7 +2287,8 @@ public final class LyreDSL {
    }
 
    /**
-    * Returns <b>true</b> if none of the items in the given list evaluates to *true* for the given predicate expression.
+    * Returns <b>true</b> if none of the items in the given list evaluates to *true* for the given predicate
+    * expression.
     * <pre>
     *    usage: none( list_expression, predicate_expression )
     *    e.g.: none( @TOKEN, #VERB ) -- returns true if none of the tokens on the current HString is a verb
@@ -2467,6 +2479,52 @@ public final class LyreDSL {
                                 o -> process(true, expression.applyAsObject(o), a -> toHString(a).pos()));
    }
 
+   private static Object postProcess(Object o) {
+      if(o instanceof Collection) {
+         Collection<?> c = Cast.<Collection<?>>as(o)
+               .stream()
+               .filter(Objects::nonNull)
+               .filter(h -> !(h instanceof HString) || !Cast.<HString>as(h).isEmpty())
+               .filter(cs -> !(cs instanceof CharSequence) || Strings.isNotNullOrBlank(cs.toString()))
+               .collect(Collectors.toList());
+         if(c.isEmpty()) {
+            return null;
+         }
+         if(c.size() == 1) {
+            return c.iterator().next();
+         }
+      }
+      return o;
+   }
+
+   private static Object process(boolean ignoreNulls, Object o, SerializableFunction<Object, ?> function) {
+      if(ignoreNulls && o == null) {
+         return null;
+      }
+      if(o instanceof Collection) {
+         return postProcess(Cast.<Collection<?>>as(o)
+                                  .stream()
+                                  .map(v -> postProcess(function.apply(v)))
+                                  .filter(Objects::nonNull)
+                                  .filter(cs -> !(cs instanceof CharSequence) || Strings.isNotNullOrBlank(Cast.as(cs)))
+                                  .collect(Collectors.toList()));
+      }
+      return postProcess(function.apply(o));
+   }
+
+   private static Object processPred(Object o, SerializablePredicate<Object> function) {
+      if(o instanceof Collection) {
+         return postProcess(Cast.<Collection<?>>as(o)
+                                  .stream()
+                                  .filter(Objects::nonNull)
+                                  .map(o2 -> filter(o2, function))
+                                  .filter(Objects::nonNull)
+                                  .filter(cs -> !(cs instanceof CharSequence) || Strings.isNotNullOrBlank(Cast.as(cs)))
+                                  .collect(Collectors.toList()));
+      }
+      return function.test(o);
+   }
+
    private static List<?> recursiveListApply(Collection<?> c, Function<Object, ?> operator) {
       if(c == null) {
          return null;
@@ -2475,9 +2533,9 @@ public final class LyreDSL {
       for(Object o : c) {
          Object toAdd;
          if(o instanceof Collection) {
-            toAdd = Lyre.postProcess(recursiveListApply(Cast.as(o), operator));
+            toAdd = postProcess(recursiveListApply(Cast.as(o), operator));
          } else {
-            toAdd = Lyre.postProcess(operator.apply(o));
+            toAdd = postProcess(operator.apply(o));
          }
          if(toAdd != null) {
             output.add(toAdd);

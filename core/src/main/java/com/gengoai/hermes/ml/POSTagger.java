@@ -27,10 +27,7 @@ import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Types;
 import com.gengoai.hermes.morphology.PartOfSpeech;
-import com.gengoai.hermes.morphology.PennTreeBank;
 import lombok.NonNull;
-
-import java.util.regex.Pattern;
 
 /**
  * The type Pos tagger.
@@ -39,7 +36,6 @@ import java.util.regex.Pattern;
  */
 public class POSTagger extends SequenceTagger {
    private static final long serialVersionUID = 1L;
-   private static final Pattern ORDINAL = Pattern.compile("^\\d+(rd|th|st|nd)$", Pattern.CASE_INSENSITIVE);
 
    /**
     * Instantiates a new Pos tagger.
@@ -47,34 +43,22 @@ public class POSTagger extends SequenceTagger {
     * @param featurizer the featurizer
     * @param labeler    the labeler
     */
-   public POSTagger(@NonNull FeatureExtractor<HString> featurizer, @NonNull SequenceLabeler labeler) {
-      super(featurizer, labeler);
+   public POSTagger(@NonNull FeatureExtractor<HString> featurizer,
+                    @NonNull SequenceLabeler labeler,
+                    @NonNull String version) {
+      super(featurizer, labeler, version);
+   }
+
+   protected void addPOS(Annotation sentence, Labeling result) {
+      for(int i = 0; i < sentence.tokenLength(); i++) {
+         Annotation token = sentence.tokenAt(i);
+         token.put(Types.PART_OF_SPEECH, PartOfSpeech.valueOf(result.getLabel(i)));
+      }
    }
 
    @Override
-   public void tag(Annotation sentence) {
-      LabeledSequence<Annotation> sequenceInput = new LabeledSequence<>(sentence.tokens());
-      Labeling result = labeler.label(featurizer.extractExample(sequenceInput));
-      for(int i = 0; i < sentence.tokenLength(); i++) {
-         Annotation token = sentence.tokenAt(i);
-         if((token.contentEqualsIgnoreCase("'s") || token.contentEqualsIgnoreCase("s'")) &&
-               token.previous().pos().isNoun()) {
-            token.put(Types.PART_OF_SPEECH, PennTreeBank.POS);
-         } else if(ORDINAL.matcher(token).matches()) {
-            token.put(Types.PART_OF_SPEECH, PennTreeBank.JJ);
-         } else if(sentence.tokenAt(i - 1).pos().isPronoun()
-               && token.contentEqualsIgnoreCase("like")
-         ) {
-            token.put(Types.PART_OF_SPEECH, PennTreeBank.VB);
-         } else if(sentence.tokenAt(i - 1).pos().isVerb() &&
-               sentence.tokenAt(i + 1).contentEqualsIgnoreCase("to") &&
-               token.toLowerCase().endsWith("ing")) {
-            //Common error of MODAL + GERUND (where GERUND form is commonly a noun) + to => VBG
-            token.put(Types.PART_OF_SPEECH, PennTreeBank.VBG);
-         } else {
-            token.put(Types.PART_OF_SPEECH, PartOfSpeech.valueOf(result.getLabel(i)));
-         }
-      }
+   public final void tag(Annotation sentence) {
+      addPOS(sentence, labeler.label(featurizer.extractExample(new LabeledSequence<>(sentence.tokens()))));
    }
 
 }// END OF POSTagger

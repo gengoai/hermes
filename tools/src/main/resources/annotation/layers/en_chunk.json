@@ -1,0 +1,15 @@
+{
+  "name": "English - Phrase Chunks",
+  "annotationType": "PHRASE_CHUNK",
+  "includeAllTags": false,
+  "tags": {
+    "NP": "GRAY",
+    "PP": "BLUE",
+    "VP": "GREEN",
+    "ADVP": "#FF00FF",
+    "ADJP": "ORANGE",
+    "SBAR": "RED",
+    "PRT": "MAGENTA",
+    "INTJ": "CYAN"
+  }
+}

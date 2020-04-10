@@ -30,9 +30,10 @@ import com.gengoai.hermes.corpus.Corpus;
 import com.gengoai.hermes.extraction.Extraction;
 import com.gengoai.hermes.extraction.FeaturizingExtractor;
 import com.gengoai.hermes.extraction.lyre.LyreDSL;
+import lombok.NonNull;
 
 /**
- * The type Tfidf keyword extractor.
+ * Keyword extractor that scores words based on their TFIDF value.
  *
  * @author David B. Bracewell
  */
@@ -41,21 +42,19 @@ public class TFIDFKeywordExtractor implements KeywordExtractor {
    private final FeaturizingExtractor termExtractor;
    private Counter<String> inverseDocumentFrequencies;
 
-
    /**
-    * Instantiates a new Tfidf keyword extractor.
+    * Instantiates a new TFIDFKeywordExtractor.
     */
    public TFIDFKeywordExtractor() {
       this(LyreDSL.lower(LyreDSL.filter(LyreDSL.annotation(Types.TOKEN), LyreDSL.isContentWord)));
    }
 
-
    /**
-    * Instantiates a new TFIDF based keyword extractor.
+    * Instantiates a new TFIDFKeywordExtractor.
     *
     * @param termExtractor the specification for filtering and converting annotations to strings
     */
-   public TFIDFKeywordExtractor(FeaturizingExtractor termExtractor) {
+   public TFIDFKeywordExtractor(@NonNull FeaturizingExtractor termExtractor) {
       this.termExtractor = termExtractor;
    }
 

@@ -37,11 +37,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+/**
+ * <p>Format Name: <b>twitter_search</b></p>
+ * <p>Format to read in results from the Twitter Search API</p>
+ */
 public class TwitterSearchFormat extends WholeFileTextFormat implements OneDocPerFileFormat, Serializable {
    private static final long serialVersionUID = 1L;
    private final DocFormatParameters parameters;
 
-   public TwitterSearchFormat(@NonNull DocFormatParameters parameters) {
+   TwitterSearchFormat(@NonNull DocFormatParameters parameters) {
       this.parameters = parameters;
    }
 
@@ -88,6 +92,9 @@ public class TwitterSearchFormat extends WholeFileTextFormat implements OneDocPe
       throw new UnsupportedOperationException();
    }
 
+   /**
+    * The type Provider.
+    */
    @MetaInfServices
    public static class Provider implements DocFormatProvider {
 

@@ -52,18 +52,18 @@ public class TermKeywordExtractor implements KeywordExtractor {
     *
     * @param termExtractor the specification on how to extract terms
     */
-   public TermKeywordExtractor(FeaturizingExtractor termExtractor) {
+   public TermKeywordExtractor(@NonNull FeaturizingExtractor termExtractor) {
       this.termExtractor = termExtractor;
-   }
-
-   @Override
-   public void fit(Corpus corpus) {
-
    }
 
    @Override
    public Extraction extract(@NonNull HString hString) {
       return termExtractor.extract(hString);
+   }
+
+   @Override
+   public void fit(Corpus corpus) {
+
    }
 
 }//END OF TermSpecExtractor

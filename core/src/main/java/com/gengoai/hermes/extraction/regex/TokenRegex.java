@@ -34,9 +34,33 @@ import java.util.Optional;
 
 import static com.gengoai.parsing.ParserGenerator.parserGenerator;
 
-
 /**
- * The type Token regex.
+ * <p>
+ * Hermes provides a token-based regular expression engine that allows for matches on arbitrary annotation types,
+ * relation types, and attributes, while providing many of the operators that are possible using standard Java regular
+ * expressions. As with Java regular expressions, the token regular expression is specified as a string and is compiled
+ * into an instance of of TokenRegex. The TokenRegex class has many of the same methods as Java’s regular expression,
+ * but returns a {@link TokenMatcher} instead of Matcher. The TokenMatcher class allows for iterating of the matches,
+ * extracting the match or named-groups within the match, the starting and ending offset of the match, and conversion
+ * into a TokenMatch object which records the current state of the match. Token regular expressions can act as
+ * extractors where the extraction generates the HStrings matched for the default group. An example of compiling a
+ * regular expression, creating a match, and iterating over the matches is as follows:
+ * </p>
+ * <pre>
+ * {@code
+ *    TokenRegex regex = TokenRegex.compile(pattern);
+ *    TokenMatcher matcher = regex.matcher(document);
+ *    while (matcher.find()) {
+ *            System.out.println(matcher.group());
+ *    }
+ * }
+ * </pre>
+ * <p>
+ * The syntax for token-based regular expressions borrows from the Lyre Expression Language where possible. Token-based
+ * regular expressions differ from Lyre in that they work over sequences of HStrings whereas Lyre is working on single
+ * HString units. As such, there are differences in the syntax between Lyre. Details on the syntax can be found in the
+ * Hermes User Guide.
+ * </p>
  *
  * @author David B. Bracewell
  */
@@ -52,15 +76,14 @@ public final class TokenRegex implements Serializable, Extractor {
       this.pattern = transitionFunction.toString();
    }
 
-
    /**
-    * Compiles the regular expression
+    * Compiles the given pattern into a TokenRegex object
     *
     * @param pattern The token regex pattern
     * @return A compiled TokenRegex
-    * @throws ParseException the parse exception
+    * @throws ParseException The given pattern has a syntax error
     */
-   public static TokenRegex compile(String pattern) throws ParseException {
+   public static TokenRegex compile(@NonNull String pattern) throws ParseException {
       Parser parser = GENERATOR.create(pattern);
       TransitionFunction top = null;
       while(parser.hasNext()) {
@@ -86,10 +109,10 @@ public final class TokenRegex implements Serializable, Extractor {
    }
 
    /**
-    * Match first optional.
+    * Runs the pattern over the given input text returning the first match if one exists.
     *
-    * @param text the text
-    * @return the optional
+    * @param text the text to run the pattern over
+    * @return an optional of the match
     */
    public Optional<HString> matchFirst(HString text) {
       TokenMatcher matcher = new TokenMatcher(nfa, text);
@@ -121,24 +144,21 @@ public final class TokenRegex implements Serializable, Extractor {
    }
 
    /**
-    * Matches boolean.
+    * Determines if the regex matches the entire region of the given input text.
     *
-    * @param text the text
-    * @return the boolean
+    * @param text the text to match
+    * @return True if the pattern matches  the entire region of the input text, False otherwise
     */
    public boolean matches(HString text) {
-      return new TokenMatcher(nfa, text).find();
+      return matchFirst(text).map(h -> h.length() == text.length()).orElse(false);
    }
 
    /**
-    * Pattern string.
-    *
     * @return The token regex pattern as a string
     */
    public String pattern() {
       return pattern;
    }
-
 
    @Override
    public String toString() {

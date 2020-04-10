@@ -22,11 +22,15 @@ public abstract class SequenceTagger implements Serializable {
    protected final FeatureExtractor<HString> featurizer;
    @Getter
    protected final SequenceLabeler labeler;
+   @Getter
+   protected final String version;
 
    protected SequenceTagger(FeatureExtractor<HString> featurizer,
-                            SequenceLabeler labeler) {
+                            SequenceLabeler labeler,
+                            String version) {
       this.featurizer = featurizer;
       this.labeler = labeler;
+      this.version = version;
    }
 
    /**

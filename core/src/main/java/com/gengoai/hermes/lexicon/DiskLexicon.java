@@ -19,14 +19,11 @@
 
 package com.gengoai.hermes.lexicon;
 
-import com.gengoai.Tag;
 import com.gengoai.Validation;
 import com.gengoai.collection.Iterables;
 import com.gengoai.collection.Sets;
 import com.gengoai.conversion.Cast;
-import com.gengoai.hermes.AttributeType;
 import com.gengoai.hermes.HString;
-import com.gengoai.io.resource.Resource;
 import com.gengoai.kv.KeyValueStoreConnection;
 import com.gengoai.kv.NavigableKeyValueStore;
 import com.gengoai.string.Strings;
@@ -35,88 +32,107 @@ import lombok.NonNull;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class DiskLexicon extends Lexicon implements PrefixSearchable {
+/**
+ * A {@link PersistentLexicon} that stores {@link LexiconEntry} on disk facilitating the use of very lexicons with
+ * little memory overhead.
+ */
+public class DiskLexicon extends PersistentLexicon implements PrefixSearchable {
    private static final long serialVersionUID = 1L;
-   private final NavigableKeyValueStore<String, List<LexiconEntry<?>>> lexiconEntries;
+   private final NavigableKeyValueStore<String, List<LexiconEntry>> lexicon;
    private final NavigableKeyValueStore<String, Object> metadata;
+   private final String name;
 
-   protected DiskLexicon(KeyValueStoreConnection connection) {
-      connection.setReadOnly(true);
-      this.lexiconEntries = connection.connect();
+   /**
+    * Instantiates a new DiskLexicon
+    *
+    * @param connection      the KeyValueStoreConnection describing how to connect to the underlying storage.
+    * @param isCaseSensitive True - the lexicon is case-sensitive, False case-insensitive (Note: if the lexicon already
+    *                        exists this value will be ignored.)
+    */
+   public DiskLexicon(@NonNull KeyValueStoreConnection connection, boolean isCaseSensitive) {
+      this.name = connection.getNamespace();
+      this.lexicon = connection.connect();
       connection.setNamespace(connection.getNamespace() + "_metadata");
       this.metadata = connection.connect();
+      if(!this.metadata.containsKey("isCaseSensitive")) {
+         this.metadata.put("isCaseSensitive", isCaseSensitive);
+      }
    }
 
-   public static DiskLexiconBuilder builder(AttributeType tagAttributeType,
-                                            boolean caseSensitive,
-                                            String name,
-                                            Resource path) {
-      return new DiskLexiconBuilder(tagAttributeType, caseSensitive, name, path);
+   @Override
+   public void add(@NonNull LexiconEntry lexiconEntry) {
+      addAll(Collections.singleton(lexiconEntry));
+   }
+
+   @Override
+   public synchronized void addAll(@NonNull Iterable<LexiconEntry> lexiconEntries) {
+      boolean changed = false;
+      int maxTokenLength = getMaxTokenLength();
+      int maxLemmaLength = getMaxLemmaLength();
+      boolean isProbabilistic = isProbabilistic();
+
+      for(LexiconEntry lexiconEntry : lexiconEntries) {
+         if(Strings.isNotNullOrBlank(lexiconEntry.getLemma())) {
+            String lemma = normalize(Validation.notNullOrBlank(lexiconEntry.getLemma()));
+            if(lexiconEntry.getProbability() > 0 && lexiconEntry.getProbability() <= 1) {
+               isProbabilistic = true;
+            } else {
+               lexiconEntry = LexiconEntry.of(lexiconEntry.getLemma(),
+                                              1.0,
+                                              lexiconEntry.getTag(),
+                                              lexiconEntry.getConstraint(),
+                                              lexiconEntry.getTokenLength());
+            }
+            List<LexiconEntry> lemmaEntries = lexicon.getOrDefault(lemma, new ArrayList<LexiconEntry>());
+            lemmaEntries.add(lexiconEntry);
+            lexicon.put(lemma, lemmaEntries);
+            maxTokenLength = Math.max(maxTokenLength, lexiconEntry.getTokenLength());
+            maxLemmaLength = Math.max(maxLemmaLength, lemma.length());
+            changed = true;
+         }
+      }
+
+      if(changed) {
+         metadata.put("isProbabilistic", isProbabilistic);
+         metadata.put("maxLemmaLength", maxLemmaLength);
+         metadata.put("maxTokenLength", maxTokenLength);
+         metadata.commit();
+         lexicon.commit();
+      }
    }
 
    @Override
    public boolean contains(String string) {
-      return lexiconEntries.containsKey(string);
+      return lexicon.containsKey(string);
    }
 
    @Override
-   public Set<LexiconEntry<?>> entries(String lemma) {
-      lemma = normalize(lemma);
-      if(lexiconEntries.containsKey(lemma)) {
-         return new HashSet<>(lexiconEntries.get(lemma));
+   public Set<LexiconEntry> entries() {
+      return Sets.asHashSet(Iterables.flatten(lexicon.values()));
+   }
+
+   @Override
+   public Set<LexiconEntry> get(String word) {
+      word = normalize(word);
+      if(lexicon.containsKey(word)) {
+         return new HashSet<>(lexicon.get(word));
       }
       return Collections.emptySet();
    }
 
    @Override
-   public Set<LexiconEntry<?>> entries() {
-      return Sets.asHashSet(Iterables.flatten(lexiconEntries.values()));
-   }
-
-   @Override
-   public List<LexiconEntry<?>> getEntries(@NonNull HString hString) {
-      String str = normalize(hString);
-      if(!lexiconEntries.containsKey(str)) {
-         if(isCaseSensitive() && Strings.isUpperCase(hString)) {
-            return Collections.emptyList();
-         }
-         str = normalize(hString.getLemma());
-      }
-      if(lexiconEntries.containsKey(str)) {
-         return Cast.as(lexiconEntries.get(str)
-                                      .stream()
-                                      .filter(le -> le.getConstraint() == null || le.getConstraint().test(hString))
-                                      .sorted()
-                                      .collect(Collectors.toList()));
-      }
-      return Collections.emptyList();
-   }
-
-   @Override
-   public List<LexiconEntry<?>> getEntries(String hString) {
-      String str = normalize(hString);
-      if(lexiconEntries.containsKey(str)) {
-         return Cast.as(lexiconEntries.get(str)
-                                      .stream()
-                                      .sorted()
-                                      .collect(Collectors.toList()));
-      }
-      return Collections.emptyList();
-   }
-
-   @Override
    public int getMaxLemmaLength() {
-      return (Integer) metadata.getOrDefault("maxLemmaLength", "0");
+      return (Integer) metadata.getOrDefault("maxLemmaLength", 0);
    }
 
    @Override
    public int getMaxTokenLength() {
-      return (Integer) metadata.getOrDefault("maxTokenLength", "0");
+      return (Integer) metadata.getOrDefault("maxTokenLength", 0);
    }
 
    @Override
-   public AttributeType<Tag> getTagAttributeType() {
-      return AttributeType.make((String) metadata.get("attributeType"));
+   public String getName() {
+      return name;
    }
 
    @Override
@@ -132,30 +148,59 @@ public class DiskLexicon extends Lexicon implements PrefixSearchable {
    @Override
    public boolean isPrefixMatch(String hString) {
       String normed = normalize(Validation.notNullOrBlank(hString));
-      Iterator<String> itr = lexiconEntries.keyIterator(normed);
-      while(true) {
-         if(itr.hasNext()) {
-            String n = itr.next();
-            return normed.equals(n) || n.startsWith(normed);
-         } else {
-            return false;
-         }
+      Iterator<String> itr = lexicon.keyIterator(normed);
+      if(itr.hasNext()) {
+         String n = itr.next();
+         return normed.equals(n) || n.startsWith(normed);
+      } else {
+         return false;
       }
    }
 
    @Override
    public boolean isProbabilistic() {
-      return (Boolean) metadata.get("isProbabilistic");
+      return (Boolean) metadata.getOrDefault("isProbabilistic", false);
    }
 
    @Override
    public Iterator<String> iterator() {
-      return lexiconEntries.keySet().iterator();
+      return lexicon.keySet().iterator();
+   }
+
+   @Override
+   public List<LexiconEntry> match(@NonNull HString string) {
+      String str = normalize(string);
+      if(!lexicon.containsKey(str)) {
+         if(isCaseSensitive() && Strings.isUpperCase(string)) {
+            return Collections.emptyList();
+         }
+         str = normalize(string.getLemma());
+      }
+      if(lexicon.containsKey(str)) {
+         return Cast.as(lexicon.get(str)
+                               .stream()
+                               .filter(le -> le.getConstraint() == null || le.getConstraint().test(string))
+                               .sorted()
+                               .collect(Collectors.toList()));
+      }
+      return Collections.emptyList();
+   }
+
+   @Override
+   public List<LexiconEntry> match(String hString) {
+      String str = normalize(hString);
+      if(lexicon.containsKey(str)) {
+         return Cast.as(lexicon.get(str)
+                               .stream()
+                               .sorted()
+                               .collect(Collectors.toList()));
+      }
+      return Collections.emptyList();
    }
 
    @Override
    public Set<String> prefixes(String string) {
-      Iterator<String> itr = lexiconEntries.keyIterator(Validation.notNullOrBlank(string));
+      Iterator<String> itr = lexicon.keyIterator(Validation.notNullOrBlank(string));
       Set<String> prefixes = new HashSet<>();
       while(itr.hasNext()) {
          String p = itr.next();
@@ -171,60 +216,6 @@ public class DiskLexicon extends Lexicon implements PrefixSearchable {
    @Override
    public int size() {
       return entries().size();
-   }
-
-   public static class DiskLexiconBuilder extends LexiconBuilder {
-      private final KeyValueStoreConnection connection;
-      private final NavigableKeyValueStore<String, List<LexiconEntry<?>>> lexiconEntries;
-      private final NavigableKeyValueStore<String, Object> metdata;
-
-      protected DiskLexiconBuilder(@NonNull AttributeType<?> attributeType,
-                                   boolean isCaseSensitive,
-                                   String name,
-                                   @NonNull Resource path) {
-         super(attributeType, isCaseSensitive);
-         Validation.notNullOrBlank(name);
-         this.connection = new KeyValueStoreConnection();
-         connection.setPath(path.path());
-         connection.setCompressed(true);
-         connection.setNamespace(name);
-         connection.setNavigable(true);
-         connection.setType("disk");
-         this.lexiconEntries = connection.connect();
-         connection.setNamespace(name + "_metadata");
-         this.metdata = connection.connect();
-         metdata.put("attributeType", attributeType.name());
-         metdata.put("isCaseSensitive", false);
-         metdata.put("isProbabilistic", false);
-         metdata.put("isConstrained", false);
-         connection.setNamespace(name);
-      }
-
-      @Override
-      public LexiconBuilder add(@NonNull LexiconEntry<?> entry) {
-         String norm = normalize(entry.getLemma());
-         List<LexiconEntry<?>> entries = lexiconEntries.getOrDefault(norm, new LinkedList<>());
-         updateMax(norm, entry.getTokenLength());
-         entries.add(entry);
-         if(entry.getProbability() != 1.0) {
-            metdata.put("isProbabilistic", true);
-         }
-         if(entry.getConstraint() != null) {
-            metdata.put("isConstrained", true);
-         }
-         lexiconEntries.put(norm, entries);
-         return this;
-      }
-
-      @Override
-      public Lexicon build() {
-         lexiconEntries.commit();
-         metdata.put("maxLemmaLength", getMaxLemmaLength());
-         metdata.put("maxTokenLength", getMaxTokenLength());
-         metdata.commit();
-         connection.setReadOnly(true);
-         return new DiskLexicon(connection);
-      }
    }
 
 }//END OF DiskLexicon

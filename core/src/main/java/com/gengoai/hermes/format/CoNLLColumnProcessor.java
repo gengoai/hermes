@@ -38,13 +38,22 @@ import java.util.Map;
 public interface CoNLLColumnProcessor {
 
    /**
+    * Gets the name of the field
+    *
+    * @return the field name
+    */
+   String getFieldName();
+
+   /**
     * Processes a set of CoNLL rows making up a document
     *
     * @param document                    the document
     * @param documentRows                the CoNLL rows making up the document
     * @param sentenceIndexToAnnotationId the index of the token in the sentence to annotation id
     */
-   void processInput(Document document, List<CoNLLRow> documentRows, Map<Tuple2<Integer, Integer>, Long> sentenceIndexToAnnotationId);
+   void processInput(Document document,
+                     List<CoNLLRow> documentRows,
+                     Map<Tuple2<Integer, Integer>, Long> sentenceIndexToAnnotationId);
 
    /**
     * Generates output data in CoNLL format
@@ -55,13 +64,6 @@ public interface CoNLLColumnProcessor {
     * @return the string
     */
    String processOutput(HString document, Annotation token, int index);
-
-   /**
-    * Gets the name of the field
-    *
-    * @return the field name
-    */
-   String getFieldName();
 
    /**
     * Updates a CoNLL row with this field

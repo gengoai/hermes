@@ -19,13 +19,17 @@
 
 package com.gengoai.hermes.corpus;
 
+import com.gengoai.LogUtils;
+import com.gengoai.config.Config;
 import com.gengoai.function.SerializableConsumer;
 import com.gengoai.hermes.Document;
 import com.gengoai.stream.MStream;
 import com.gengoai.stream.StreamingContext;
 import lombok.NonNull;
 
-public class MStreamDocumentCollection implements DocumentCollection {
+import java.util.logging.Level;
+
+class MStreamDocumentCollection implements DocumentCollection {
    private MStream<Document> stream;
 
    public MStreamDocumentCollection(MStream<Document> stream) {
@@ -58,11 +62,21 @@ public class MStreamDocumentCollection implements DocumentCollection {
    }
 
    @Override
-   public DocumentCollection update(@NonNull SerializableConsumer<Document> documentProcessor) {
+   public DocumentCollection update(@NonNull String operation,
+                                    @NonNull SerializableConsumer<Document> documentProcessor) {
+      ProgressLogger progressLogger = ProgressLogger.create(getStreamingContext(),
+                                                            LogUtils.getLogger(DocumentCollection.class),
+                                                            Config.get(DocumentCollection.REPORT_LEVEL)
+                                                                  .as(Level.class, Level.FINEST),
+                                                            Config.get(DocumentCollection.REPORT_INTERVAL)
+                                                                  .as(int.class, 500),
+                                                            operation);
       stream = stream.map(d -> {
+         progressLogger.start();
          documentProcessor.accept(d);
+         progressLogger.stop(d.tokenLength());
          return d;
-      });
+      }).onClose(progressLogger::report);
       return this;
    }
 

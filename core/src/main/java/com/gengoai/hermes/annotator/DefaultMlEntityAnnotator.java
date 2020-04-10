@@ -23,29 +23,29 @@ package com.gengoai.hermes.annotator;
 
 import com.gengoai.Language;
 import com.gengoai.cache.Cache;
+import com.gengoai.collection.Sets;
 import com.gengoai.hermes.AnnotatableType;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.ResourceType;
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.ml.BIOTagger;
+import com.gengoai.hermes.ml.IOBTagger;
 
-import java.io.Serializable;
 import java.util.Collections;
 import java.util.Set;
 
 /**
- * The type Default ml entity annotator.
+ * Default Machine-Learning based Entity annotator.
  *
  * @author David B. Bracewell
  */
-public class DefaultMlEntityAnnotator extends SentenceLevelAnnotator implements Serializable {
-   private static final Cache<Language, BIOTagger> cache = ResourceType.MODEL.createCache("Annotation.ML_ENTITY",
+public class DefaultMlEntityAnnotator extends SentenceLevelAnnotator {
+   private static final Cache<Language, IOBTagger> cache = ResourceType.MODEL.createCache("Annotation.ML_ENTITY",
                                                                                           "ner.model.bin");
    private static final long serialVersionUID = 1L;
 
    @Override
-   public void annotate(Annotation sentence) {
-      BIOTagger tagger = cache.get(sentence.getLanguage());
+   protected void annotate(Annotation sentence) {
+      IOBTagger tagger = cache.get(sentence.getLanguage());
       if(tagger != null) {
          tagger.tag(sentence);
       }
@@ -53,7 +53,12 @@ public class DefaultMlEntityAnnotator extends SentenceLevelAnnotator implements 
 
    @Override
    protected Set<AnnotatableType> furtherRequires() {
-      return Collections.singleton(Types.PART_OF_SPEECH);
+      return Sets.hashSetOf(Types.PART_OF_SPEECH, Types.CATEGORY);
+   }
+
+   @Override
+   public String getProvider(Language language) {
+      return "IOBTagger v" + cache.get(language).getVersion();
    }
 
    @Override
@@ -61,4 +66,4 @@ public class DefaultMlEntityAnnotator extends SentenceLevelAnnotator implements 
       return Collections.singleton(Types.ML_ENTITY);
    }
 
-}//END OF MLEntityAnnotator
+}//END OF DefaultMlEntityAnnotator

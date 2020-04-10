@@ -25,7 +25,6 @@ import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.Document;
 import com.gengoai.hermes.DocumentFactory;
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.annotator.BaseWordCategorization;
 import com.gengoai.io.resource.Resource;
 import com.gengoai.string.Strings;
 import com.gengoai.tuple.Tuple2;
@@ -42,6 +41,32 @@ import static com.gengoai.collection.Maps.hashMapOf;
 import static com.gengoai.reflection.TypeUtils.parameterizedType;
 import static com.gengoai.tuple.Tuples.$;
 
+/**
+ * <p>Format Name: <b>conll</b></p>
+ * <p>
+ * The CoNLL format. The following additional parameters are available when reading/writing in CoNLL format:
+ * </p>
+ * <p><ul>
+ * <li>docPerSentence=[true|false]: One document per sentence when true (default: true).
+ * <li>fields=&lt;list of fields&gt;: list of string denoting the field names (default: ["WORD", "POS", "CHUNK")]).
+ * <li>fs=&lt;String&gt;: Field separator (default: "\\s+")
+ * <li>overrideSentences=[true|false]: Override the CoNLL sentence boundaries with Hermes boundaries when true
+ * (default: false)
+ * </ul></p>
+ * <p>Currently, the following indexes are supported:</p>
+ * <p><ul>
+ * <li>INDEX - The index of the word in the sentence.
+ * <li>WORD - The word.
+ * <li>LEMMA - The lemmatized form of the word.
+ * <li>UPOS - The universal part-of-speech tag of the word.
+ * <li>POS - The part-of-speech tag of the word.
+ * <li>CHUNK - IOB annotated Phrase Chunks.
+ * <li>ENTITY - IOB annotated Named Entities.
+ * <li>HEAD - The index of this word’s syntactic head in the sentence.
+ * <li>DEP_REL - The dependency relation of this word to its head.
+ * <li>IGNORE - Ignores the field.
+ * </ul></p>
+ */
 public class CoNLLFormat extends WholeFileTextFormat implements OneDocPerFileFormat, Serializable {
    private static final long serialVersionUID = 1L;
    /**
@@ -68,7 +93,7 @@ public class CoNLLFormat extends WholeFileTextFormat implements OneDocPerFileFor
 
    private final CoNLLParameters parameters;
 
-   public CoNLLFormat(@NonNull CoNLLParameters parameters) {
+   CoNLLFormat(@NonNull CoNLLParameters parameters) {
       this.parameters = parameters;
    }
 
@@ -106,7 +131,9 @@ public class CoNLLFormat extends WholeFileTextFormat implements OneDocPerFileFor
          document.setCompleted(Types.SENTENCE, "PROVIDED");
       }
       document.setCompleted(Types.TOKEN, "PROVIDED");
-      BaseWordCategorization.INSTANCE.categorize(document);
+      if(document.isCompleted(Types.PART_OF_SPEECH)) {
+         document.annotate(Types.CATEGORY);
+      }
       return document;
    }
 
@@ -130,7 +157,8 @@ public class CoNLLFormat extends WholeFileTextFormat implements OneDocPerFileFor
 
       final String resource = file.strip();
       for(String line : resource.split("\\r?\\n")) {
-         if(Strings.isNullOrBlank(line) || line.trim().startsWith("-X-")) {
+         line = line.strip();
+         if(Strings.isNullOrBlank(line) || line.trim().startsWith("-X-") || line.startsWith("# newdoc id")) {
             if(list.size() > lastSize) {
                sentenceIndex++;
                if(oneDocumentPerSentence) {
@@ -141,6 +169,8 @@ public class CoNLLFormat extends WholeFileTextFormat implements OneDocPerFileFor
                   lastSize = 0;
                }
             }
+         } else if(line.strip().startsWith("#")) {
+            continue;
          } else {
             List<String> parts = Arrays.asList(line.split(FS));
             CoNLLRow row = new CoNLLRow();
@@ -185,6 +215,9 @@ public class CoNLLFormat extends WholeFileTextFormat implements OneDocPerFileFor
       }
    }
 
+   /**
+    * The type Provider.
+    */
    @MetaInfServices
    public static class Provider implements DocFormatProvider {
 
