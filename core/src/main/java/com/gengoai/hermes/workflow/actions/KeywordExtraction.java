@@ -23,7 +23,7 @@ import com.gengoai.Validation;
 import com.gengoai.collection.counter.Counter;
 import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.corpus.Corpus;
+import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.hermes.extraction.keyword.KeywordExtractor;
 import com.gengoai.hermes.extraction.keyword.TermKeywordExtractor;
 import com.gengoai.hermes.workflow.Action;
@@ -42,6 +42,10 @@ public class KeywordExtraction implements Action {
    private KeywordExtractor extractor = new TermKeywordExtractor();
    private boolean keepGlobalCounts = false;
 
+   public static Counter<String> getKeywords(@NonNull Context context) {
+      return Cast.as(context.get(Types.KEYWORDS.name()));
+   }
+
    public KeywordExtraction(@NonNull KeywordExtractor extractor, int n, boolean keepGlobalCounts) {
       this.extractor = extractor;
       this.keepGlobalCounts = keepGlobalCounts;
@@ -53,12 +57,8 @@ public class KeywordExtraction implements Action {
 
    }
 
-   public static Counter<String> getKeywords(@NonNull Context context) {
-      return Cast.as(context.get(Types.KEYWORDS.name()));
-   }
-
    @Override
-   public void process(Corpus corpus, Context context) throws Exception {
+   public DocumentCollection process(DocumentCollection corpus, Context context) throws Exception {
       extractor.fit(corpus);
       final MCounterAccumulator<String> globalKeywordCounts = keepGlobalCounts
                                                               ? corpus.getStreamingContext().counterAccumulator()
@@ -73,6 +73,7 @@ public class KeywordExtraction implements Action {
       if(keepGlobalCounts) {
          context.property(Types.KEYWORDS.name(), globalKeywordCounts.value());
       }
+      return corpus;
    }
 
 }//END OF KeywordExtraction

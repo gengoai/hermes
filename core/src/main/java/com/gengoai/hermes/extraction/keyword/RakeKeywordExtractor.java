@@ -28,7 +28,7 @@ import com.gengoai.collection.counter.Counters;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.corpus.Corpus;
+import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.hermes.extraction.Extraction;
 import com.gengoai.hermes.extraction.FeaturizingExtractor;
 import com.gengoai.hermes.extraction.lyre.LyreDSL;
@@ -118,7 +118,7 @@ public class RakeKeywordExtractor implements KeywordExtractor {
    }
 
    @Override
-   public void fit(Corpus corpus) {
+   public void fit(DocumentCollection corpus) {
 
    }
 

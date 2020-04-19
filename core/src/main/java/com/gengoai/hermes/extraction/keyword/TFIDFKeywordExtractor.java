@@ -26,7 +26,7 @@ import com.gengoai.collection.counter.Counter;
 import com.gengoai.collection.counter.Counters;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.corpus.Corpus;
+import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.hermes.extraction.Extraction;
 import com.gengoai.hermes.extraction.FeaturizingExtractor;
 import com.gengoai.hermes.extraction.lyre.LyreDSL;
@@ -68,7 +68,7 @@ public class TFIDFKeywordExtractor implements KeywordExtractor {
    }
 
    @Override
-   public void fit(Corpus corpus) {
+   public void fit(DocumentCollection corpus) {
       final double numDocs = corpus.size();
       this.inverseDocumentFrequencies = corpus.documentCount(termExtractor)
                                               .adjustValuesSelf(d -> Math.log(numDocs / d));

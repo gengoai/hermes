@@ -21,7 +21,7 @@ package com.gengoai.hermes.workflow.actions;
 
 import com.gengoai.collection.counter.Counter;
 import com.gengoai.conversion.Cast;
-import com.gengoai.hermes.corpus.Corpus;
+import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.hermes.extraction.FeaturizingExtractor;
 import com.gengoai.hermes.extraction.TermExtractor;
 import com.gengoai.hermes.extraction.lyre.Lyre;
@@ -48,6 +48,10 @@ public class TermCounts implements Action {
    @Getter
    private FeaturizingExtractor extractor;
 
+   public static Counter<String> getTermCounts(@NonNull Context context) {
+      return Cast.as(context.get(EXTRACTED_TERMS));
+   }
+
    /**
     * Instantiates a new Term extraction processor.
     */
@@ -66,10 +70,6 @@ public class TermCounts implements Action {
       this.documentFrequencies = documentFrequencies;
    }
 
-   public static Counter<String> getTermCounts(@NonNull Context context) {
-      return Cast.as(context.get(EXTRACTED_TERMS));
-   }
-
    /**
     * On complete corpus.
     *
@@ -78,12 +78,12 @@ public class TermCounts implements Action {
     * @param counts  the counts
     * @return the corpus
     */
-   protected Corpus onComplete(Corpus corpus, Context context, Counter<String> counts) {
+   protected DocumentCollection onComplete(DocumentCollection corpus, Context context, Counter<String> counts) {
       return corpus;
    }
 
    @Override
-   public void process(Corpus corpus, Context context) throws Exception {
+   public DocumentCollection process(DocumentCollection corpus, Context context) throws Exception {
       Counter<String> counts;
       if(documentFrequencies) {
          counts = corpus.documentCount(extractor);
@@ -91,7 +91,7 @@ public class TermCounts implements Action {
          counts = corpus.termCount(extractor);
       }
       context.property(EXTRACTED_TERMS, counts);
-      onComplete(corpus, context, counts);
+      return onComplete(corpus, context, counts);
    }
 
    /**

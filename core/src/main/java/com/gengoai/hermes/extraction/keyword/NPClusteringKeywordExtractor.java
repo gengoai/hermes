@@ -29,11 +29,11 @@ import com.gengoai.collection.multimap.SetMultimap;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.corpus.Corpus;
+import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.hermes.extraction.Extraction;
 import com.gengoai.hermes.extraction.NGramExtractor;
-import com.gengoai.hermes.morphology.StopWords;
 import com.gengoai.hermes.morphology.PartOfSpeech;
+import com.gengoai.hermes.morphology.StopWords;
 import lombok.NonNull;
 
 import java.util.HashMap;
@@ -143,7 +143,7 @@ public class NPClusteringKeywordExtractor implements KeywordExtractor {
    }
 
    @Override
-   public void fit(Corpus corpus) {
+   public void fit(DocumentCollection corpus) {
 
    }
 

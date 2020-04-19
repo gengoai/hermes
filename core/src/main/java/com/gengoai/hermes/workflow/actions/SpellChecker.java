@@ -25,7 +25,7 @@ import com.gengoai.collection.counter.Counter;
 import com.gengoai.collection.counter.Counters;
 import com.gengoai.config.Config;
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.corpus.Corpus;
+import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.hermes.extraction.TermExtractor;
 import com.gengoai.hermes.lexicon.SimpleWordList;
 import com.gengoai.hermes.lexicon.TrieWordList;
@@ -86,7 +86,7 @@ public class SpellChecker implements Action, Serializable {
    }
 
    @Override
-   public void process(@NonNull Corpus corpus, @NonNull Context context) throws Exception {
+   public DocumentCollection process(@NonNull DocumentCollection corpus, @NonNull Context context) throws Exception {
       final WordList wordList = new SimpleWordList(spellingEmbedding.getAlphabet());
       final Counter<String> unigrams = corpus.documentCount(TermExtractor
                                                                   .builder()
@@ -128,7 +128,7 @@ public class SpellChecker implements Action, Serializable {
             })
             .collectAsMap();
 
-      corpus.update("SpellChecker", document -> document
+      return corpus.update("SpellChecker", document -> document
             .tokenStream()
             .forEach(token -> {
                if(spelling.containsKey(token.getLemma())) {

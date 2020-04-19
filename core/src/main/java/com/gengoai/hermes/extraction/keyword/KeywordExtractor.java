@@ -22,7 +22,7 @@
 package com.gengoai.hermes.extraction.keyword;
 
 import com.gengoai.hermes.HString;
-import com.gengoai.hermes.corpus.Corpus;
+import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.hermes.extraction.Extractor;
 import lombok.NonNull;
 
@@ -42,6 +42,6 @@ public interface KeywordExtractor extends Extractor, Serializable {
     *
     * @param corpus the corpus to fit the extractor to
     */
-   void fit(@NonNull Corpus corpus);
+   void fit(@NonNull DocumentCollection corpus);
 
 }//END OF KeywordExtractor

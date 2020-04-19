@@ -13,7 +13,7 @@
 :toclevels: 4
 :sectnums:
 :sectlinks:
-:source-highlighter: coderay
+:observationType-highlighter: coderay
 ifndef::imagesdir[:imagesdir: images]
 ifndef::sourcedir[:sourcedir: ../../main/java]
 
@@ -52,7 +52,7 @@ Additionally, Hermes is tightly integrated with GengoAI’s https://github.com/g
 
 Hermes requires Java 11+ and is available via the maven central repository at:
 
-[source,xml]
+[observationType,xml]
 ----
 <dependency>
      <groupId>com.gengoai</groupId>
@@ -99,7 +99,7 @@ Hermes supports the following Annotatable Types:
 An AttributeType defines a **named** Attribute that can be added to an HString.
 Each AttributeType has an associated value type which defines the class of value that the attribute accepts and is specified using Java Generics as follows:
 
-[source,java]
+[observationType,java]
 ....
 AttributeType<String> AUTHOR = AttributeType.make("AUTHOR", String.class);
 AttributeType<Set<BasicCategories>> CATEGORIES = AttributeType.make("CATEGORIES", parameterizedType(Set.class,BasicCategories.class))
@@ -118,7 +118,7 @@ Additionally, each AnnotationType has an associated <<#tags,Tag>> attribute type
 By default, an annotation's tag type is inherited from the parent or defined as being a StringTag.
 The following code snippet illustrates creating a simple AnnotationType with the default parent and a and an AnnotationType whose parent is _ENTITY_.
 
-[source,java]
+[observationType,java]
 ....
 /* Assume that SENSE_TAG is a predefined AttributeType */
 AnnotationType WORD_SENSE = AnnotationType.make("WORD_SENSE", SENSE_TAG);
@@ -133,7 +133,7 @@ A RelationType defines the type of arbitrary link, i.e. relation, between two HS
 Relation types can define such things as co-reference and syntactic and semantic structure.
 Defining a RelationType is performed as follows:
 
-[source,java]
+[observationType,java]
 ....
 RelationType AGENT = RelationType.make("AGENT");
 ....
@@ -150,8 +150,8 @@ RelationType AGENT = RelationType.make("AGENT");
      +-----+       +-------+
 ....
 
-Annotating for RelationType adds a <<#relations,Relation>> object on the source and target annotation as an _outgoing_ and _incoming_ annotation respectively.
-For example, if we had a token _Jim_ as the agent of the verb _moved_, and annotated for the _AGENT_ RelationType we would add an outgoing _AGENT_ relation on _JIM_ with _moved_ as the target and an incoming _AGENT_ relation on _moved_ with _JIM_ as the source.
+Annotating for RelationType adds a <<#relations,Relation>> object on the observationType and target annotation as an _outgoing_ and _incoming_ annotation respectively.
+For example, if we had a token _Jim_ as the agent of the verb _moved_, and annotated for the _AGENT_ RelationType we would add an outgoing _AGENT_ relation on _JIM_ with _moved_ as the target and an incoming _AGENT_ relation on _moved_ with _JIM_ as the observationType.
 Pictorial this would be represented as follows:
 
 ==== Annotators
@@ -207,7 +207,7 @@ where _LANGUAGE_CODE_ is the ISO code of the document language, _LANGUAGE_NAME_ 
 
 An example configuration defining a _REGEX_ENTITY_ AnnotationType is as follows:
 
-[source,json]
+[observationType,json]
 ....
 Annotation {
      REGEX_ENTITY {
@@ -357,10 +357,10 @@ Finally, HStrings provide access to the incoming and outgoing <<relations>> dire
 |List<Relation>| incomingRelations(boolean) | Gets all incoming relations to this HString including sub-annotations if the given boolean is *true*
 |List<Relation>| incoming(RelationType) | Gets all relations of the given type targeting this HString or one of its sub-annotations.
 |List<Relation>| incoming(RelationType, boolean) | Gets all relations of the given type targeting this HString or one of its sub-annotations if the given boolean is *true*.
-|List<Annotation>| outgoing(RelationType) | Gets all annotations that have relation with this HString as the source where this HString includes all sub-annotations.
-|List<Annotation>| outgoing(RelationType, boolean) | Gets all annotations that have relation with this HString as the source, including sub-annotations if the given boolean value is *true*.
-|List<Annotation>| outgoing(RelationType, String) | Gets all annotations that have relation with this HString as the source where this HString includes all sub-annotations.
-|List<Annotation>| outgoing(RelationType, String, boolean) | Gets all annotations that have relation with this HString as the source where this HString, including sub-annotations if the given boolean value is *true*.
+|List<Annotation>| outgoing(RelationType) | Gets all annotations that have relation with this HString as the observationType where this HString includes all sub-annotations.
+|List<Annotation>| outgoing(RelationType, boolean) | Gets all annotations that have relation with this HString as the observationType, including sub-annotations if the given boolean value is *true*.
+|List<Annotation>| outgoing(RelationType, String) | Gets all annotations that have relation with this HString as the observationType where this HString includes all sub-annotations.
+|List<Annotation>| outgoing(RelationType, String, boolean) | Gets all annotations that have relation with this HString as the observationType where this HString, including sub-annotations if the given boolean value is *true*.
 |List<Relation>| outgoingRelations() | Gets all outgoing relations to this HString including sub-annotations.
 |List<Relation>| outgoingRelations(boolean) | Gets all outgoing relations to this HString including sub-annotations if the given boolean is *true*
 |List<Relation>| outgoing(RelationType) | Gets all relations of the given type originating from this HString or one of its sub-annotations.
@@ -415,7 +415,7 @@ An AnnotationBuilder provides the following methods for constructing an annotati
 As an example of creating Annotations, let's assume we want to add ENTITY annotations to all occurrences of GengoAI in a document.
 We can do this as follows:
 
-[source,java]
+[observationType,java]
 ....
 Document doc = ...;
 
@@ -475,7 +475,7 @@ TIP: Take a look at *CustomAnnotator.java*, *LexiconExample.java*, and *GettingS
 === Relation
 
 Relations provide a mechanism to link two Annotations.
-Relations are directional, i.e. they have a source and a target, and form a directed graph between annotations on the document.
+Relations are directional, i.e. they have a observationType and a target, and form a directed graph between annotations on the document.
 Relations can represent any type of link, but often represent syntactic (e.g. dependency relations), semantic (e.g. semantic roles), or pragmatic (e.g. dialog acts) information.
 Relations, like attributes, are stored as key value pairs with the key being the <<#relation_type,RelationType>> and the value being a String representing the label.
 Relations are associated with individual annotations (i.e. tokens for dependency relations, entities for co-reference).
@@ -484,7 +484,7 @@ Methods on <<#hstring,HString>> allow for checking for and retrieving relations 
 ==== Dependency Relations
 
 Dependency relations are the most common relation and connect and label pairs of words where one word represents the head and the other the dependent.
-The assigned relations are syntactic, e.g. _nn_ for noun-noun, _nsubj_ for noun subject of a predicate, and _advmod_ for adverbial modifier, and the relation points from the dependent (source) to the head (target).
+The assigned relations are syntactic, e.g. _nn_ for noun-noun, _nsubj_ for noun subject of a predicate, and _advmod_ for adverbial modifier, and the relation points from the dependent (observationType) to the head (target).
 Because of their wide use, Hermes provides convenience methods for working dependency relations.
 Namely, the `parent` and `children` methods on <<#hstring,HString>> provide access to the dependents and heads of a specific token and the `dependencyRelation` method provides access to the head (parent) of the token and the relation between it and its head.
 
@@ -523,7 +523,7 @@ Documents provide the following additional methods on top of the ones inherited 
 Documents are created using a DocumentFactory, which defines the preprocessing (e.g whitespace and unicode normalization) steps (TextNormalizers) to be performed on raw text before creating a document and the default language with which the documents are written.
 The default DocumentFactory has its default language and TextNormalizers specified via configuration as follows:
 
-[source]
+[observationType]
 ----
 hermes {
 
@@ -549,20 +549,20 @@ The default set of TextNormalizers includes:
 
 The following snippet illustrates creating a document using the default DocumentFactory.
 
-[source,java]
+[observationType,java]
 ....
 Document document = DocumentFactory.getInstance().create("...My Text Goes Here...");
 ....
 
 For convenience a document can also be created using static methods on the document class, which will use the default DocumentFactory as follows:
 
-[source,java]
+[observationType,java]
 ....
 Document d1 = Document.create("...My Text Goes Here..."); <1> 
 Document d2 = Document.create("my-unique-id", "...My Text Goes Here..."); <2> 
 Document d3 = Document.create("Este es un documento escrito en español.", Language.SPANISH); <3> 
 Document d4 = Document.create("...My Text Goes Here...", <4>
-                              Maps.of($(Types.SOURCE, "The document source"),
+                              Maps.of($(Types.SOURCE, "The document observationType"),
                                       $(Types.AUTHOR, "A really important person")));
 ....
 <1> Creation of a document specifying only the content.
@@ -580,7 +580,7 @@ The pipeline defines the type of annotations, attributes, and relations that wil
 However, Document and Corpora provide a convenience method `annotate(AnnotatableType...)` that takes care of constructing the pipeline and calling its annotation method.
 The following snippet illustrates annotating a document for TOKEN, SENTENCE, and PART_OF_SPEECH:
 
-[source,java]
+[observationType,java]
 ....
 Document d1 = Document.create("...My Text Goes Here...");
 d1.annotate(Types.TOKEN, TYPES.SENTENCE, TYPES.PART_OF_SPEECH) <1>
@@ -590,7 +590,7 @@ d1.annotate(Types.TOKEN, TYPES.SENTENCE, TYPES.PART_OF_SPEECH) <1>
 Ad-hoc annotations are easily added using one of the `createAnnotation` methods on the document.
 The first step is to define your AnnotationType:
 
-[source,java]
+[observationType,java]
 ....
 AnnotationType animalMention = Types.type("ANIMAL_MENTION");
 ....
@@ -599,14 +599,14 @@ Now, let's identify animal mentions using a simple regular expression.
 Since Document extends HString we have time saving methods for dealing with the textual content.
 Namely, we can easily get a Java regex Matcher for the content of the document by:
 
-[source,java]
+[observationType,java]
 ....
 Matcher matcher = document.matcher("\\b(fox|dog)\\b");
 ....
 
 With the matcher, we can iterate over the matches and create new annotations as follows:
 
-[source,java]
+[observationType,java]
 ....
 while (matcher.find()) { 
    document.createAnnotation(animalMention,
@@ -618,7 +618,7 @@ while (matcher.find()) {
 More complicated annotation types would also provide attributes, for example entity type, word sense, etc.
 Once annotations have been added to a document they can be retrieved using the `annotations(AnnotationType)` method.
 
-[source,java]
+[observationType,java]
 ....
 document.get(animalMention)
         .forEach(a -> System.out.println(a + "[" + a.start() + ", " + a.end() + "]"));
@@ -626,7 +626,7 @@ document.get(animalMention)
 
 In addition, convenience methods exist for retrieving tokens, `tokens()`, and sentences, `sentences()`.
 
-[source,java]
+[observationType,java]
 ....
 document.sentences().forEach(System.out::println);
 ....
@@ -753,16 +753,16 @@ The _DocumentCollection_ class provides the following methods to create a docume
 
 The following is an example of creating a document collection from Twitter data:
 
-[source,java]
+[observationType,java]
 ....
 DocumentCollection twitter = DocumentCollection.create("twitter_search::/data/twitter_search_results/");
 ....
 
 A more complex example is creation from CSV files:
 
-[source,java]
+[observationType,java]
 ....
-DocumentCollection csv = DocumentCollection.create("csv::/data/my_csv.csv;columns=id,content,language,author,source");
+DocumentCollection csv = DocumentCollection.create("csv::/data/my_csv.csv;columns=id,content,language,author,observationType");
 ....
 
 ==== Working with Document Collections and Corpora
@@ -820,7 +820,7 @@ The query syntax is as follows:
 Multiword phrases are expressed using quotes, e.g. `'United States'` would match the entire phrase whereas `United AND States` only requires the two words to present in the document in any order.
 The default operator when one is not specified is `OR`, i.e. `United States` would be expanded to `United OR States`.
 
-[source,java]
+[observationType,java]
 ....
 Corpus corpus = ...;
 SearchResults results = corpus.query("'United States' AND 'holiday'");
@@ -841,7 +841,7 @@ In Hermes, the frequency of any type of annotation can be calculated across a co
 The analysis is defined using an _Extractor_ object, which provides a fluent interface for defining annotation type, conversion to string form, filters, and how to calculate the term values (see <<#extraction>> for more information on Extractors).
 An example is as follows:
 
-[source,java]
+[observationType,java]
 ....
 Corpus corpus = ...;
 Extractor spec = TermExtractor.builder() <1>
@@ -859,7 +859,7 @@ By default, the TermExtractor will specify TOKEN annotations which will be conve
 In a similar manner, document frequencies can be extracted using the `documentCount(Extractor)` method.
 An example is as follows:
 
-[source,java]
+[observationType,java]
 ....
 Corpus corpus =...;
 Extractor spec = TermExtractor.builder()
@@ -875,7 +875,7 @@ Both the _termCount_ and _documentCount_ methods take an _Extractor_, which can 
 While n-grams can be extracted using the `termCount` and `documentCount` feature, Hermes provides the `nGramCount(NGramExtractor)` method for calculating document-based counts of n-grams where the n-gram is represented as _Tuple_ of string.
 An example of gathering bigram counts from a corpus is as follows:
 
-[source,java]
+[observationType,java]
 ....
 Corpus corpus = ...;
 NGramExtractor extractor = NGramExtractor.bigrams() <1>
@@ -896,7 +896,7 @@ Additionally, a _ContingencyTableCalculator_ can be given which is used to calcu
 Both methods return a _Counter<Tuple>_ containing the bigrams and their score.
 The following example illustrates finding significant bigrams using Normalized Pointwise Mutual Information (NPMI):
 
-[source,java]
+[observationType,java]
 ....
 Corpus corpus = ...;
 NGramExtractor extractor = NGramExtractor.bigrams()
@@ -912,7 +912,7 @@ Counter<Tuple> bigrams = corpus.significantBigrams(extractor, 5, 0, Association.
 Often times we only want to use a small portion of a corpus to test for analysis in order to test it out.
 The corpus class provides a means for performing https://en.wikipedia.org/wiki/Reservoir_sampling:[reservoir sampling] on the corpus using the following two methods:
 
-[source,java]
+[observationType,java]
 ....
 sample(int size)
 sample(int size, Random random)
@@ -928,12 +928,12 @@ The Corpora class provides a `groupBy(SerializableFunction<? super Document, K>)
 The method returns a _Multimap<K, Document>_ where _K_ is the key type and takes a function that maps a _Document_ to _K_.
 The following code example shows where this may of help.
 
-[source,java]
+[observationType,java]
 ....
 Corpus corpus = ...;
 corpus.groupBy(doc -> doc.getAttributeAsString(Types.SOURCE)); <1>
 ....
-<1> Group documents by their source.
+<1> Group documents by their observationType.
 
 Note that because this method returns a Multimap, the entire corpus must be able to fit in memory.
 
@@ -1011,7 +1011,7 @@ This allows for lexicons to be defined via configuration and then to be loaded a
 
 Lexicons are defined using a _LexiconSpecification_ in the following format:
 
-[source]
+[observationType]
 ....
 lexicon:(mem|disk):name(:(csv|json))*::RESOURCE(;ARG=VALUE)*
 ....
@@ -1039,7 +1039,7 @@ CSV lexicons allow for the additionaly following parameters:
 
 As an example, we can define the following lexicons in our configuration:
 
-[source]
+[observationType]
 ....
 person.lexicon =  lexicon:mem:person:json::<hermes.resources.dir:ENGLISH>person.lexicon <1>
 huge.lexicon  =  lexicon:disk:everything:<hermes.resources.dir:ENGLISH>huge.lexicon <2>
@@ -1054,7 +1054,7 @@ The language name can be omitted when the lexicon is in the default resources.
 
 We can retrieve a lexicon from the _LexiconManager_ as follows:
 
-[source,java]
+[observationType,java]
 ....
 Lexicon lexicon = LexiconManager.getLexicon("person.lexicon"); <1>
 Lexicon undefined = LexiconManager.getLexicon("undefined.lexicon"); <2>
@@ -1072,7 +1072,7 @@ TIP: Take a look at *LexiconExample.java* in the Hermes examples project to see 
 The _LexiconIO_ class provides static methods for reading and writing in-memory lexicons.
 The primary format of a Hermes lexicon is Json and is described as follows:
 
-[source,json]
+[observationType,json]
 ....
 {
   "@spec": { <1>
@@ -1151,7 +1151,7 @@ A _LyreExpression_ represents a series of steps to perform over an input HString
 
 A LyreExpression can be created by parsing a string representation using `Lyre.parse(String)` or by using the `LyreDSL` class to programmatically build up the expression.
 
-[source,java]
+[observationType,java]
 ....
 import static LyreDSL.*;
 
@@ -1197,7 +1197,7 @@ Note that one-argument methods in Lyre (e.g. lower, isUpper, etc.) have an impli
 *String Literals*: Lyre allows for string literals to be specified using single quotes (').
 The backslash character can be use to escape a single quote if it is required in the literal.
 
-[source,java]
+[observationType,java]
 ....
 'Orlando'
 '\'s'
@@ -1206,7 +1206,7 @@ The backslash character can be use to escape a single quote if it is required in
 *Numeric Literals*: Lyres accepts numerical literal values in the form of ints and doubles and allows for scientific notation.
 Additionally, negative and positive infinity can be expressed as `-INF` and `INF` respectively and NaN as `NaN`.
 
-[source,java]
+[observationType,java]
 ....
 12
 1.05
@@ -1215,14 +1215,14 @@ Additionally, negative and positive infinity can be expressed as `-INF` and `INF
 
 *Null*: Null values are represented using the keyword `null`.
 
-[source,java]
+[observationType,java]
 ....
 $_ = null
 ....
 
 *Boolean Literals*: Boolean values are represented as `true` and `false`.
 
-[source,java]
+[observationType,java]
 ....
 isStopWord = true
 ....
@@ -1231,7 +1231,7 @@ isStopWord = true
 
 A list of literals or expressions can be defined as follows:
 
-[source,java]
+[observationType,java]
 ....
 [1.0, 2.0, 3.0]
 ['Orlando', 'Dallas', 'Phoenix']
@@ -1243,7 +1243,7 @@ For example, if a method generated the list `[1]`, the value `1` would be return
 
 *Length*: The length of a list is determined using the `llen' method as follows:
 
-[source,java]
+[observationType,java]
 ....
 llen( @ENTITY )
 ....
@@ -1258,7 +1258,7 @@ where we are returning the length of the list of entities on the object in focus
 
 The following code snippet illustrates using these three accessor methods:
 
-[source,java]
+[observationType,java]
 ....
 first( @ENTITY ) <1>
 last( @ENTITY ) <2>
@@ -1275,7 +1275,7 @@ get(@TOKEN, 10) <3>
 
 The following code snippet illustrates using these two selection methods:
 
-[source,java]
+[observationType,java]
 ....
 max( @ENTITY ) <1>
 longest( @ENTITY ) <2>
@@ -1293,7 +1293,7 @@ Note that unlike `max` the entity returned from `longest` may not be the one the
 Note that Lyre will create a one-item list if the list item passed in is not a collection.
 The following code snippet illustrates using these three transform methods:
 
-[source,java]
+[observationType,java]
 ....
 map(@PHRASE_CHUNK, lower) <1>
 filter(@TOKEN, isContentWord) <2>
@@ -1314,7 +1314,7 @@ flatten( map(@TOKEN, [ 'p1=' + $_[:-1], 'p2=' + $_[:-2] ] )  ) <3>
 Note that Lyre will create a one-item list if the item passed in is not a collection.
 The following code snippet illustrates using these three predicate methods:
 
-[source,java]
+[observationType,java]
 ....
 any(@TOKEN, isStopWord) <1>
 all(@TOKEN, isContentWord) <2>
@@ -1361,7 +1361,7 @@ The first is the And-pipe operator `&>` which sequentially processes each expres
 All expression are evaluated regardless of whether or not a null value is encountered.
 The second is the Or-pipe operator `|>` which sequentially processes each expression with the input object, returning the result of the first expression that evaluates to a non-null, non-empty list, or finite numeric value.
 
-[source,java]
+[observationType,java]
 ....
 map(@TOKEN, lower &> s/\d+/#/g) <1>
 map(@TOKEN, filter($_, isContentWord) |> 'STOPWORD') <2>
@@ -1389,7 +1389,7 @@ Which operation is performed depends on the LHS and RHS type as follows in order
 The in operator, `LHS in RHS`, checks if the left-hand object is "in" the right-hand object, where in means "contains".
 Lyre is able to handle collections, lexicons, and CharSequence as the right-hand object.
 
-[source,java]
+[observationType,java]
 ....
 'a' in 'hat' <1>
 'dog' in ['cat', 'dog', 'bird'] <2>
@@ -1399,7 +1399,7 @@ Lyre is able to handle collections, lexicons, and CharSequence as the right-hand
 
 The has operator, `LHS has RHS`, checks if any annotations on the LHS HString evaluates to true using the right-hand expression.
 
-[source,java]
+[observationType,java]
 ....
 $_ has #NP(@PHRASE_CHUNK)
 ....
@@ -1411,7 +1411,7 @@ Slices are defined using the square brackets, `[` and `]`, with the starting (in
 The starting or ending index can be omitted, e.g. `[:1]` or `[3:]`, where the implied starting index is _0_ and the implied ending index is the length of the object.
 Additionally, the ending index can be given as a relative offset to the end of the item, e.g. `[:-2]` represents a slice starting at 0 to item length -2. An example of the slice operator is as follows:
 
-[source,java]
+[observationType,java]
 ....
 $_[:-1] <1>
 $_[2:] <2>
@@ -1434,7 +1434,7 @@ Note that the list is of length 3 and therefore will return an empty list as the
 *If*: The if-then ,`if( PREDICATE, TRUE_EXPRESSION, FALSE_EXPRESSION )`, method performs a given true or false expression based on a given condition.
 The following example snippets checks if the object in focus is a digit and when it is returns the string literal `'[:digit:]` and when it is not returns the item.
 
-[source,java]
+[observationType,java]
 ....
 if(isDigit, '[:digit:]', $_)
 ....
@@ -1442,7 +1442,7 @@ if(isDigit, '[:digit:]', $_)
 *When*: The when, `when( PREDICATE, TRUE_EXPRESSION )`, performs the given expression when the given condition is true and returns *null* when the condition is false.
 The following example snippets checks if the length of the item in focus is greater than three and when it is returns the concatenation of the string literal `'s3='` and the substring/sublist starting at index 3 to the end of the item.
 
-[source,java]
+[observationType,java]
 ....
 when( len > 3, 's3=' + $_[-3:] )
 ....
@@ -1450,7 +1450,7 @@ when( len > 3, 's3=' + $_[-3:] )
 *Not Null*: The not null,`nn( EXPRESSION, DEFAULT_VALUE_EXPRESSION )`, returns the result of the given expression when not null and the result of the default value expression when null.
 The following example snippets checks for the existence of entities on the object in focus and when there are none (the empty list is automatically converted into a null value) will return the string literal `'non-entity'`.
 
-[source,java]
+[observationType,java]
 ....
 nn( @ENTITY, 'non-entity' )
 ....
@@ -1461,7 +1461,7 @@ nn( @ENTITY, 'non-entity' )
 
 *Exists*: The exists predicate, `exists( OBJECT )` checks if the Object exists meaning it is not null and not a blank CharSequence or empty list.
 
-[source,java]
+[observationType,java]
 ....
 exists(@ENTITY)
 ....
@@ -1471,7 +1471,7 @@ The code snippet above checks if the object in focus has at least one overlappin
 *Look Behind*: The positive, `(?< ...)`, and negative, `(?!< ... )`, look behind predicates determine if the previous annotation matches (positive) or does not match (negative) the given expression.
 Note that positive and negative look behinds should be done on single HStrings or used in a list operator.
 
-[source,java]
+[observationType,java]
 ....
 (?< /M[rs]\\./g ) #NNP <1>
 filter(@TOKEN, (?< /M[rs]\\./g ) #NNP) <2>
@@ -1487,7 +1487,7 @@ filter(@TOKEN, (?< /M[rs]\\./g ) #NNP) <4>
 *Look Ahead*: The positive, `(?> ...)`, and negative, `(?!> ... )`, look ahead predicates determine if the next annotation matches (positive) or does not match (negative) the given expression.
 Note that positive and negative look aheads should be done on single HStrings or used in a list operator.
 
-[source,java]
+[observationType,java]
 ....
 #NNP (?> $_ = 'inc.') <1>
 filter(@TOKEN, #NNP (?> $_ = 'inc.')) <2>
@@ -1519,7 +1519,7 @@ Note that for all methods listed above, the `OBJECT` is optional and will defaul
 *Tag Matching*: The tag predicate, `#TAG_VALUE( OBJECT )`, checks if the Tag on the object in focus is of the given Tag value.
 Note that object in focus must be an annotation and the tag value needs to be convertible to that annotation's tag type.
 
-[source,java]
+[observationType,java]
 ....
 filter(@TOKEN, #NNP)<1>
 
@@ -1545,7 +1545,7 @@ All of the methods listed above can specified by their name only, e.g. `string`,
 *Apply transform*: Lyre uses `LHS ~= RHS` to denote that the RHS expression is to be applied to the LHS expression.
 This is especially useful for regular expression matching and substitution.
 
-[source,java]
+[observationType,java]
 ....
 $_ ~= /[Oo]rlando/; <1>
 @PHRASE_CHUNK ~= [lower, upper] <2>
@@ -1555,7 +1555,7 @@ $_ ~= /[Oo]rlando/; <1>
 
 *Context Expansion*: The context method, `cxt( HSTRING, CONTEXT_SIZE )`, returns a contextual (previous or next) token for the given HString at the given position (relative) where a positive value for the context size represents a next contextual token and a negative value a previous contextual token.
 
-[source,java]
+[observationType,java]
 ....
 cxt( $_, -1) <1>
 cxt( $_, 10) <2>
@@ -1570,7 +1570,7 @@ cxt( $_, 10) <2>
 
 Note that in both `lpad` and `rpad` if the given PADDING_CHARACTER has a length > 1 only the first character is used.
 
-[source,java]
+[observationType,java]
 ....
 lpad('ab', 4, '^'); <1>
 rpad('ab', 3, '$') <2>
@@ -1581,7 +1581,7 @@ rpad('ab', 3, '$') <2>
 *HString Trimming*: The trim, `trim(HSTRING, PREDICATE)`, method removes tokens from the left and right of the input HString if they evaluate to true with the given predicate.
 The following code snippet trims token from the input HString when they are a stopword or have a length less than three characters.
 
-[source,java]
+[observationType,java]
 ....
 trim( $_, isStopWord || len < 3 )
 ....
@@ -1607,7 +1607,7 @@ Note that in call cases if the returned list has a single annotation, the single
 
 The following code snippet shows examples of extracting annotations in Lyre.
 
-[source,java]
+[observationType,java]
 ....
 @ENTITY <1>
 @TOKEN( @ENTITY ) <2>
@@ -1635,7 +1635,7 @@ The following code snippet shows examples of extracting annotations in Lyre.
 The returned lexicon can then be used to check of the existence of words.
 The following snippet gives two examples of checking if the object in focus is in a lexicon named `person`:
 
-[source,java]
+[observationType,java]
 ....
 $_ in %person
 %person
@@ -1646,7 +1646,7 @@ As can be seen in the snippet above, the lexicon acts as a predicate checking fo
 *Word Lists*: The word list function, `wordList( LIST_EXPRESSION )`, will create a temporary word list for use.
 The following code snippet shows an example of constructing a temporary word list made up of the strings "dog", "cat", and "bird" and using the constructed word list as a container to check if the object in focus's string representation if one of the items in the word list.
 
-[source,java]
+[observationType,java]
 ....
 $_ in wordList(['dog', 'cat', 'bird'])
 ....
@@ -1664,7 +1664,7 @@ $_ in wordList(['dog', 'cat', 'bird'])
 * `iob( 'ANNOTATION_TYPE' )`: Generates IOB-formatted tags for the given `ANNOTATION_TYPE` overlapping the object in focus.
 * `iob( 'ANNOTATION_TYPE', OBJECT )`: Generates IOB-formatted tags for the given `ANNOTATION_TYPE` overlapping the given OBJECT.
 
-[source,java]
+[observationType,java]
 ....
 binary{'WORD'}(@TOKEN)<1>
 frequency{'WORD'}(@TOKEN)<2>
@@ -1724,7 +1724,7 @@ The _TokenMatcher_ class allows for iterating of the matches, extracting the mat
 Token regular expressions can act as extractors where the extraction generates the HStrings matched for the default group.
 An example of compiling a regular expression, creating a match, and iterating over the matches is as follows:
 
-[source,java]
+[observationType,java]
 ....
 TokenRegex regex = TokenRegex.compile(pattern);
 TokenMatcher matcher = regex.matcher(document);
@@ -1749,7 +1749,7 @@ Content can be matched in the following manner:
 * *Lemmatized String Match*: Matches based on a case-insensitive match to the lemmatized form of the HString, expressed using the less than and greater signs, e.g. `<ABC>`.
 * *Lexicon Match*: Matches against a lexicon can be made by expressing the name of the lexicon to match against using `%LEXICON_NAME`.
 
-[source]
+[observationType]
 ....
 "Orlando" <1>
 'orlando' <2>
@@ -1782,7 +1782,7 @@ The following word classes are defined:
 Token-based regular expressions allow for matching of attribute values including numeric comparisons for number-valued attributes.
 The first set of attribute-based matching will match non-numeric attributes, such as strings and tags.
 
-[source]
+[observationType]
 ....
 $PART_OF_SPEECH = 'NOUN' <1>
 $PART_OF_SPEECH != 'NOUN' <2>
@@ -1794,7 +1794,7 @@ $COLLECTION ~ 'VALUE' <3>
 
 Additionally, the full range of numeric comparisons are available:
 
-[source]
+[observationType]
 ....
 $CONFIDENCE = 0.0
 $CONFIDENCE != 0.0
@@ -1814,7 +1814,7 @@ Matches can include the existence of annotations including optional constraints 
 Annotations are declared using `@ANNOTATION_TYPE` and constraints can be specified using parenthesis, i.e. `@ANNOTATION_TYPE(...)`.
 The following code snippet gives examples:
 
-[source]
+[observationType]
 ....
 @ENTITY( $CONFIDENCE >= 0.90 ) <1>
 @PHRASE_CHUNK( #NP ) @PHRASE_CHUNK( #VP ) @PHRASE_CHUNK( #NP ) <2>
@@ -1837,7 +1837,7 @@ In Lyre, the first example in the snippet above would be expressed as `$CONFIDEN
 * `@>`: Retrieves a the annotations that are reachable via an outgoing dependency relation.
 * `@>{'DEPENDENCY_TYPE'}`: Retrieves a the annotations that are reachable via an outgoing dependency relation and having the given `DEPENDENCY_TYPE`.
 
-[source]
+[observationType]
 ....
 @PHRASE_CHUNK & @>{'nsubj'} <1>
 @<ROLE{'AGENT'}( @ENTITY( #PERSON ) ) <2>
@@ -1869,7 +1869,7 @@ The following special constructs are supported:
 
 *Look Behind*: The positive, `(?< ...)`, and negative, `(?!< ... )`, look behind predicates determine if the previous annotation sequences matches (positive) or does not match (negative) the given expression.
 
-[source]
+[observationType]
 ....
 (?< 'manager' 'of' ) @PHRASE_CHUNK(#NOUN)
 (?!< #DT | #ADJECTIVE ) <bank>
@@ -1880,7 +1880,7 @@ The second example, matches all HStrings whose lemmatized form is "bank" and are
 
 *Look Ahead*: The positive, `(?> ...)`, and negative, `(?!> ... )`, look ahead predicates determine if the next annotation sequence matches (positive) or does not match (negative) the given expression.
 
-[source]
+[observationType]
 ....
 PHRASE_CHUNK( #NOUN ) (?> PHRASE_CHUNK(#VERB) )
 Digit (?!> Punctuation )
@@ -1893,14 +1893,14 @@ The second example, matches all HStrings which represent Digits and are not foll
 The groups captured HString is accessed using `TokenMatcher.group(String)` where the String is the group name.
 The following example illustrates a named group:
 
-[source]
+[observationType]
 ....
 (?<PERSON> @ENTITY(#PERSON))
 ....
 
 *Backreference*: Backreference to named groups is possible using `\GROUP_NAME`.
 
-[source]
+[observationType]
 ....
 (?<PERSON> @ENTITY(#PERSON)) .* PHRASE_CHUNK(#VERB & @<{'nsubj'}(\PERSON))
 ....
@@ -1920,7 +1920,7 @@ Each rule starts with a unique name declared in square brackets, e.g. `[my_rule]
 Following the rule name is the *trigger*, which is a <<#tokenre>> that captures the text causing the rule to fire.
 Example triggers are as follows:
 
-[source]
+[observationType]
 ....
 trigger: (<man> | <woman> | <child> | <baby>) <1>
 trigger: (?<PERSON> @ENTITY(#PERSON)) (?<ACTION> @PHRASE_CHUNK(#VERB)) (?<OBJECT> @PHRASE_CHUNK(#NOUN)) <2>
@@ -1937,14 +1937,14 @@ Each annotation is defined using `annotation:` and requires the following option
 
 Additionally, attributes can be defined using as follows:
 
-[source]
+[observationType]
 ....
 $ATTRIBUTE_NAME = VALUE
 ....
 
 An example of a rule to create ENTITY annotations of type PERSON and BODY_PART is as follows:
 
-[source]
+[observationType]
 ....
 //###################################################################################
 // Entity: PERSON - Identifies PERSON entities from Alice in Wonderland
@@ -1957,7 +1957,7 @@ annotation: capture=*
             $CONFIDENCE=1.0
 ....
 
-[source]
+[observationType]
 ....
 //###################################################################################
 // Entity: BODY_PART - Identifies body part entities.
@@ -1978,13 +1978,13 @@ Relations require the following options to be specified:
 
 * `type=RELATION_TYPE`: The name of the relation type to construct.
 * `value=STRING`: The value of the relation type.
-* `@>`: The source of the relation specified using a <<#lyre>> with an optional named matching group defined like `@>{GROUP_NAME}`
+* `@>`: The observationType of the relation specified using a <<#lyre>> with an optional named matching group defined like `@>{GROUP_NAME}`
 * `@<`: The target of the relation specified using a <<#lyre>> with an optional named matching group defined like `@>{GROUP_NAME}`
 
 Additionally, a relation can be defined as _bidirectional_ by specifying `bidirectional=true`.
 An example of a rule to create a HAS_A relation between a PERSON and BODY_PART is as follows:
 
-[source]
+[observationType]
 ....
 //###################################################################################
 // Relation: HAS_A - Relates a BODY_PART to a PERSON
@@ -1999,12 +1999,12 @@ relation:  has_a
 ....
 
 In the example rule listed above, we define a trigger that matches a PERSON entity followed by the word "with" followed by between one to three tokens, and finally followed by a BODY_PART entity.
-The relation definition for HAS_A is named `has_a` and defines an ATTRIBUTE relation with value HAS_A where the source of the relation is the PERSON entity and the target of the relation is the BODY_PART entity.
+The relation definition for HAS_A is named `has_a` and defines an ATTRIBUTE relation with value HAS_A where the observationType of the relation is the PERSON entity and the target of the relation is the BODY_PART entity.
 
 In order to prevent superfluous matches, annotations and relations can have requirements on each other specified using a `requires` statement.
 The use of requires can be seen in the following example rule:
 
-[source]
+[observationType]
 ....
 //###################################################################################
 // Murder - The killing of one person by another
@@ -2048,7 +2048,7 @@ Please note that Caduceus is not designed for blazing performance, but for ease 
 
 Caduceus programs can be executed over corpora or single documents as the following code snippet illustrates.
 
-[source,java]
+[observationType,java]
 ....
 CaduceusProgram events = CaduceusProgram.read(Resources.from("/data/caduceus/events.cg"));
 
@@ -2124,7 +2124,7 @@ An action can ignore its state and reprocess the corpus when either the config s
 Workflows are defined using Json.
 The follow is an example definition:
 
-[source,json]
+[observationType,json]
 ....
 {
   "type"  : "Sequential",
@@ -2174,7 +2174,7 @@ The application has the following command line options:
 
 An example command line is as follows:
 
-[source,bash]
+[observationType,bash]
 ....
 
 csv2Lexicon --csv lexicon:mem:adhoc:csv::/data/test/import.csv;probability=-1;constraint=2;caseSensitive=true;tagAttribute=ENTITY_TYPE;defaultTag=PERSON --lexicon lexicon:disk:adhoc::/data/test/adhoc.lexicon

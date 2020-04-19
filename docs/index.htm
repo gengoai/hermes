@@ -849,8 +849,8 @@ Defining a RelationType is performed as follows:</p>
 <div class="title">Figure 2. Pictorial example of annotating an AGENT relation from <em>Jim</em> to <em>moved</em>.</div>
 </div>
 <div class="paragraph">
-<p>Annotating for RelationType adds a <a href="#relations">Relation</a> object on the source and target annotation as an <em>outgoing</em> and <em>incoming</em> annotation respectively.
-For example, if we had a token <em>Jim</em> as the agent of the verb <em>moved</em>, and annotated for the <em>AGENT</em> RelationType we would add an outgoing <em>AGENT</em> relation on <em>JIM</em> with <em>moved</em> as the target and an incoming <em>AGENT</em> relation on <em>moved</em> with <em>JIM</em> as the source.
+<p>Annotating for RelationType adds a <a href="#relations">Relation</a> object on the observationType and target annotation as an <em>outgoing</em> and <em>incoming</em> annotation respectively.
+For example, if we had a token <em>Jim</em> as the agent of the verb <em>moved</em>, and annotated for the <em>AGENT</em> RelationType we would add an outgoing <em>AGENT</em> relation on <em>JIM</em> with <em>moved</em> as the target and an incoming <em>AGENT</em> relation on <em>moved</em> with <em>JIM</em> as the observationType.
 Pictorial this would be represented as follows:</p>
 </div>
 </div>
@@ -1584,22 +1584,22 @@ Look at the <strong>GettingStarted.java</strong> and <strong>CustomAnnotator.jav
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>List&lt;Annotation&gt;</code></p></td>
 <td class="tableblock halign-right valign-top"><p class="tableblock"><code>outgoing(RelationType)</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Gets all annotations that have relation with this HString as the source where this HString includes all sub-annotations.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Gets all annotations that have relation with this HString as the observationType where this HString includes all sub-annotations.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>List&lt;Annotation&gt;</code></p></td>
 <td class="tableblock halign-right valign-top"><p class="tableblock"><code>outgoing(RelationType, boolean)</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Gets all annotations that have relation with this HString as the source, including sub-annotations if the given boolean value is <strong>true</strong>.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Gets all annotations that have relation with this HString as the observationType, including sub-annotations if the given boolean value is <strong>true</strong>.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>List&lt;Annotation&gt;</code></p></td>
 <td class="tableblock halign-right valign-top"><p class="tableblock"><code>outgoing(RelationType, String)</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Gets all annotations that have relation with this HString as the source where this HString includes all sub-annotations.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Gets all annotations that have relation with this HString as the observationType where this HString includes all sub-annotations.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>List&lt;Annotation&gt;</code></p></td>
 <td class="tableblock halign-right valign-top"><p class="tableblock"><code>outgoing(RelationType, String, boolean)</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Gets all annotations that have relation with this HString as the source where this HString, including sub-annotations if the given boolean value is <strong>true</strong>.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Gets all annotations that have relation with this HString as the observationType where this HString, including sub-annotations if the given boolean value is <strong>true</strong>.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>List&lt;Relation&gt;</code></p></td>
@@ -1909,7 +1909,7 @@ Take a look at <strong>CustomAnnotator.java</strong>, <strong>LexiconExample.jav
 <h3 id="relations"><a class="link" href="#relations">3.4. Relation</a></h3>
 <div class="paragraph">
 <p>Relations provide a mechanism to link two Annotations.
-Relations are directional, i.e. they have a source and a target, and form a directed graph between annotations on the document.
+Relations are directional, i.e. they have a observationType and a target, and form a directed graph between annotations on the document.
 Relations can represent any type of link, but often represent syntactic (e.g. dependency relations), semantic (e.g. semantic roles), or pragmatic (e.g. dialog acts) information.
 Relations, like attributes, are stored as key value pairs with the key being the <a href="#relation_type">RelationType</a> and the value being a String representing the label.
 Relations are associated with individual annotations (i.e. tokens for dependency relations, entities for co-reference).
@@ -1919,7 +1919,7 @@ Methods on <a href="#hstring">HString</a> allow for checking for and retrieving 
 <h4 id="_dependency_relations"><a class="link" href="#_dependency_relations">3.4.1. Dependency Relations</a></h4>
 <div class="paragraph">
 <p>Dependency relations are the most common relation and connect and label pairs of words where one word represents the head and the other the dependent.
-The assigned relations are syntactic, e.g. <em>nn</em> for noun-noun, <em>nsubj</em> for noun subject of a predicate, and <em>advmod</em> for adverbial modifier, and the relation points from the dependent (source) to the head (target).
+The assigned relations are syntactic, e.g. <em>nn</em> for noun-noun, <em>nsubj</em> for noun subject of a predicate, and <em>advmod</em> for adverbial modifier, and the relation points from the dependent (observationType) to the head (target).
 Because of their wide use, Hermes provides convenience methods for working dependency relations.
 Namely, the <code>parent</code> and <code>children</code> methods on <a href="#hstring">HString</a> provide access to the dependents and heads of a specific token and the <code>dependencyRelation</code> method provides access to the head (parent) of the token and the relation between it and its head.</p>
 </div>
@@ -2072,7 +2072,7 @@ The default DocumentFactory has its default language and TextNormalizers specifi
 <span class="predefined-type">Document</span> d2 = <span class="predefined-type">Document</span>.create(<span class="string"><span class="delimiter">&quot;</span><span class="content">my-unique-id</span><span class="delimiter">&quot;</span></span>, <span class="string"><span class="delimiter">&quot;</span><span class="content">...My Text Goes Here...</span><span class="delimiter">&quot;</span></span>); <i class="conum" data-value="2"></i><b>(2)</b>
 <span class="predefined-type">Document</span> d3 = <span class="predefined-type">Document</span>.create(<span class="string"><span class="delimiter">&quot;</span><span class="content">Este es un documento escrito en español.</span><span class="delimiter">&quot;</span></span>, Language.SPANISH); <i class="conum" data-value="3"></i><b>(3)</b>
 <span class="predefined-type">Document</span> d4 = <span class="predefined-type">Document</span>.create(<span class="string"><span class="delimiter">&quot;</span><span class="content">...My Text Goes Here...</span><span class="delimiter">&quot;</span></span>, <i class="conum" data-value="4"></i><b>(4)</b>
-                              Maps.of(<span class="error">$</span>(<span class="predefined-type">Types</span>.SOURCE, <span class="string"><span class="delimiter">&quot;</span><span class="content">The document source</span><span class="delimiter">&quot;</span></span>),
+                              Maps.of(<span class="error">$</span>(<span class="predefined-type">Types</span>.SOURCE, <span class="string"><span class="delimiter">&quot;</span><span class="content">The document observationType</span><span class="delimiter">&quot;</span></span>),
                                       <span class="error">$</span>(<span class="predefined-type">Types</span>.AUTHOR, <span class="string"><span class="delimiter">&quot;</span><span class="content">A really important person</span><span class="delimiter">&quot;</span></span>)));</code></pre>
 </div>
 </div>
@@ -2515,7 +2515,7 @@ By default the following parameters can be set:</p>
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="CodeRay highlight"><code data-lang="java">DocumentCollection csv = DocumentCollection.create(<span class="string"><span class="delimiter">&quot;</span><span class="content">csv::/data/my_csv.csv;columns=id,content,language,author,source</span><span class="delimiter">&quot;</span></span>);</code></pre>
+<pre class="CodeRay highlight"><code data-lang="java">DocumentCollection csv = DocumentCollection.create(<span class="string"><span class="delimiter">&quot;</span><span class="content">csv::/data/my_csv.csv;columns=id,content,language,author,observationType</span><span class="delimiter">&quot;</span></span>);</code></pre>
 </div>
 </div>
 </div>
@@ -2823,7 +2823,7 @@ corpus.groupBy(doc -&gt; doc.getAttributeAsString(<span class="predefined-type">
 <table>
 <tr>
 <td><i class="conum" data-value="1"></i><b>1</b></td>
-<td>Group documents by their source.</td>
+<td>Group documents by their observationType.</td>
 </tr>
 </table>
 </div>
@@ -4839,7 +4839,7 @@ Relations require the following options to be specified:</p>
 <p><code>value=STRING</code>: The value of the relation type.</p>
 </li>
 <li>
-<p><code>@&gt;</code>: The source of the relation specified using a <a href="#lyre">Lyre Expression Language</a> with an optional named matching group defined like <code>@&gt;{GROUP_NAME}</code></p>
+<p><code>@&gt;</code>: The observationType of the relation specified using a <a href="#lyre">Lyre Expression Language</a> with an optional named matching group defined like <code>@&gt;{GROUP_NAME}</code></p>
 </li>
 <li>
 <p><code>@&lt;</code>: The target of the relation specified using a <a href="#lyre">Lyre Expression Language</a> with an optional named matching group defined like <code>@&gt;{GROUP_NAME}</code></p>
@@ -4866,7 +4866,7 @@ relation:  has_a
 </div>
 <div class="paragraph">
 <p>In the example rule listed above, we define a trigger that matches a PERSON entity followed by the word "with" followed by between one to three tokens, and finally followed by a BODY_PART entity.
-The relation definition for HAS_A is named <code>has_a</code> and defines an ATTRIBUTE relation with value HAS_A where the source of the relation is the PERSON entity and the target of the relation is the BODY_PART entity.</p>
+The relation definition for HAS_A is named <code>has_a</code> and defines an ATTRIBUTE relation with value HAS_A where the observationType of the relation is the PERSON entity and the target of the relation is the BODY_PART entity.</p>
 </div>
 <div class="paragraph">
 <p>In order to prevent superfluous matches, annotations and relations can have requirements on each other specified using a <code>requires</code> statement.

@@ -21,6 +21,7 @@ package com.gengoai.hermes.tools;
 
 import com.gengoai.application.Option;
 import com.gengoai.hermes.corpus.Corpus;
+import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.hermes.workflow.Context;
 import com.gengoai.hermes.workflow.Workflow;
 import com.gengoai.io.resource.Resource;
@@ -64,14 +65,14 @@ public class Runner extends HermesCorpusCLI {
                                .build();
       Workflow workflow = Json.parse(definition, Workflow.class);
       try (Corpus input = getCorpus()) {
-         try (Corpus output = workflow.process(input, context)) {
-            if (getOutputSpecification() != null && differentCorpusOutput(input, output)) {
-               writeCorpus(output);
-            }
-            if (contextOutputLocation != null) {
-               contextOutputLocation.write(Json.asJsonEntry(context).pprint(3));
-            }
-         }
+//         try (DocumentCollection output = workflow.process(input, context)) {
+//            if (getOutputSpecification() != null && differentCorpusOutput(input, output)) {
+////               writeCorpus(output);
+//            }
+//            if (contextOutputLocation != null) {
+//               contextOutputLocation.write(Json.asJsonEntry(context).pprint(3));
+//            }
+//         }
       }
    }
 
