@@ -20,8 +20,8 @@
 package com.gengoai.hermes.ml.feature;
 
 import com.gengoai.Validation;
-import com.gengoai.apollo.ml.Feature;
-import com.gengoai.apollo.ml.Featurizer;
+import com.gengoai.apollo.ml.observation.Variable;
+import com.gengoai.apollo.ml.feature.Featurizer;
 import com.gengoai.conversion.Cast;
 import com.gengoai.function.SerializableFunction;
 import com.gengoai.function.SerializablePredicate;
@@ -40,37 +40,27 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class PredefinedFeatures {
    private static final Map<String, Featurizer<HString>> features = new ConcurrentHashMap<>();
 
-
    /**
-    * Instantiates a new Predefined features.
-    */
-   public PredefinedFeatures() {
-      throw new IllegalAccessError();
-   }
-
-
-   /**
-    * Predefined value feature predefined featurizer.
+    * Get featurizer.
     *
-    * @param name       the name
-    * @param featurizer the featurizer
-    * @return the predefined featurizer
+    * @param name the name
+    * @return the featurizer
     */
-   public static PredefinedFeaturizer predefinedValueFeature(String name,
-                                                             @NonNull SerializableFunction<? super HString, String> featurizer) {
-      return predefinedFeature(name, Featurizer.valueFeaturizer(name, featurizer));
+   public static Featurizer<HString> get(String name) {
+      if(features.containsKey(name)) {
+         return features.get(name);
+      }
+      throw new IllegalArgumentException(String.format("%s is not a predefined feature.", name));
    }
 
    /**
-    * Predefined predicate feature predefined featurizer.
+    * Lenient context string.
     *
-    * @param name       the name
-    * @param featurizer the featurizer
-    * @return the predefined featurizer
+    * @param objects the objects
+    * @return the string
     */
-   public static PredefinedFeaturizer predefinedPredicateFeature(String name,
-                                                                 @NonNull SerializablePredicate<? super HString> featurizer) {
-      return predefinedFeature(name, Featurizer.predicateFeaturizer(name, featurizer));
+   public static String lenientContext(@NonNull Object... objects) {
+      return strictContext(false, objects);
    }
 
    /**
@@ -91,16 +81,27 @@ public final class PredefinedFeatures {
    }
 
    /**
-    * Get featurizer.
+    * Predefined predicate feature predefined featurizer.
     *
-    * @param name the name
-    * @return the featurizer
+    * @param name       the name
+    * @param featurizer the featurizer
+    * @return the predefined featurizer
     */
-   public static Featurizer<HString> get(String name) {
-      if(features.containsKey(name)) {
-         return features.get(name);
-      }
-      throw new IllegalArgumentException(String.format("%s is not a predefined feature.", name));
+   public static PredefinedFeaturizer predefinedPredicateFeature(String name,
+                                                                 @NonNull SerializablePredicate<? super HString> featurizer) {
+      return predefinedFeature(name, Featurizer.predicateFeaturizer(name, featurizer));
+   }
+
+   /**
+    * Predefined value feature predefined featurizer.
+    *
+    * @param name       the name
+    * @param featurizer the featurizer
+    * @return the predefined featurizer
+    */
+   public static PredefinedFeaturizer predefinedValueFeature(String name,
+                                                             @NonNull SerializableFunction<? super HString, String> featurizer) {
+      return predefinedFeature(name, Featurizer.valueFeaturizer(name, featurizer));
    }
 
    /**
@@ -111,16 +112,6 @@ public final class PredefinedFeatures {
     */
    public static String strictContext(@NonNull Object... objects) {
       return strictContext(true, objects);
-   }
-
-   /**
-    * Lenient context string.
-    *
-    * @param objects the objects
-    * @return the string
-    */
-   public static String lenientContext(@NonNull Object... objects) {
-      return strictContext(false, objects);
    }
 
    /**
@@ -143,11 +134,18 @@ public final class PredefinedFeatures {
          @NonNull PredefinedFeaturizer f = Cast.as(objects[i]);
          @NonNull Integer index = Cast.as(objects[i + 1]);
          sb.append(f.name)
-               .append("[")
-               .append(index)
-               .append("]");
+           .append("[")
+           .append(index)
+           .append("]");
       }
       return sb.toString();
+   }
+
+   /**
+    * Instantiates a new Predefined features.
+    */
+   public PredefinedFeatures() {
+      throw new IllegalAccessError();
    }
 
    /**
@@ -165,7 +163,7 @@ public final class PredefinedFeatures {
       }
 
       @Override
-      public List<Feature> applyAsFeatures(HString input) {
+      public List<Variable> applyAsFeatures(HString input) {
          return featurizer.applyAsFeatures(input);
       }
 

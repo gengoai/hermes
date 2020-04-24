@@ -19,11 +19,10 @@
 
 package com.gengoai.hermes.corpus;
 
-import com.gengoai.apollo.ml.data.DatasetType;
-import com.gengoai.apollo.ml.data.ExampleDataset;
-import com.gengoai.apollo.statistics.measure.Association;
-import com.gengoai.apollo.statistics.measure.ContingencyTable;
-import com.gengoai.apollo.statistics.measure.ContingencyTableCalculator;
+import com.gengoai.apollo.ml.DataSet;
+import com.gengoai.apollo.math.statistics.measure.Association;
+import com.gengoai.apollo.math.statistics.measure.ContingencyTable;
+import com.gengoai.apollo.math.statistics.measure.ContingencyTableCalculator;
 import com.gengoai.collection.counter.Counter;
 import com.gengoai.collection.multimap.ArrayListMultimap;
 import com.gengoai.collection.multimap.ListMultimap;
@@ -42,9 +41,7 @@ import com.gengoai.hermes.extraction.regex.TokenMatcher;
 import com.gengoai.hermes.extraction.regex.TokenRegex;
 import com.gengoai.hermes.format.DocFormatService;
 import com.gengoai.hermes.lexicon.Lexicon;
-import com.gengoai.hermes.ml.ExampleGenerator;
-import com.gengoai.hermes.ml.InstanceGenerator;
-import com.gengoai.hermes.ml.SequenceGenerator;
+import com.gengoai.hermes.ml.HStringDataSetGenerator;
 import com.gengoai.io.Resources;
 import com.gengoai.parsing.ParseException;
 import com.gengoai.specification.Specification;
@@ -58,7 +55,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static com.gengoai.collection.counter.Counters.newCounter;
@@ -195,72 +191,13 @@ public interface DocumentCollection extends Iterable<Document>, AutoCloseable {
    }
 
    /**
-    * Constructs a Dataset from the Corpus according to the {@link ExampleGenerator}
+    * As data set data set.
     *
-    * @param exampleGenerator the example generator to use to construct the dataset
-    * @param datasetType      the dataset type
-    * @return the dataset
+    * @param HStringDataSetGenerator the example generator
+    * @return the data set
     */
-   default ExampleDataset asDataset(@NonNull ExampleGenerator exampleGenerator, @NonNull DatasetType datasetType) {
-      return ExampleDataset.builder()
-                           .type(datasetType)
-                           .source(stream().flatMap(exampleGenerator::apply));
-   }
-
-   /**
-    * Constructs a Dataset from the Corpus according to the {@link ExampleGenerator}
-    *
-    * @param exampleGenerator the example generator to use to construct the dataset
-    * @return the dataset
-    */
-   default ExampleDataset asDataset(@NonNull ExampleGenerator exampleGenerator) {
-      return asDataset(exampleGenerator, getStreamingContext().isDistributed()
-                                         ? DatasetType.Distributed
-                                         : DatasetType.InMemory);
-   }
-
-   /**
-    * Constructs a Dataset of Instances from the Corpus according to an {@link InstanceGenerator}
-    *
-    * @param updater     the dataset definition
-    * @param datasetType the dataset type
-    * @return the dataset
-    */
-   default ExampleDataset asInstanceDataset(@NonNull Consumer<InstanceGenerator> updater,
-                                            @NonNull DatasetType datasetType) {
-      return asDataset(ExampleGenerator.instance(updater), datasetType);
-   }
-
-   /**
-    * Constructs a Dataset of Instances from the Corpus according to an {@link InstanceGenerator}
-    *
-    * @param updater the dataset definition
-    * @return the dataset
-    */
-   default ExampleDataset asInstanceDataset(@NonNull Consumer<InstanceGenerator> updater) {
-      return asDataset(ExampleGenerator.instance(updater));
-   }
-
-   /**
-    * Constructs a Dataset of Sequences from the Corpus according to an {@link SequenceGenerator}
-    *
-    * @param updater the dataset definition
-    * @return the dataset
-    */
-   default ExampleDataset asSequenceDataset(@NonNull Consumer<SequenceGenerator> updater) {
-      return asDataset(ExampleGenerator.sequence(updater));
-   }
-
-   /**
-    * Constructs a Dataset of Sequences from the Corpus according to an {@link SequenceGenerator}
-    *
-    * @param updater     the dataset definition
-    * @param datasetType the dataset type
-    * @return the dataset
-    */
-   default ExampleDataset asSequenceDataset(@NonNull Consumer<SequenceGenerator> updater,
-                                            @NonNull DatasetType datasetType) {
-      return asDataset(ExampleGenerator.sequence(updater), datasetType);
+   default DataSet asDataSet(@NonNull HStringDataSetGenerator HStringDataSetGenerator) {
+      return HStringDataSetGenerator.generate(stream());
    }
 
    /**
@@ -305,6 +242,8 @@ public interface DocumentCollection extends Iterable<Document>, AutoCloseable {
    }
 
    /**
+    * Is empty boolean.
+    *
     * @return True if this document collection has no documents.
     */
    default boolean isEmpty() {
@@ -502,4 +441,14 @@ public interface DocumentCollection extends Iterable<Document>, AutoCloseable {
    default DocumentCollection update(@NonNull CaduceusProgram program) {
       return update("ExecuteCaduceusProgram", program::execute);
    }
+
+   /**
+    * Caches any actions performed on this collection.
+    *
+    * @return the document collection
+    */
+   default DocumentCollection cache(){
+      return this;
+   }
+
 }//END OF DocumentCollection

@@ -21,8 +21,8 @@
 
 package com.gengoai.hermes.ml.feature;
 
-import com.gengoai.apollo.ml.Feature;
-import com.gengoai.apollo.ml.Featurizer;
+import com.gengoai.apollo.ml.observation.Variable;
+import com.gengoai.apollo.ml.feature.Featurizer;
 import com.gengoai.hermes.HString;
 
 import java.util.ArrayList;
@@ -50,14 +50,14 @@ public class AffixFeaturizer extends Featurizer<HString> {
    }
 
    @Override
-   public List<Feature> applyAsFeatures(HString word) {
-      List<Feature> features = new ArrayList<>();
-      for (int i = 1; word.length() > i && i <= suffixSize; i++) {
+   public List<Variable> applyAsFeatures(HString word) {
+      List<Variable> features = new ArrayList<>();
+      for(int i = 1; word.length() > i && i <= suffixSize; i++) {
          features.add(
-            Feature.booleanFeature(i + "-SUFFIX", word.substring(word.length() - i, word.length()).toString()));
+               Variable.binary(i + "-SUFFIX", word.substring(word.length() - i, word.length()).toLowerCase()));
       }
-      for (int i = 1; word.length() > i && i <= prefixSize; i++) {
-         features.add(Feature.booleanFeature(i + "-PREFIX", word.substring(0, i).toString()));
+      for(int i = 1; word.length() > i && i <= prefixSize; i++) {
+         features.add(Variable.binary(i + "-PREFIX", word.substring(0, i).toLowerCase()));
       }
       return features;
    }

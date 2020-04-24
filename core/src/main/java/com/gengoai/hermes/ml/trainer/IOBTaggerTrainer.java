@@ -17,13 +17,14 @@
  * under the License.
  */
 
-package com.gengoai.hermes.ml;
+package com.gengoai.hermes.ml.trainer;
 
-import com.gengoai.apollo.ml.FeatureExtractor;
-import com.gengoai.apollo.ml.sequence.SequenceLabeler;
+import com.gengoai.apollo.ml.model.Model;
 import com.gengoai.hermes.AnnotationType;
-import com.gengoai.hermes.HString;
-import com.gengoai.hermes.ml.trainer.SequenceTaggerTrainer;
+import com.gengoai.hermes.Types;
+import com.gengoai.hermes.ml.HStringDataSetGenerator;
+import com.gengoai.hermes.ml.IOBLabelMaker;
+import com.gengoai.hermes.ml.IOBTagger;
 import lombok.Getter;
 import lombok.NonNull;
 
@@ -49,18 +50,21 @@ public abstract class IOBTaggerTrainer extends SequenceTaggerTrainer<IOBTagger> 
       this.trainingAnnotation = trainingAnnotation;
    }
 
+   protected abstract void addInputs(HStringDataSetGenerator.Builder builder);
+
    @Override
-   protected final IOBTagger createTagger(SequenceLabeler labeler, FeatureExtractor<HString> featureExtractor) {
+   protected final IOBTagger createTagger(Model labeler, HStringDataSetGenerator featureExtractor) {
       LocalDateTime now = LocalDateTime.now();
       String version = now.format(DateTimeFormatter.ofPattern("YYYY_MM_DD"));
       return new IOBTagger(featureExtractor, annotationType, labeler, version);
    }
 
-   @Override
-   protected SequenceGenerator getSequenceGenerator() {
-      return new SequenceGenerator()
-            .labelGenerator(new IOBLabelMaker(trainingAnnotation, getValidTags()))
-            .featureExtractor(createFeatureExtractor());
+   protected final HStringDataSetGenerator getExampleGenerator() {
+      HStringDataSetGenerator.Builder builder = HStringDataSetGenerator.builder(Types.SENTENCE)
+                                                                       .defaultOutput(new IOBLabelMaker(trainingAnnotation,
+                                                                                                        getValidTags()));
+      addInputs(builder);
+      return builder.build();
    }
 
    protected Set<String> getValidTags() {

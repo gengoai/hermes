@@ -84,7 +84,6 @@ public class POSFormat extends WholeFileTextFormat implements OneDocPerFileForma
       document.setCompleted(Types.SENTENCE, "PROVIDED");
       document.setCompleted(Types.TOKEN, "PROVIDED");
       document.setCompleted(Types.PART_OF_SPEECH, "PROVIDED");
-      document.annotate(Types.CATEGORY);
       return Stream.of(document);
    }
 

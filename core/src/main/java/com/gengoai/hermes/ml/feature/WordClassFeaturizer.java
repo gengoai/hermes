@@ -21,8 +21,8 @@
 
 package com.gengoai.hermes.ml.feature;
 
-import com.gengoai.apollo.ml.Feature;
-import com.gengoai.apollo.ml.Featurizer;
+import com.gengoai.apollo.ml.observation.Variable;
+import com.gengoai.apollo.ml.feature.Featurizer;
 import com.gengoai.hermes.HString;
 
 import java.util.Collections;
@@ -46,53 +46,52 @@ public class WordClassFeaturizer extends Featurizer<HString> {
    public static String featurePrefix = "WORD_CLASS";
    private static Pattern capPeriod = Pattern.compile("^[A-Z]\\.$");
 
-
    @Override
-   public List<Feature> applyAsFeatures(HString string) {
-      if (Character.getType(string.charAt(0)) == Character.CURRENCY_SYMBOL) {
-         return Collections.singletonList(Feature.booleanFeature(featurePrefix, "CURRENCY"));
+   public List<Variable> applyAsFeatures(HString string) {
+      if(Character.getType(string.charAt(0)) == Character.CURRENCY_SYMBOL) {
+         return Collections.singletonList(Variable.binary(featurePrefix, "CURRENCY"));
       }
 
-      if (string.contentEqualsIgnoreCase("'s")) {
-         return Collections.singletonList(Feature.booleanFeature(featurePrefix, "POSSESSIVE"));
+      if(string.contentEqualsIgnoreCase("'s")) {
+         return Collections.singletonList(Variable.binary(featurePrefix, "POSSESSIVE"));
       }
 
       StringPattern pattern = StringPattern.recognize(string.toString());
 
       String feat;
-      if (pattern.isAllLowerCaseLetter()) {
+      if(pattern.isAllLowerCaseLetter()) {
          feat = "lc";
-      } else if (pattern.digits() == 2) {
+      } else if(pattern.digits() == 2) {
          feat = "2d";
-      } else if (pattern.digits() == 4) {
+      } else if(pattern.digits() == 4) {
          feat = "4d";
-      } else if (pattern.containsDigit()) {
-         if (pattern.containsLetters()) {
+      } else if(pattern.containsDigit()) {
+         if(pattern.containsLetters()) {
             feat = "an";
-         } else if (pattern.containsHyphen()) {
+         } else if(pattern.containsHyphen()) {
             feat = "dd";
-         } else if (pattern.containsSlash()) {
+         } else if(pattern.containsSlash()) {
             feat = "ds";
-         } else if (pattern.containsComma()) {
+         } else if(pattern.containsComma()) {
             feat = "dc";
-         } else if (pattern.containsPeriod()) {
+         } else if(pattern.containsPeriod()) {
             feat = "dp";
          } else {
             feat = "num";
          }
-      } else if (pattern.isAllCapitalLetter() && string.length() == 1) {
+      } else if(pattern.isAllCapitalLetter() && string.length() == 1) {
          feat = "sc";
-      } else if (pattern.isAllCapitalLetter()) {
+      } else if(pattern.isAllCapitalLetter()) {
          feat = "ac";
-      } else if (capPeriod.matcher(string).find()) {
+      } else if(capPeriod.matcher(string).find()) {
          feat = "cp";
-      } else if (pattern.isInitialCapitalLetter()) {
+      } else if(pattern.isInitialCapitalLetter()) {
          feat = "ic";
       } else {
          feat = "other";
       }
 
-      return Collections.singletonList(Feature.booleanFeature(featurePrefix, feat));
+      return Collections.singletonList(Variable.binary(featurePrefix, feat));
    }
 
 }//END OF WordClassFeaturizer

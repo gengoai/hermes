@@ -19,10 +19,11 @@
 
 package com.gengoai.hermes.tools;
 
-import com.gengoai.apollo.ml.Model;
-import com.gengoai.apollo.ml.embedding.Embedding;
-import com.gengoai.apollo.ml.embedding.VSQuery;
+import com.gengoai.apollo.ml.model.ModelIO;
+import com.gengoai.apollo.ml.model.embedding.VSQuery;
+import com.gengoai.apollo.ml.model.embedding.WordEmbedding;
 import com.gengoai.application.Option;
+import com.gengoai.conversion.Cast;
 import com.gengoai.io.resource.Resource;
 
 import java.io.Console;
@@ -53,29 +54,28 @@ public class EmbeddingQueryCLI extends HermesCLI {
 
    @Override
    protected void programLogic() throws Exception {
-      Embedding embedding = Model.read(model);
-
+      WordEmbedding embedding = Cast.as(ModelIO.load(model));
 
       Console console = System.console();
       String line;
       do {
          line = console.readLine("query:> ");
-         if (line.equals("?quit") || line.equals("?q")) {
+         if(line.equals("?quit") || line.equals("?q")) {
             System.exit(0);
-         } else if (line.startsWith("?search") || line.startsWith("?s")) {
+         } else if(line.startsWith("?search") || line.startsWith("?s")) {
             String search = line.substring(line.indexOf(' ')).trim();
             embedding.getAlphabet().parallelStream()
                      .filter(term -> term.startsWith(search))
                      .forEach(term -> System.out.println("  " + term));
-         } else if (embedding.contains(line)) {
+         } else if(embedding.contains(line)) {
             embedding.query(VSQuery.termQuery(line.toLowerCase()).limit(10)).forEach(
-               slv -> System.out.println("  " + slv.getLabel() + " : " + slv.getWeight()));
+                  slv -> System.out.println("  " + slv.getLabel() + " : " + slv.getWeight()));
             System.out.println();
          } else {
             System.out.println("!! " + line + " is not in the dictionary");
          }
 
-      } while (!line.equals("q!"));
+      } while(!line.equals("q!"));
 
    }
 

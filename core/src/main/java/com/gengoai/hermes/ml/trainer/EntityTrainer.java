@@ -19,17 +19,16 @@
 
 package com.gengoai.hermes.ml.trainer;
 
-import com.gengoai.apollo.ml.FeatureExtractor;
-import com.gengoai.apollo.ml.Featurizer;
-import com.gengoai.apollo.ml.FitParameters;
-import com.gengoai.apollo.ml.data.DatasetType;
-import com.gengoai.apollo.ml.data.ExampleDataset;
-import com.gengoai.apollo.ml.sequence.Crf;
-import com.gengoai.apollo.ml.sequence.SequenceLabeler;
-import com.gengoai.hermes.HString;
+import com.gengoai.apollo.ml.DataSet;
+import com.gengoai.apollo.ml.Datum;
+import com.gengoai.apollo.ml.model.FitParameters;
+import com.gengoai.apollo.ml.model.Model;
+import com.gengoai.apollo.ml.feature.Featurizer;
+import com.gengoai.apollo.ml.model.sequence.Crf;
+import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.Types;
 import com.gengoai.hermes.corpus.DocumentCollection;
-import com.gengoai.hermes.ml.IOBTaggerTrainer;
+import com.gengoai.hermes.ml.HStringDataSetGenerator;
 import lombok.NonNull;
 
 import static com.gengoai.hermes.ml.feature.Features.*;
@@ -43,62 +42,70 @@ public class EntityTrainer extends IOBTaggerTrainer {
    }
 
    @Override
-   public ExampleDataset createDataset(@NonNull DocumentCollection data) {
+   protected void addInputs(@NonNull HStringDataSetGenerator.Builder builder) {
+      builder.tokenSequence(Datum.DEFAULT_INPUT,
+                            Featurizer.chain(LowerCaseWord,
+                                             IsInitialCapital,
+                                             IsAllCaps,
+                                             hasCapital,
+                                             IsDigit,
+                                             IsAlphaNumeric,
+                                             IsPunctuation,
+                                             PartOfSpeech,
+                                             IsLanguageName,
+                                             IsPlace,
+                                             IsStateOrPrefecture,
+                                             IsMonth,
+                                             IsOrganization,
+                                             IsHuman,
+                                             WordAndClass)
+                                      .withContext(lenientContext(LowerCaseWord, -1),
+                                                   strictContext(LowerCaseWord, -2),
+                                                   strictContext(PartOfSpeech, -1),
+                                                   strictContext(LowerCaseWord, -1, LowerCaseWord, 0),
+                                                   strictContext(PartOfSpeech, -1, LowerCaseWord, 0),
+                                                   strictContext(LowerCaseWord, -2, LowerCaseWord, -1),
+                                                   strictContext(LowerCaseWord, -2,
+                                                                 LowerCaseWord, -1,
+                                                                 LowerCaseWord, 0),
+                                                   strictContext(LowerCaseWord, -3,
+                                                                 LowerCaseWord, -2,
+                                                                 LowerCaseWord, -1,
+                                                                 LowerCaseWord, 0),
+                                                   lenientContext(LowerCaseWord, +1),
+                                                   strictContext(PartOfSpeech, +1),
+                                                   strictContext(LowerCaseWord, 0, LowerCaseWord, +1),
+                                                   strictContext(LowerCaseWord, +2),
+                                                   strictContext(LowerCaseWord, +1, LowerCaseWord, +2),
+                                                   strictContext(LowerCaseWord,
+                                                                 0,
+                                                                 LowerCaseWord,
+                                                                 +1,
+                                                                 LowerCaseWord,
+                                                                 +2),
+                                                   strictContext(LowerCaseWord, 0, PartOfSpeech, +1),
+                                                   strictContext(IsPlace, -1, IsPunctuation, 0, IsPlace, +1),
+                                                   strictContext(IsTime, -1, IsPunctuation, 0, IsTime, +1)));
+   }
+
+   @Override
+   public DataSet createDataset(@NonNull DocumentCollection data) {
       return data.annotate(Types.CATEGORY)
-                 .asDataset(getSequenceGenerator(), DatasetType.InMemory);
+                 .asDataSet(getExampleGenerator());
    }
 
    @Override
-   public FeatureExtractor<HString> createFeatureExtractor() {
-      return Featurizer.chain(LowerCaseWord,
-                              IsInitialCapital,
-                              IsAllCaps,
-                              hasCapital,
-                              IsDigit,
-                              IsAlphaNumeric,
-                              IsPunctuation,
-                              PartOfSpeech,
-                              IsLanguageName,
-                              IsPlace,
-                              IsStateOrPrefecture,
-                              IsMonth,
-                              IsOrganization,
-                              IsHuman,
-                              WordAndClass)
-                       .withContext(lenientContext(LowerCaseWord, -1),
-                                    strictContext(LowerCaseWord, -2),
-                                    strictContext(PartOfSpeech, -1),
-                                    strictContext(LowerCaseWord, -1, LowerCaseWord, 0),
-                                    strictContext(PartOfSpeech, -1, LowerCaseWord, 0),
-                                    strictContext(LowerCaseWord, -2, LowerCaseWord, -1),
-                                    strictContext(LowerCaseWord, -2,
-                                                  LowerCaseWord, -1,
-                                                  LowerCaseWord, 0),
-                                    strictContext(LowerCaseWord, -3,
-                                                  LowerCaseWord, -2,
-                                                  LowerCaseWord, -1,
-                                                  LowerCaseWord, 0),
-                                    lenientContext(LowerCaseWord, +1),
-                                    strictContext(PartOfSpeech, +1),
-                                    strictContext(LowerCaseWord, 0, LowerCaseWord, +1),
-                                    strictContext(LowerCaseWord, +2),
-                                    strictContext(LowerCaseWord, +1, LowerCaseWord, +2),
-                                    strictContext(LowerCaseWord, 0, LowerCaseWord, +1, LowerCaseWord, +2),
-                                    strictContext(LowerCaseWord, 0, PartOfSpeech, +1),
-                                    strictContext(IsPlace, -1, IsPunctuation, 0, IsPlace, +1),
-                                    strictContext(IsTime, -1, IsPunctuation, 0, IsTime, +1));
+   protected Model createSequenceLabeler(FitParameters<?> fitParameters) {
+      return new Crf(Cast.<Crf.Parameters>as(fitParameters));
    }
 
    @Override
-   protected SequenceLabeler createSequenceLabeler() {
-      return new Crf();
-   }
-
-   @Override
-   public FitParameters<?> getDefaultFitParameters() {
+   public FitParameters<?> getFitParameters() {
       return new Crf.Parameters()
-            .verbose.set(true)
-            .maxIterations.set(500)
-            .minFeatureFreq.set(5);
+            .update(p -> {
+               p.minFeatureFreq.set(5);
+               p.maxIterations.set(500);
+            });
    }
+
 }//END OF EntityTrainer

@@ -23,7 +23,7 @@
 package com.gengoai.hermes.extraction;
 
 import com.gengoai.Copyable;
-import com.gengoai.apollo.ml.Feature;
+import com.gengoai.apollo.ml.observation.Variable;
 import com.gengoai.collection.Arrays2;
 import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.AnnotationType;
@@ -77,11 +77,11 @@ public abstract class MultiPhaseExtractor extends FeaturizingExtractor implement
    private final @NonNull ValueCalculator valueCalculator;
 
    @Override
-   public final List<Feature> applyAsFeatures(@NonNull HString input) {
+   public final List<Variable> applyAsFeatures(@NonNull HString input) {
       return extract(input).count()
                            .entries()
                            .stream()
-                           .map(e -> Feature.realFeature(getPrefix(), e.getKey(), e.getValue()))
+                           .map(e -> Variable.real(getPrefix(), e.getKey(), e.getValue()))
                            .collect(Collectors.toList());
    }
 

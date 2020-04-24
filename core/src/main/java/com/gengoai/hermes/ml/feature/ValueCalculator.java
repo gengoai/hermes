@@ -1,6 +1,6 @@
 package com.gengoai.hermes.ml.feature;
 
-import com.gengoai.apollo.ml.Feature;
+import com.gengoai.apollo.ml.observation.Variable;
 import com.gengoai.collection.counter.Counter;
 import com.gengoai.function.SerializableFunction;
 import lombok.NonNull;
@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
  *
  * @author David B. Bracewell
  */
-public enum ValueCalculator implements SerializableFunction<Counter<String>, Set<Feature>> {
+public enum ValueCalculator implements SerializableFunction<Counter<String>, Set<Variable>> {
    /**
     * The Binary.
     */
@@ -42,7 +42,6 @@ public enum ValueCalculator implements SerializableFunction<Counter<String>, Set
       }
    };
 
-
    /**
     * Adjust counter.
     *
@@ -53,9 +52,9 @@ public enum ValueCalculator implements SerializableFunction<Counter<String>, Set
    public abstract <T> Counter<T> adjust(Counter<T> counter);
 
    @Override
-   public Set<Feature> apply(@NonNull Counter<String> stringCounter) {
+   public Set<Variable> apply(@NonNull Counter<String> stringCounter) {
       return adjust(stringCounter).entries().stream()
-                                  .map(entry -> Feature.realFeature(entry.getKey(), entry.getValue()))
+                                  .map(entry -> Variable.real(entry.getKey(), entry.getValue()))
                                   .collect(Collectors.toSet());
    }
 

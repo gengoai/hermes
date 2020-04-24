@@ -21,18 +21,19 @@
 
 package com.gengoai.hermes.ml;
 
-import com.gengoai.apollo.ml.FeatureExtractor;
-import com.gengoai.apollo.ml.LabeledSequence;
-import com.gengoai.apollo.ml.sequence.Labeling;
-import com.gengoai.apollo.ml.sequence.SequenceLabeler;
+import com.gengoai.apollo.ml.model.Model;
+import com.gengoai.apollo.ml.observation.Sequence;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.AnnotationType;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Types;
+import lombok.Getter;
 import lombok.NonNull;
 
 /**
- * The type Bio tagger.
+ * <p>
+ * Creates annotations based on the IOB tag output of an underlying model.
+ * </p>
  *
  * @author David B. Bracewell
  */
@@ -41,43 +42,49 @@ public class IOBTagger extends SequenceTagger {
    /**
     * The Annotation type.
     */
+   @Getter
    final AnnotationType annotationType;
 
    /**
-    * Instantiates a new Bio tagger.
+    * Instantiates a new IOBTagger
     *
-    * @param featurizer     the featurizer
-    * @param annotationType the annotation type
-    * @param labeler        the labeler
+    * @param inputGenerator the generator to convert HString into input for the model
+    * @param annotationType the type of annotation to add during tagging.
+    * @param labeler        the model to use to perform the IOB tagging
+    * @param version        the version of the model to be used as part of the provider of the annotation.
     */
-   public IOBTagger(@NonNull FeatureExtractor<HString> featurizer,
-                    AnnotationType annotationType,
-                    @NonNull SequenceLabeler labeler,
+   public IOBTagger(@NonNull HStringDataSetGenerator inputGenerator,
+                    @NonNull AnnotationType annotationType,
+                    @NonNull Model labeler,
                     @NonNull String version) {
-      super(featurizer, labeler, version);
+      super(inputGenerator, labeler, version);
       this.annotationType = annotationType;
    }
 
    /**
-    * Tag labeling result.
+    * Tags the given Sentence adding annotations of a predefined type and setting the tag and confidence based on the
+    * underlying Model using the IOB tag scheme.
     *
-    * @param sentence the sentence
+    * @param sentence the sentence to tag
     */
    @Override
-   public void tag(Annotation sentence) {
-      LabeledSequence<Annotation> sequenceInput = new LabeledSequence<>(sentence.tokens());
-      Labeling result = labeler.label(featurizer.extractExample(sequenceInput));
+   public void tag(@NonNull Annotation sentence) {
+      Sequence<?> result = labeler.transform(inputGenerator.apply(sentence))
+                                  .get(outputName)
+                                  .asSequence();
       for(int i = 0; i < sentence.tokenLength(); ) {
-         if(result.getLabel(i).equals("O")) {
+         String label = result.get(i).asVariable().getName();
+         double score = result.get(i).asVariable().getValue();
+         if(label.equals("O")) {
             i++;
          } else {
             Annotation start = sentence.tokenAt(i);
-            String type = result.getLabel(i).substring(2);
-            double p = result.getScore(i);
+            String type = label.substring(2);
+            double p = score;
             i++;
             final String insideType = "I-" + type;
-            while(i < sentence.tokenLength() && result.getLabel(i).equals(insideType)) {
-               p *= result.getScore(i);
+            while(i < sentence.tokenLength() && result.get(i).asVariable().getName().equals(insideType)) {
+               p *= score;
                i++;
             }
             Annotation end = sentence.tokenAt(i - 1);

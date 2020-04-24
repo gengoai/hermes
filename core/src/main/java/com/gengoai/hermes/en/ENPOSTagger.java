@@ -19,12 +19,11 @@
 
 package com.gengoai.hermes.en;
 
-import com.gengoai.apollo.ml.FeatureExtractor;
-import com.gengoai.apollo.ml.sequence.Labeling;
-import com.gengoai.apollo.ml.sequence.SequenceLabeler;
+import com.gengoai.apollo.ml.model.Model;
+import com.gengoai.apollo.ml.observation.Sequence;
 import com.gengoai.hermes.Annotation;
-import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Types;
+import com.gengoai.hermes.ml.HStringDataSetGenerator;
 import com.gengoai.hermes.ml.POSTagger;
 import com.gengoai.hermes.morphology.PartOfSpeech;
 import com.gengoai.hermes.morphology.PennTreeBank;
@@ -49,14 +48,14 @@ public class ENPOSTagger extends POSTagger {
     * @param labeler    the sequence labelling model
     * @param version    the model version number
     */
-   public ENPOSTagger(@NonNull FeatureExtractor<HString> featurizer,
-                      @NonNull SequenceLabeler labeler,
+   public ENPOSTagger(@NonNull HStringDataSetGenerator featurizer,
+                      @NonNull Model labeler,
                       @NonNull String version) {
       super(featurizer, labeler, version);
    }
 
    @Override
-   protected void addPOS(Annotation sentence, Labeling result) {
+   protected void addPOS(Annotation sentence, Sequence<?> result) {
       for(int i = 0; i < sentence.tokenLength(); i++) {
          Annotation token = sentence.tokenAt(i);
          if((token.contentEqualsIgnoreCase("'s") || token.contentEqualsIgnoreCase("s'")) &&
@@ -74,7 +73,7 @@ public class ENPOSTagger extends POSTagger {
             //Common error of MODAL + GERUND (where GERUND form is commonly a noun) + to => VBG
             token.put(Types.PART_OF_SPEECH, PennTreeBank.VBG);
          } else {
-            token.put(Types.PART_OF_SPEECH, PartOfSpeech.valueOf(result.getLabel(i)));
+            token.put(Types.PART_OF_SPEECH, PartOfSpeech.valueOf(result.get(i).asVariable().getName()));
          }
       }
    }

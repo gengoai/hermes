@@ -1,10 +1,10 @@
 package com.gengoai.hermes.ml;
 
-import com.gengoai.apollo.ml.Example;
-import com.gengoai.apollo.ml.sequence.SequenceValidator;
+import com.gengoai.apollo.ml.observation.Observation;
+import com.gengoai.apollo.ml.model.sequence.SequenceValidator;
 
 /**
- * The type Bio validator.
+ * <p>Sequence validator ensuring correct IOB tag output</p>
  *
  * @author David B. Bracewell
  */
@@ -12,7 +12,7 @@ public class IOBValidator implements SequenceValidator {
    private static final long serialVersionUID = 1L;
 
    @Override
-   public boolean isValid(String label, String previousLabel, Example instance) {
+   public boolean isValid(String label, String previousLabel, Observation instance) {
       if(label.startsWith("I-")) {
          if(previousLabel == null) {
             return false;

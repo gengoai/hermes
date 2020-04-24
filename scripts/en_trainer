@@ -19,8 +19,6 @@ function arguments() {
 }
 
 model=$(echo $1 | tr a-z A-Z)
-
 [ "$1" == "" ] && echo "Usage en_trainer [POS|PHRASE_CHUNK|ENTITY]"
-
 args=$(arguments $model)
 cd tools && jexec TaggerApp TRAIN $args "${@:2}"

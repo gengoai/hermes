@@ -24,7 +24,7 @@ package com.gengoai.hermes.extraction.lyre;
 
 import com.gengoai.Tag;
 import com.gengoai.Validation;
-import com.gengoai.apollo.ml.Feature;
+import com.gengoai.apollo.ml.observation.Variable;
 import com.gengoai.collection.Iterables;
 import com.gengoai.collection.Lists;
 import com.gengoai.collection.Sets;
@@ -1025,7 +1025,7 @@ public final class LyreDSL {
                                 o -> calculator.adjust(expression.count(toHString(o)))
                                                .entries()
                                                .stream()
-                                               .map(e -> Feature.realFeature(prefix, e.getKey(), e.getValue()))
+                                               .map(e -> Variable.real(prefix, e.getKey(), e.getValue()))
                                                .collect(Collectors.toList()));
    }
 

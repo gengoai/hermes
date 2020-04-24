@@ -19,9 +19,9 @@
 
 package com.gengoai.hermes.en;
 
-import com.gengoai.apollo.ml.Example;
-import com.gengoai.apollo.ml.Feature;
-import com.gengoai.apollo.ml.sequence.SequenceValidator;
+import com.gengoai.apollo.ml.observation.Observation;
+import com.gengoai.apollo.ml.observation.Variable;
+import com.gengoai.apollo.ml.model.sequence.SequenceValidator;
 import com.gengoai.hermes.morphology.PartOfSpeech;
 import com.gengoai.hermes.morphology.PennTreeBank;
 import com.gengoai.string.StringMatcher;
@@ -38,9 +38,9 @@ public class ENPOSValidator implements SequenceValidator {
    @Override
    public boolean isValid(String label,
                           String previousLabel,
-                          Example instance) {
+                          Observation instance) {
 
-      Feature wordFeature = instance.getFeatureByPrefix("WORD", null);
+      Variable wordFeature = instance.asVariableCollection().getVariableByPrefix("WORD");
       String word = wordFeature == null
                     ? Strings.EMPTY
                     : wordFeature.getSuffix();

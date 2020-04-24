@@ -19,8 +19,8 @@
 
 package com.gengoai.hermes.workflow.actions;
 
-import com.gengoai.apollo.ml.embedding.Embedding;
-import com.gengoai.apollo.statistics.measure.Similarity;
+import com.gengoai.apollo.ml.model.embedding.WordEmbedding;
+import com.gengoai.apollo.math.statistics.measure.Similarity;
 import com.gengoai.collection.counter.Counter;
 import com.gengoai.collection.counter.Counters;
 import com.gengoai.config.Config;
@@ -52,14 +52,14 @@ public class SpellChecker implements Action, Serializable {
    private static final long serialVersionUID = 1L;
    private final TrieWordList dictionary;
    private final int maxCost;
-   private final Embedding spellingEmbedding;
+   private final WordEmbedding spellingEmbedding;
 
    /**
     * Instantiates a new Spellchecker module.
     *
     * @param spellingEmbedding the spelling embedding
     */
-   public SpellChecker(@NonNull Embedding spellingEmbedding) {
+   public SpellChecker(@NonNull WordEmbedding spellingEmbedding) {
       this(spellingEmbedding,
            Config
                  .get("SpellcheckerModule.dictionary")
@@ -75,7 +75,7 @@ public class SpellChecker implements Action, Serializable {
     * @param dictionary        the dictionary
     * @param maxCost           the max cost
     */
-   public SpellChecker(@NonNull Embedding spellingEmbedding, @NonNull Resource dictionary, int maxCost) {
+   public SpellChecker(@NonNull WordEmbedding spellingEmbedding, @NonNull Resource dictionary, int maxCost) {
       this.spellingEmbedding = spellingEmbedding;
       try {
          this.dictionary = TrieWordList.read(dictionary);
@@ -114,12 +114,12 @@ public class SpellChecker implements Action, Serializable {
                      .entrySet()
                      .stream()
                      .filter(e -> e.getValue() <= min)
-                     .filter(e -> spellingEmbedding.contains(e.getKey()))
+                     .filter(e -> spellingEmbedding.getAlphabet().contains(e.getKey()))
                      .filter(e -> unigrams.get(e.getKey()) >= 10)
                      .forEach(e -> {
                         double sim = Similarity.Cosine.calculate(
-                              spellingEmbedding.lookup(e.getKey()),
-                              spellingEmbedding.lookup(oov));
+                              spellingEmbedding.embed(e.getKey()),
+                              spellingEmbedding.embed(oov));
                         if(sim > 0) {
                            adjusted.increment(e.getKey(), sim);
                         }

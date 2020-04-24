@@ -119,7 +119,6 @@ public final class PorterStemmer {
                               /* to test getResultBuffer(), getResultLength() : */
                               /* u = new String(s.getResultBuffer(), 0, s.getResultLength()); */
 
-                              System.out.print(u);
                            }
                            break;
                         }

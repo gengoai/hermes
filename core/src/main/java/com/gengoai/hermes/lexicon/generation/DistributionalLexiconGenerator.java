@@ -22,10 +22,10 @@
 package com.gengoai.hermes.lexicon.generation;
 
 import com.gengoai.Tag;
-import com.gengoai.apollo.linear.NDArray;
-import com.gengoai.apollo.linear.NDArrayFactory;
-import com.gengoai.apollo.ml.embedding.Embedding;
-import com.gengoai.apollo.ml.embedding.VSQuery;
+import com.gengoai.apollo.math.linalg.NDArray;
+import com.gengoai.apollo.math.linalg.NDArrayFactory;
+import com.gengoai.apollo.ml.model.embedding.VSQuery;
+import com.gengoai.apollo.ml.model.embedding.WordEmbedding;
 import com.gengoai.collection.counter.MultiCounter;
 import com.gengoai.collection.counter.MultiCounters;
 import com.gengoai.collection.multimap.HashSetMultimap;
@@ -39,7 +39,7 @@ import lombok.Setter;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.gengoai.apollo.statistics.measure.Similarity.Cosine;
+import static com.gengoai.apollo.math.statistics.measure.Similarity.Cosine;
 
 /**
  * Generates a lexicon based on similarity in an embedding space where positive and negative examples can be given per
@@ -51,7 +51,7 @@ import static com.gengoai.apollo.statistics.measure.Similarity.Cosine;
 public class DistributionalLexiconGenerator<T extends Tag> implements LexiconGenerator<T> {
    private final SetMultimap<T, String> negativeSeedTerms = new HashSetMultimap<>();
    private final SetMultimap<T, String> seedTerms = new HashSetMultimap<>();
-   private final Embedding wordEmbeddings;
+   private final WordEmbedding wordEmbeddings;
    @Getter
    @Setter
    private int maximumTermCount = 100;
@@ -64,7 +64,7 @@ public class DistributionalLexiconGenerator<T extends Tag> implements LexiconGen
     *
     * @param wordEmbeddings the word embeddings
     */
-   public DistributionalLexiconGenerator(@NonNull Embedding wordEmbeddings) {
+   public DistributionalLexiconGenerator(@NonNull WordEmbedding wordEmbeddings) {
       this.wordEmbeddings = wordEmbeddings;
    }
 
@@ -74,7 +74,8 @@ public class DistributionalLexiconGenerator<T extends Tag> implements LexiconGen
     * @param wordEmbeddings the word embeddings
     * @param seedTerms      the seed terms
     */
-   public DistributionalLexiconGenerator(@NonNull Embedding wordEmbeddings, @NonNull Multimap<T, String> seedTerms) {
+   public DistributionalLexiconGenerator(@NonNull WordEmbedding wordEmbeddings,
+                                         @NonNull Multimap<T, String> seedTerms) {
       this.wordEmbeddings = wordEmbeddings;
       this.seedTerms.putAll(seedTerms);
    }
@@ -86,7 +87,7 @@ public class DistributionalLexiconGenerator<T extends Tag> implements LexiconGen
     * @param seedTerms      the seed terms
     * @param threshold      the threshold
     */
-   public DistributionalLexiconGenerator(@NonNull Embedding wordEmbeddings,
+   public DistributionalLexiconGenerator(@NonNull WordEmbedding wordEmbeddings,
                                          @NonNull Multimap<T, String> seedTerms,
                                          double threshold) {
       this.wordEmbeddings = wordEmbeddings;
@@ -133,19 +134,20 @@ public class DistributionalLexiconGenerator<T extends Tag> implements LexiconGen
                      NDArray v = NDArrayFactory.DENSE.array(wordEmbeddings.dimension());
                      seedTerms.get(tag).stream()
                               .filter(wordEmbeddings::contains)
-                              .forEach(s -> v.addi(wordEmbeddings.lookup(s)));
+                              .forEach(s -> v.addi(wordEmbeddings.embed(s)));
                      v.divi(seedTerms.size());
                      vectors.put(tag, v);
                      NDArray negV = NDArrayFactory.DENSE.array(wordEmbeddings.dimension());
                      negativeSeedTerms.get(tag)
                                       .stream()
                                       .filter(wordEmbeddings::contains)
-                                      .forEach(s -> negV.addi(wordEmbeddings.lookup(s)));
+                                      .forEach(s -> negV.addi(wordEmbeddings.embed(s)));
                      negVectors.put(tag, negV);
                   });
          lexicon.putAll(seedTerms);
          MultiCounter<String, T> scores = MultiCounters.newConcurrentMultiCounter();
-         vectors.forEach((tag, vector) -> wordEmbeddings.query(VSQuery.vectorQuery(vector).limit(maximumTermCount * 10))
+         vectors.forEach((tag, vector) -> wordEmbeddings.query(VSQuery.vectorQuery(vector)
+                                                                      .limit(maximumTermCount * 10))
                                                         .filter(slv -> !seedTerms.containsValue(slv.getLabel()))
                                                         .forEach(slv -> {
                                                            double neg = 0;

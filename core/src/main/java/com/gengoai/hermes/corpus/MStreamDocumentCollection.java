@@ -37,6 +37,12 @@ class MStreamDocumentCollection implements DocumentCollection {
    }
 
    @Override
+   public DocumentCollection cache() {
+      stream = stream.cache();
+      return this;
+   }
+
+   @Override
    public void close() throws Exception {
       stream.close();
    }

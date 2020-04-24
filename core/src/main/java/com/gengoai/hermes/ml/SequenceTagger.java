@@ -1,7 +1,8 @@
 package com.gengoai.hermes.ml;
 
-import com.gengoai.apollo.ml.FeatureExtractor;
-import com.gengoai.apollo.ml.sequence.SequenceLabeler;
+import com.gengoai.apollo.ml.DataSetGenerator;
+import com.gengoai.apollo.ml.model.Model;
+import com.gengoai.collection.Iterables;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.HString;
 import com.gengoai.io.resource.Resource;
@@ -19,19 +20,13 @@ import java.io.Serializable;
 public abstract class SequenceTagger implements Serializable {
    private static final long serialVersionUID = 1L;
    @Getter
-   protected final FeatureExtractor<HString> featurizer;
+   protected final DataSetGenerator<HString> inputGenerator;
    @Getter
-   protected final SequenceLabeler labeler;
+   protected final Model labeler;
    @Getter
    protected final String version;
-
-   protected SequenceTagger(FeatureExtractor<HString> featurizer,
-                            SequenceLabeler labeler,
-                            String version) {
-      this.featurizer = featurizer;
-      this.labeler = labeler;
-      this.version = version;
-   }
+   @Getter
+   protected final String outputName;
 
    /**
     * Read the tagger model.
@@ -43,6 +38,23 @@ public abstract class SequenceTagger implements Serializable {
     */
    public static <T extends SequenceTagger> T read(@NonNull Resource resource) throws Exception {
       return resource.readObject();
+   }
+
+   /**
+    * Instantiates a new SequenceTagger.
+    *
+    * @param inputGenerator the generator to convert HString into input for the model
+    * @param labeler        the model to use to perform the part-of-speech tagging
+    * @param version        the version of the model to be used as part of the provider of the part-of-speech.
+    */
+   protected SequenceTagger(DataSetGenerator<HString> inputGenerator,
+                            Model labeler,
+                            String version) {
+      this.inputGenerator = inputGenerator;
+      this.labeler = labeler;
+      this.version = version;
+      this.outputName = Iterables.getFirst(labeler.getOutputs())
+                                 .orElseThrow(() -> new IllegalArgumentException("Model has no outputs"));
    }
 
    /**

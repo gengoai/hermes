@@ -21,8 +21,8 @@
 
 package com.gengoai.hermes.ml.feature;
 
-import com.gengoai.apollo.ml.Feature;
-import com.gengoai.apollo.ml.Featurizer;
+import com.gengoai.apollo.ml.observation.Variable;
+import com.gengoai.apollo.ml.feature.Featurizer;
 import com.gengoai.hermes.HString;
 import com.gengoai.string.Strings;
 
@@ -35,45 +35,44 @@ import java.util.List;
  * @author David B. Bracewell
  */
 public class WordShapeFeaturizer extends Featurizer<HString> {
-   /**
-    * The constant INSTANCE.
-    */
-   public static final WordShapeFeaturizer INSTANCE = new WordShapeFeaturizer();
    private static final long serialVersionUID = 1L;
    /**
     * The constant FEATURE_PREFIX.
     */
    public static final String FEATURE_PREFIX = "WORD_SHAPE";
-
+   /**
+    * The constant INSTANCE.
+    */
+   public static final WordShapeFeaturizer INSTANCE = new WordShapeFeaturizer();
 
    @Override
-   public List<Feature> applyAsFeatures(HString string) {
-      if (Strings.isNullOrBlank(string)) {
+   public List<Variable> applyAsFeatures(HString string) {
+      if(Strings.isNullOrBlank(string)) {
          return Collections.emptyList();
       }
       StringBuilder builder = new StringBuilder();
-      for (int ci = 0; ci < string.length(); ci++) {
+      for(int ci = 0; ci < string.length(); ci++) {
          char c = string.charAt(ci);
-         if (Character.isUpperCase(c)) {
+         if(Character.isUpperCase(c)) {
             builder.append("U");
-         } else if (Character.isLowerCase(c)) {
+         } else if(Character.isLowerCase(c)) {
             builder.append("L");
-         } else if (Character.isDigit(c)) {
+         } else if(Character.isDigit(c)) {
             builder.append("D");
-         } else if (c == '.' || c == ',') {
+         } else if(c == '.' || c == ',') {
             builder.append(".");
-         } else if (c == ';' || c == ':' || c == '?' || c == '!') {
+         } else if(c == ';' || c == ':' || c == '?' || c == '!') {
             builder.append(";");
-         } else if (c == '+' || c == '-' || c == '*' || c == '/' || c == '=' || c == '|' || c == '_') {
+         } else if(c == '+' || c == '-' || c == '*' || c == '/' || c == '=' || c == '|' || c == '_') {
             builder.append("-");
-         } else if (c == '(' || c == '{' || c == '[' || c == '<') {
+         } else if(c == '(' || c == '{' || c == '[' || c == '<') {
             builder.append("(");
-         } else if (c == ')' || c == '}' || c == ']' || c == '>') {
+         } else if(c == ')' || c == '}' || c == ']' || c == '>') {
             builder.append(")");
          } else {
             builder.append(c);
          }
       }
-      return Collections.singletonList(Feature.booleanFeature(FEATURE_PREFIX, builder.toString()));
+      return Collections.singletonList(Variable.binary(FEATURE_PREFIX, builder.toString()));
    }
 }//END OF WordShapeFeaturizer

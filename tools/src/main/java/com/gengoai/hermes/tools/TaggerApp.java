@@ -20,17 +20,17 @@
 package com.gengoai.hermes.tools;
 
 import com.gengoai.Stopwatch;
-import com.gengoai.apollo.ml.FitParameters;
-import com.gengoai.apollo.ml.data.ExampleDataset;
-import com.gengoai.apollo.ml.sequence.PerInstanceEvaluation;
-import com.gengoai.apollo.ml.sequence.SequenceLabelerEvaluation;
+import com.gengoai.apollo.ml.DataSet;
+import com.gengoai.apollo.ml.model.FitParameters;
+import com.gengoai.apollo.ml.evaluation.PerInstanceEvaluation;
+import com.gengoai.apollo.ml.evaluation.SequenceLabelerEvaluation;
 import com.gengoai.application.Option;
 import com.gengoai.config.Config;
 import com.gengoai.conversion.Converter;
 import com.gengoai.conversion.TypeConversionException;
 import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.hermes.en.ENPOSTrainer;
-import com.gengoai.hermes.ml.IOBEvaluation;
+import com.gengoai.hermes.ml.CoNLLEvaluation;
 import com.gengoai.hermes.ml.IOBTagger;
 import com.gengoai.hermes.ml.SequenceTagger;
 import com.gengoai.hermes.ml.trainer.EntityTrainer;
@@ -58,6 +58,8 @@ import static com.gengoai.tuple.Tuples.$;
 
 @Log
 public class TaggerApp extends HermesCLI {
+   private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+
    private static final Map<String, SequenceTaggerTrainer<?>> NAMED_TRAINERS =
          Collections.unmodifiableMap(hashMapOf(
                $("PHRASE_CHUNK", new PhraseChunkTrainer()),
@@ -76,6 +78,9 @@ public class TaggerApp extends HermesCLI {
    @Option(description = "Location to save model",
          aliases = {"m"})
    private String model;
+   @Option(description = "Print a Confusion Matrix",
+         defaultValue = "false")
+   private boolean printCM;
 
    public static void main(String[] args) {
       new TaggerApp().run(args);
@@ -124,7 +129,7 @@ public class TaggerApp extends HermesCLI {
             test(getDocumentCollection(), SequenceTagger.read(Resources.from(model)));
             break;
          case "PARAMETERS":
-            logFitParameters(getTrainer().getDefaultFitParameters());
+            logFitParameters(getTrainer().getFitParameters());
             break;
          case "LS":
          case "LIST":
@@ -140,26 +145,27 @@ public class TaggerApp extends HermesCLI {
       logInfo(log, "   Data: {0}", documentCollectionSpec);
       logInfo(log, " Tagger: {0}", model);
       logInfo(log, "========================================================");
-      ExampleDataset testingData = getTrainer().createDataset(testingCollection);
+      logInfo(log, "Loading data set");
+      DataSet testingData = getTrainer().createDataset(testingCollection);
       SequenceLabelerEvaluation evaluation;
       if(tagger instanceof IOBTagger) {
-         evaluation = new IOBEvaluation();
+         evaluation = new CoNLLEvaluation(tagger.getOutputName());
       } else {
-         evaluation = new PerInstanceEvaluation();
+         evaluation = new PerInstanceEvaluation(tagger.getOutputName());
       }
       Stopwatch stopwatch = Stopwatch.createStarted();
       logInfo(log, "Testing Started at {0}",
-              LocalDateTime.now().format(DateTimeFormatter.BASIC_ISO_DATE));
+              LocalDateTime.now().format(TIME_FORMATTER));
       evaluation.evaluate(tagger.getLabeler(), testingData);
       stopwatch.stop();
       logInfo(log, "Testing Stopped at {0} ({1})",
-              LocalDateTime.now().format(DateTimeFormatter.BASIC_ISO_DATE),
+              LocalDateTime.now().format(TIME_FORMATTER),
               stopwatch);
 
       Resource stdOut = new StringResource();
       try(OutputStream os = stdOut.outputStream();
           PrintStream printStream = new PrintStream(os)) {
-         evaluation.output(printStream, true);
+         evaluation.output(printStream, printCM);
       } catch(IOException e) {
          throw new RuntimeException(e);
       }
@@ -174,7 +180,7 @@ public class TaggerApp extends HermesCLI {
       SequenceTaggerTrainer<?> trainer = getTrainer();
 
       //--Fill in parameters based on command line settings
-      FitParameters<?> parameters = trainer.getDefaultFitParameters();
+      FitParameters<?> parameters = trainer.getFitParameters();
       for(String parameterName : parameters.parameterNames()) {
          String confName = "param." + parameterName;
          if(Config.hasProperty(confName)) {
@@ -192,11 +198,11 @@ public class TaggerApp extends HermesCLI {
       Stopwatch stopwatch = Stopwatch.createStarted();
       logInfo(log,
               "Training Started at {0}",
-              LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")));
+              LocalDateTime.now().format(TIME_FORMATTER));
       SequenceTagger tagger = trainer.fit(getDocumentCollection(), parameters);
       stopwatch.stop();
       logInfo(log, "Training Stopped at {0} ({1})",
-              LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")),
+              LocalDateTime.now().format(TIME_FORMATTER),
               stopwatch);
       return tagger;
    }

@@ -19,7 +19,6 @@
 
 package com.gengoai.hermes.tools;
 
-import com.gengoai.apollo.ml.embedding.Embedding;
 import com.gengoai.application.Option;
 import com.gengoai.io.resource.Resource;
 
@@ -40,7 +39,7 @@ public class EmbeddingConverter extends HermesCLI {
 
    @Override
    protected void programLogic() throws Exception {
-      Embedding.readWord2VecTextFormat(in).write(out);
+      //ModelIO.save(PreTrainedWordEmbedding.readWord2VecTextFormat(in), out);
    }
 
 }// END OF EmbeddingConverter

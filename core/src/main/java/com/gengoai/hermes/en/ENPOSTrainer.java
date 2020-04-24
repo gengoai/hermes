@@ -19,90 +19,87 @@
 
 package com.gengoai.hermes.en;
 
-import com.gengoai.apollo.ml.FeatureExtractor;
-import com.gengoai.apollo.ml.Featurizer;
-import com.gengoai.apollo.ml.FitParameters;
-import com.gengoai.apollo.ml.Params;
-import com.gengoai.apollo.ml.preprocess.MinCountTransform;
-import com.gengoai.apollo.ml.sequence.GreedyAvgPerceptron;
-import com.gengoai.apollo.ml.sequence.SequenceLabeler;
+import com.gengoai.apollo.ml.*;
+import com.gengoai.apollo.ml.feature.FeatureExtractor;
+import com.gengoai.apollo.ml.feature.Featurizer;
+import com.gengoai.apollo.ml.model.FitParameters;
+import com.gengoai.apollo.ml.model.Model;
+import com.gengoai.apollo.ml.model.Params;
+import com.gengoai.apollo.ml.observation.Variable;
+import com.gengoai.apollo.ml.transform.MinCountFilter;
+import com.gengoai.apollo.ml.model.PipelineModel;
+import com.gengoai.apollo.ml.model.sequence.GreedyAvgPerceptron;
+import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.HString;
+import com.gengoai.hermes.Types;
+import com.gengoai.hermes.ml.HStringDataSetGenerator;
 import com.gengoai.hermes.ml.POSTagger;
-import com.gengoai.hermes.ml.SequenceGenerator;
 import com.gengoai.hermes.ml.feature.AffixFeaturizer;
 import com.gengoai.hermes.ml.feature.Features;
 import com.gengoai.hermes.ml.trainer.SequenceTaggerTrainer;
-import com.gengoai.string.Strings;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
 
-import static com.gengoai.apollo.ml.Featurizer.booleanFeaturizer;
-import static com.gengoai.apollo.ml.Featurizer.predicateFeaturizer;
+import static com.gengoai.hermes.ml.feature.Features.LowerCaseWord;
+import static com.gengoai.hermes.ml.feature.Features.WordAndClass;
+import static com.gengoai.hermes.ml.feature.PredefinedFeatures.strictContext;
 
 public class ENPOSTrainer extends SequenceTaggerTrainer<POSTagger> {
-   @Override
-   public FeatureExtractor<HString> createFeatureExtractor() {
+   private FeatureExtractor<HString> createFeatureExtractor() {
       return Featurizer.chain(new AffixFeaturizer(3, 3),
-                              Features.LowerCaseWord,
-                              predicateFeaturizer("ALL_UPPERCASE", Strings::isUpperCase),
-                              predicateFeaturizer("START_UPPERCASE",
-                                                  (HString s) -> Character.isUpperCase(s.charAt(0))),
-                              predicateFeaturizer("IS_DIGIT", Features::isDigit),
-                              predicateFeaturizer("IS_PUNCTUATION", Strings::isPunctuation),
-                              booleanFeaturizer((HString a) -> {
-                                 String norm = a.toLowerCase();
-                                 if(norm.endsWith("es")) {
-                                    return Collections.singleton("ENDING_ES");
-                                 } else if(norm.endsWith("s")) {
-                                    return Collections.singleton("ENDING_S");
-                                 } else if(norm.endsWith("ed")) {
-                                    return Collections.singleton("ENDING_ED");
-                                 } else if(norm.endsWith("ing")) {
-                                    return Collections.singleton("ENDING_ING");
-                                 } else if(norm.endsWith("ly")) {
-                                    return Collections.singleton("ENDING_LY");
-                                 }
-                                 return Collections.emptyList();
-                              })).withContext("WORD[-1]",
-                                              "WORD[-1]|WORD[0]",
-                                              "~WORD[-2]",
-                                              "~WORD[-2]|WORD[-1]",
-                                              "WORD[+1]",
-                                              "WORD[0]|WORD[+1]",
-                                              "~WORD[+2]",
-                                              "~WORD[+1]|WORD[+2]"
-                                             );
+                              LowerCaseWord,
+                              WordAndClass,
+                              Features.IsPunctuation,
+                              Features.IsInitialCapital,
+                              Features.IsAllCaps,
+                              Features.IsInitialCapital,
+                              Features.IsDigit)
+                       .withContext(
+                             "LowerWord[-1]",
+                             "~LowerWord[-2]",
+                             "LowerWord[+1]",
+                             "~LowerWord[+2]",
+                             strictContext(WordAndClass, -1),
+                             strictContext(WordAndClass, -2),
+                             strictContext(LowerCaseWord, 1),
+                             strictContext(LowerCaseWord, 2)
+                                   );
    }
 
    @Override
-   protected SequenceLabeler createSequenceLabeler() {
-      return new GreedyAvgPerceptron(new ENPOSValidator(),
-                                     new MinCountTransform(5));
+   protected Model createSequenceLabeler(FitParameters<?> parameters) {
+      return PipelineModel.builder()
+                          .defaultInput(new MinCountFilter(5))
+                          .build(new GreedyAvgPerceptron(Cast.<GreedyAvgPerceptron.Parameters>as(parameters)));
    }
 
    @Override
-   protected POSTagger createTagger(SequenceLabeler labeler, FeatureExtractor<HString> featureExtractor) {
+   protected POSTagger createTagger(Model labeler, HStringDataSetGenerator featureExtractor) {
       LocalDateTime now = LocalDateTime.now();
       String version = now.format(DateTimeFormatter.ofPattern("YYYY_MM_DD"));
       return new ENPOSTagger(featureExtractor, labeler, version);
    }
 
    @Override
-   public FitParameters<?> getDefaultFitParameters() {
-      GreedyAvgPerceptron.Parameters parameters = new GreedyAvgPerceptron.Parameters();
-      parameters.set(Params.Optimizable.maxIterations, 200);
-      parameters.set(Params.verbose, true);
-      parameters.set(Params.Optimizable.historySize, 3);
-      parameters.set(Params.Optimizable.tolerance, 1e-4);
-      return parameters;
+   protected HStringDataSetGenerator getExampleGenerator() {
+      return HStringDataSetGenerator.builder(Types.SENTENCE)
+                                    .dataSetType(DataSetType.InMemory)
+                                    .tokenSequence(Datum.DEFAULT_INPUT, createFeatureExtractor())
+                                    .tokenSequence(Datum.DEFAULT_OUTPUT, h -> Variable.binary(h.pos().name()))
+                                    .build();
    }
 
    @Override
-   protected SequenceGenerator getSequenceGenerator() {
-      return new SequenceGenerator()
-            .labelGenerator(HString::pos)
-            .featureExtractor(createFeatureExtractor());
+   public FitParameters<?> getFitParameters() {
+      return new GreedyAvgPerceptron.Parameters()
+            .update(parameters -> {
+               parameters.set(Params.Optimizable.maxIterations, 15);
+               parameters.set(Params.verbose, true);
+               parameters.set(Params.Optimizable.historySize, 3);
+               parameters.set(Params.Optimizable.tolerance, 1e-4);
+               parameters.validator.set(new ENPOSValidator());
+            });
    }
+
 }//END OF ENPOSTrainer

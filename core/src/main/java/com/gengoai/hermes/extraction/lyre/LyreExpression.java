@@ -24,7 +24,7 @@ package com.gengoai.hermes.extraction.lyre;
 
 import com.gengoai.Validation;
 import com.gengoai.annotation.JsonHandler;
-import com.gengoai.apollo.ml.Feature;
+import com.gengoai.apollo.ml.observation.Variable;
 import com.gengoai.collection.Lists;
 import com.gengoai.collection.counter.Counter;
 import com.gengoai.collection.counter.Counters;
@@ -119,14 +119,14 @@ public final class LyreExpression extends FeaturizingExtractor implements Expres
    }
 
    @Override
-   public List<Feature> applyAsFeatures(HString hString) {
+   public List<Variable> applyAsFeatures(HString hString) {
       if(isInstance(LyreExpressionType.FEATURE)) {
          return Cast.as(applyAsList(hString));
       } else if(isInstance(COUNTER)) {
          return Cast.<Counter<?>>as(applyAsObject(hString))
                .entries()
                .stream()
-               .map(e -> Feature.realFeature(e.getKey().toString(), e.getValue()))
+               .map(e -> Variable.real(e.getKey().toString(), e.getValue()))
                .collect(Collectors.toList());
       }
       List<Object> list = applyAsList(hString);
@@ -134,7 +134,7 @@ public final class LyreExpression extends FeaturizingExtractor implements Expres
          return Collections.emptyList();
       }
       return list.stream()
-                 .map(o -> Feature.booleanFeature(o.toString()))
+                 .map(o -> Variable.binary(o.toString()))
                  .collect(Collectors.toList());
    }
 
@@ -220,7 +220,7 @@ public final class LyreExpression extends FeaturizingExtractor implements Expres
          cntr = Cast.<Counter<?>>as(applyAsObject(hString)).mapKeys(Object::toString);
       } else if(getType().isInstance(LyreExpressionType.FEATURE)) {
          cntr = Counters.newCounter();
-         for(Feature feature : applyAsList(hString, Feature.class)) {
+         for(Variable feature : applyAsList(hString, Variable.class)) {
             cntr.set(feature.getName(), feature.getValue());
          }
       } else {

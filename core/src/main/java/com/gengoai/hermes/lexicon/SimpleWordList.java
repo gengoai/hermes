@@ -27,6 +27,7 @@ import lombok.NonNull;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -39,15 +40,6 @@ import java.util.Set;
 public class SimpleWordList implements WordList, Serializable {
    private static final long serialVersionUID = 1L;
    private final Set<String> words;
-
-   /**
-    * Instantiates a new Simple word list.
-    *
-    * @param words the words
-    */
-   public SimpleWordList(@NonNull Set<String> words) {
-      this.words = new HashSet<>(words);
-   }
 
    /**
     * <p>
@@ -85,6 +77,15 @@ public class SimpleWordList implements WordList, Serializable {
          throw new IOException(e);
       }
       return new SimpleWordList(words);
+   }
+
+   /**
+    * Instantiates a new Simple word list.
+    *
+    * @param words the words
+    */
+   public SimpleWordList(@NonNull Collection<String> words) {
+      this.words = new HashSet<>(words);
    }
 
    @Override

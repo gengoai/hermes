@@ -20,17 +20,16 @@
 package com.gengoai.hermes.ml.trainer;
 
 import com.gengoai.Stopwatch;
-import com.gengoai.apollo.ml.FeatureExtractor;
-import com.gengoai.apollo.ml.Featurizer;
-import com.gengoai.apollo.ml.FitParameters;
-import com.gengoai.apollo.ml.data.DatasetType;
-import com.gengoai.apollo.ml.data.ExampleDataset;
-import com.gengoai.apollo.ml.sequence.Crf;
-import com.gengoai.apollo.ml.sequence.SequenceLabeler;
-import com.gengoai.hermes.HString;
+import com.gengoai.apollo.ml.DataSet;
+import com.gengoai.apollo.ml.Datum;
+import com.gengoai.apollo.ml.model.FitParameters;
+import com.gengoai.apollo.ml.model.Model;
+import com.gengoai.apollo.ml.feature.Featurizer;
+import com.gengoai.apollo.ml.model.sequence.Crf;
+import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.Types;
 import com.gengoai.hermes.corpus.DocumentCollection;
-import com.gengoai.hermes.ml.IOBTaggerTrainer;
+import com.gengoai.hermes.ml.HStringDataSetGenerator;
 import com.gengoai.hermes.morphology.PennTreeBank;
 import lombok.NonNull;
 import lombok.extern.java.Log;
@@ -39,8 +38,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.gengoai.LogUtils.logFine;
-import static com.gengoai.hermes.ml.feature.Features.LowerCaseWord;
-import static com.gengoai.hermes.ml.feature.Features.PartOfSpeech;
+import static com.gengoai.hermes.ml.feature.Features.*;
 import static com.gengoai.hermes.ml.feature.PredefinedFeatures.lenientContext;
 import static com.gengoai.hermes.ml.feature.PredefinedFeatures.strictContext;
 
@@ -52,35 +50,48 @@ public class PhraseChunkTrainer extends IOBTaggerTrainer {
    }
 
    @Override
-   public ExampleDataset createDataset(@NonNull DocumentCollection data) {
+   protected void addInputs(HStringDataSetGenerator.Builder builder) {
+      builder.tokenSequence(Datum.DEFAULT_INPUT,
+                            Featurizer.chain(LowerCaseWord, PartOfSpeech, WordAndClass)
+                                      .withContext(lenientContext(LowerCaseWord, -1),
+                                                   strictContext(LowerCaseWord, -1, LowerCaseWord, 0),
+                                                   lenientContext(LowerCaseWord, -2),
+                                                   lenientContext(LowerCaseWord, +1),
+                                                   strictContext(LowerCaseWord, 0, LowerCaseWord, +1),
+                                                   lenientContext(LowerCaseWord, +2),
+                                                   lenientContext(PartOfSpeech, -1),
+                                                   strictContext(PartOfSpeech, -1, LowerCaseWord, 0),
+                                                   strictContext(PartOfSpeech, -1, PartOfSpeech, 0),
+                                                   lenientContext(PartOfSpeech, -2),
+                                                   lenientContext(PartOfSpeech, +1),
+                                                   lenientContext(PartOfSpeech, +2),
+                                                   strictContext(PartOfSpeech, 0, LowerCaseWord, +1),
+                                                   strictContext(PartOfSpeech, 0, PartOfSpeech, +1)
+                                                  ));
+   }
+
+   @Override
+   public DataSet createDataset(@NonNull DocumentCollection data) {
       Stopwatch sw = Stopwatch.createStarted();
-      ExampleDataset dataset = data.update("RemovePartOfSpeech", d -> d.setUncompleted(Types.PART_OF_SPEECH))
-                                   .annotate(Types.PART_OF_SPEECH)
-                                   .asDataset(getSequenceGenerator(), DatasetType.InMemory);
+      DataSet dataset = data.update("RemovePartOfSpeech", d -> d.setUncompleted(Types.PART_OF_SPEECH))
+                            .annotate(Types.PART_OF_SPEECH)
+                            .asDataSet(getExampleGenerator());
       sw.stop();
       logFine(log, "Took {0} to create dataset.", sw);
       return dataset;
    }
 
    @Override
-   public FeatureExtractor<HString> createFeatureExtractor() {
-      return Featurizer.chain(LowerCaseWord, PartOfSpeech)
-                       .withContext(lenientContext(LowerCaseWord, -1),
-                                    strictContext(LowerCaseWord, -1, LowerCaseWord, 0),
-                                    strictContext(PartOfSpeech, -1),
-                                    strictContext(PartOfSpeech, -1, PartOfSpeech, 0),
-                                    strictContext(PartOfSpeech, -1, LowerCaseWord, 0));
+   protected Model createSequenceLabeler(FitParameters<?> parameters) {
+      return new Crf(Cast.<Crf.Parameters>as(parameters));
    }
 
    @Override
-   protected SequenceLabeler createSequenceLabeler() {
-      return new Crf();
-   }
-
-   @Override
-   public FitParameters<?> getDefaultFitParameters() {
+   public FitParameters<?> getFitParameters() {
       return new Crf.Parameters()
-            .minFeatureFreq.set(5);
+            .update(p -> {
+               p.minFeatureFreq.set(5);
+            });
    }
 
    @Override
