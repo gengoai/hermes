@@ -2064,14 +2064,14 @@ events.execute(document); <2>
 
 TIP: Take a look at *CaduceusExample.java* in the Hermes examples project to see a complete example.
 
-== Machine Learning
-
-Machine learning is commonly used for providing annotations and relations, determining the value of an attribute for a document or annotation, or determining the topics discussed in a corpus.
-Training of these types of machine learning models is done from a corpus.
-In the case of supervised learning the corpus contains the gold standard, or correct, annotations, relations, or attributes.
-Herme’s Corpus class makes it easy to construct (see asLabeledStream, asClassificationDataSet, asRegressionDataSet, and asSequenceDataSet in the Javadoc) an Apollo dataset which various machine learning algorithms can be trained or applied.
-
-TIP: Take a look at *GettingStarted.java*, *CorpusExample.java*, *MLExample.java*, and *SparkExample.java* in the Hermes examples project to see a complete example.
+//== Machine Learning
+//
+//Machine learning is commonly used for providing annotations and relations, determining the value of an attribute for a document or annotation, or determining the topics discussed in a corpus.
+//Training of these types of machine learning models is done from a corpus.
+//In the case of supervised learning the corpus contains the gold standard, or correct, annotations, relations, or attributes.
+//Herme’s Corpus class makes it easy to construct (see asLabeledStream, asClassificationDataSet, asRegressionDataSet, and asSequenceDataSet in the Javadoc) an Apollo dataset which various machine learning algorithms can be trained or applied.
+//
+//TIP: Take a look at *GettingStarted.java*, *CorpusExample.java*, *MLExample.java*, and *SparkExample.java* in the Hermes examples project to see a complete example.
 
 [#workflows]
 == Workflows
@@ -2105,7 +2105,7 @@ Actions share a common key-value memory store, called a _Context_, in which info
                    <update>       <update>
 ....
 
-The figure illustrated above gives an example of a sequential workflow where an document collection is passed through a series of three actions each of which update (Modify) the collection and the context. The <<#workflow_runner,Workflow Runner>> the can save the final output to file.
+The figure illustrated above gives an example of a sequential workflow where an document collection is passed through a series of three actions each of which update (Modify) the collection and the context. The <<#workflowApp,Workflow Runner>> the can save the final output to file.
 
 === Contexts
 
@@ -2159,10 +2159,25 @@ Finally the set of actions are defined as an array within the "actions" object.
 [#hermes_applications]
 == Hermes Applications
 
-[#workflow_runner]
-=== Workflow Runner
+[#courpusApp]
+=== Corpus Application
 
-=== annotate
+[cols="2,6",stripes="odd"]
+|===
+|INFO|Displays the number of documents and completed AnnotatableType for the corpus.
+|QUERY|Queries the corpus with the given query returning the top 10 results.
+|GET|Gets the given document (or a random one if *rnd* is given) in Json format.
+|IMPORT|Imports the documents from the input document collection into the corpus.
+|ANNOTATE|Annotates the corpus with the given annotatable types.
+|FORMATS|List the available document formats and their parameters.
+|===
+
+[#workflowApp]
+=== Workflow Application
+
+
+[#lexiconApp]
+=== Lexicon Application
 
 === csv2Lexicon
 
@@ -2181,5 +2196,6 @@ csv2Lexicon --csv lexicon:mem:adhoc:csv::/data/test/import.csv;probability=-1;co
 
 ....
 
-
+[#embeddingApp]
+=== Word Embedding Application
 

@@ -19,16 +19,17 @@
 
 package com.gengoai.hermes.en;
 
-import com.gengoai.apollo.ml.*;
+import com.gengoai.apollo.ml.DataSetType;
+import com.gengoai.apollo.ml.Datum;
 import com.gengoai.apollo.ml.feature.FeatureExtractor;
 import com.gengoai.apollo.ml.feature.Featurizer;
 import com.gengoai.apollo.ml.model.FitParameters;
 import com.gengoai.apollo.ml.model.Model;
 import com.gengoai.apollo.ml.model.Params;
-import com.gengoai.apollo.ml.observation.Variable;
-import com.gengoai.apollo.ml.transform.MinCountFilter;
 import com.gengoai.apollo.ml.model.PipelineModel;
 import com.gengoai.apollo.ml.model.sequence.GreedyAvgPerceptron;
+import com.gengoai.apollo.ml.observation.Variable;
+import com.gengoai.apollo.ml.transform.MinCountFilter;
 import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Types;
@@ -94,7 +95,7 @@ public class ENPOSTrainer extends SequenceTaggerTrainer<POSTagger> {
    public FitParameters<?> getFitParameters() {
       return new GreedyAvgPerceptron.Parameters()
             .update(parameters -> {
-               parameters.set(Params.Optimizable.maxIterations, 15);
+               parameters.set(Params.Optimizable.maxIterations, 50);
                parameters.set(Params.verbose, true);
                parameters.set(Params.Optimizable.historySize, 3);
                parameters.set(Params.Optimizable.tolerance, 1e-4);

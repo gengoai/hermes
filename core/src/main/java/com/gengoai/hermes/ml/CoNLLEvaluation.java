@@ -23,7 +23,6 @@ package com.gengoai.hermes.ml;
 
 import com.gengoai.Validation;
 import com.gengoai.apollo.ml.DataSet;
-import com.gengoai.apollo.ml.Datum;
 import com.gengoai.apollo.ml.evaluation.SequenceLabelerEvaluation;
 import com.gengoai.apollo.ml.model.Model;
 import com.gengoai.apollo.ml.observation.Sequence;
@@ -31,7 +30,6 @@ import com.gengoai.collection.Sets;
 import com.gengoai.collection.counter.Counter;
 import com.gengoai.collection.counter.Counters;
 import com.gengoai.conversion.Cast;
-import com.gengoai.stream.MStream;
 import com.gengoai.string.Strings;
 import com.gengoai.string.TableFormatter;
 import com.gengoai.tuple.Tuple3;
@@ -59,7 +57,6 @@ import java.util.TreeSet;
  * @author David B. Bracewell
  */
 public class CoNLLEvaluation implements SequenceLabelerEvaluation {
-
    private final Counter<String> incorrect = Counters.newCounter();
    private final Counter<String> correct = Counters.newCounter();
    private final Counter<String> missed = Counters.newCounter();
@@ -110,12 +107,6 @@ public class CoNLLEvaluation implements SequenceLabelerEvaluation {
 
    @Override
    public void evaluate(@NonNull Model model, @NonNull DataSet dataset) {
-      dataset.forEach(datum -> entry(tags(datum.get(outputName).asSequence()),
-                                     tags(model.transform(datum).get(outputName).asSequence())));
-   }
-
-   @Override
-   public void evaluate(@NonNull Model model, @NonNull MStream<Datum> dataset) {
       dataset.forEach(datum -> entry(tags(datum.get(outputName).asSequence()),
                                      tags(model.transform(datum).get(outputName).asSequence())));
    }

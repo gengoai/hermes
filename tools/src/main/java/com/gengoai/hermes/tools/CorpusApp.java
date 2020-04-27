@@ -41,18 +41,18 @@ import static com.gengoai.LogUtils.logSevere;
 
 @Application.Description(
       "===========================================================\n" +
-            "           Application for working with corpora.\n" +
-            "===========================================================\n" +
-            "                         Operations\n" +
-            "---------------------------------------------------------\n" +
-            "INFO -  Displays the number of documents and completed AnnotatableType for the corpus.\n" +
-            "QUERY - Queries the corpus with the given query returning the top 10 results.\n" +
-            "GET - Gets the given document (or a random one if *rnd* is given) in Json format.\n" +
-            "IMPORT - Imports the documents from the input document collection into the corpus.\n" +
-            "ANNOTATE - Annotates the corpus with the given annotatable types.\n" +
-            "FORMATS - List the available document formats and their parameters.\n" +
-            "---------------------------------------------------------\n" +
-            "\n                     Command Line Arguments "
+      "           Application for working with corpora.\n" +
+      "===========================================================\n" +
+      "                         Operations\n" +
+      "---------------------------------------------------------\n" +
+      "INFO -  Displays the number of documents and completed AnnotatableType for the corpus.\n" +
+      "QUERY - Queries the corpus with the given query returning the top 10 results.\n" +
+      "GET - Gets the given document (or a random one if *rnd* is given) in Json format.\n" +
+      "IMPORT - Imports the documents from the input document collection into the corpus.\n" +
+      "ANNOTATE - Annotates the corpus with the given annotatable types.\n" +
+      "FORMATS - List the available document formats and their parameters.\n" +
+      "---------------------------------------------------------\n" +
+      "\n                     Command Line Arguments "
 )
 @Log
 public class CorpusApp extends HermesCLI {
@@ -202,7 +202,7 @@ public class CorpusApp extends HermesCLI {
    protected void programLogic() throws Exception {
       ensurePositionalArgument(0, "No Operation Given!");
       final String operation = getPositionalArgs()[0];
-      switch(operation) {
+      switch(operation.toUpperCase()) {
          case "INFO":
             corpusInfo();
             break;

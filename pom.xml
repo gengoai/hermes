@@ -58,6 +58,7 @@
     <modules>
         <module>core</module>
         <module>tools</module>
+        <module>examples</module>
     </modules>
     <dependencyManagement>
         <dependencies>
@@ -174,7 +175,7 @@
                         </executions>
                     </plugin>
                     <plugin>
-                        <artifactId>maven-observationType-plugin</artifactId>
+                        <artifactId>maven-source-plugin</artifactId>
                         <version>3.2.0</version>
                         <executions>
                             <execution>

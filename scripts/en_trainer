@@ -7,7 +7,7 @@ CORPUS_DIR=/data/corpora/hermes_data
 function arguments() {
   case "$1" in
   POS)
-    echo "--tagger EN_POS --df pos_opl::/$CORPUS_DIR/$LANG/part_of_speech/combined.txt --model $HERMES_RESOURCE_DIR/$LANG/models/pos.model.bin"
+    echo "--tagger EN_POS --df pos_opl::/$CORPUS_DIR/$LANG/part_of_speech/penn_treebank_train.txt --model $HERMES_RESOURCE_DIR/$LANG/models/pos.model.bin"
     ;;
   PHRASE_CHUNK)
     echo "--tagger PHRASE_CHUNK --df conll::$CORPUS_DIR/$LANG/phrase_chunk/combined.txt --model $HERMES_RESOURCE_DIR/$LANG/models/phrase_chunk.model.bin"

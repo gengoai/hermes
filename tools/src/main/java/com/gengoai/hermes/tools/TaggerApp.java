@@ -21,9 +21,9 @@ package com.gengoai.hermes.tools;
 
 import com.gengoai.Stopwatch;
 import com.gengoai.apollo.ml.DataSet;
-import com.gengoai.apollo.ml.model.FitParameters;
 import com.gengoai.apollo.ml.evaluation.PerInstanceEvaluation;
 import com.gengoai.apollo.ml.evaluation.SequenceLabelerEvaluation;
+import com.gengoai.apollo.ml.model.FitParameters;
 import com.gengoai.application.Option;
 import com.gengoai.config.Config;
 import com.gengoai.conversion.Converter;
