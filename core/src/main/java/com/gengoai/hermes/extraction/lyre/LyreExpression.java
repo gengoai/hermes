@@ -22,9 +22,7 @@
 
 package com.gengoai.hermes.extraction.lyre;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.*;
 import com.gengoai.Validation;
 import com.gengoai.apollo.ml.observation.Variable;
 import com.gengoai.collection.Lists;
@@ -63,6 +61,8 @@ import static com.gengoai.reflection.TypeUtils.parameterizedType;
  *
  * @author David B. Bracewell
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.NONE)
+@JsonFormat(shape=JsonFormat.Shape.STRING)
 public final class LyreExpression extends FeaturizingExtractor implements Expression,
                                                                           SerializableFunction<HString, String>,
                                                                           SerializablePredicate<HString> {
@@ -84,7 +84,7 @@ public final class LyreExpression extends FeaturizingExtractor implements Expres
     * @return the LyreExpression Expression
     */
    @JsonCreator
-   public static LyreExpression parse(@JsonProperty("pattern") String pattern) {
+   public static LyreExpression parse(@JsonProperty String pattern) {
       try {
          List<LyreExpression> expressions = PARSER_GENERATOR.create(pattern).evaluateAll(evaluator);
          if(expressions.size() != 1) {
@@ -275,7 +275,7 @@ public final class LyreExpression extends FeaturizingExtractor implements Expres
     *
     * @return the Lyre pattern
     */
-   @JsonProperty
+   @JsonValue
    public String getPattern() {
       return toString();
    }

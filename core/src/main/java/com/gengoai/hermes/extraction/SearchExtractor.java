@@ -21,6 +21,8 @@ package com.gengoai.hermes.extraction;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Types;
 import com.gengoai.string.StringMatcher;
@@ -33,6 +35,8 @@ import java.util.ArrayList;
  * An Extractor implementation that searches for a given search text in the document.
  */
 @Value
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
+@JsonDeserialize(as = SearchExtractor.class)
 public class SearchExtractor implements Extractor {
    String searchText;
    boolean caseSensitive;

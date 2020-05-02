@@ -25,6 +25,7 @@ package com.gengoai.hermes.extraction;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.gengoai.hermes.HString;
+import com.gengoai.hermes.extraction.lyre.LyreExpression;
 import lombok.NonNull;
 
 /**
@@ -34,8 +35,8 @@ import lombok.NonNull;
  *
  * @author David B. Bracewell
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS,defaultImpl = LyreExpression.class)
 public interface Extractor {
 
    /**

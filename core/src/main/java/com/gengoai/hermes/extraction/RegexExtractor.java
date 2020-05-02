@@ -21,6 +21,8 @@ package com.gengoai.hermes.extraction;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Types;
 import lombok.NonNull;
@@ -34,6 +36,8 @@ import java.util.regex.Pattern;
  * An Extractor implementation that searches for a given regular expression pattern in the document.
  */
 @Value
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
+@JsonDeserialize(as = RegexExtractor.class)
 public class RegexExtractor implements Extractor {
    Pattern pattern;
    boolean fuzzyMatch;
@@ -45,9 +49,9 @@ public class RegexExtractor implements Extractor {
     * @param fuzzyMatch True - allow sub-word matching (i.e. "is" will be matched in "This"), False must match full
     *                   spans of text.
     */
-   @JsonCreator
-   public RegexExtractor(@JsonProperty("pattern") @NonNull Pattern pattern,
-                         @JsonProperty("fuzzyMatch") boolean fuzzyMatch) {
+
+   public RegexExtractor(@NonNull Pattern pattern,
+                         boolean fuzzyMatch) {
       this.pattern = pattern;
       this.fuzzyMatch = fuzzyMatch;
    }
@@ -68,6 +72,19 @@ public class RegexExtractor implements Extractor {
       }
       this.pattern = Pattern.compile(pattern);
       this.fuzzyMatch = fuzzyMatch;
+   }
+
+   /**
+    * Instantiates a new RegexExtractor.
+    *
+    * @param pattern    the pattern to search for
+    * @param fuzzyMatch True - allow sub-word matching (i.e. "is" will be matched in "This"), False must match full
+    *                   spans of text.
+    */
+   @JsonCreator
+   public RegexExtractor(@JsonProperty("pattern") @NonNull String pattern,
+                         @JsonProperty("fuzzyMatch") boolean fuzzyMatch) {
+      this(pattern, true, fuzzyMatch);
    }
 
    @Override

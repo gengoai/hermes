@@ -22,6 +22,7 @@
 
 package com.gengoai.hermes.extraction;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.gengoai.apollo.ml.feature.Featurizer;
 import com.gengoai.hermes.HString;
 
@@ -31,6 +32,7 @@ import com.gengoai.hermes.HString;
  *
  * @author David B. Bracewell
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
 public abstract class FeaturizingExtractor extends Featurizer<HString> implements Extractor {
    private static final long serialVersionUID = 1L;
 

@@ -6,6 +6,8 @@ import com.gengoai.hermes.Document;
 import com.gengoai.hermes.Types;
 import com.gengoai.hermes.extraction.lyre.LyreExpression;
 import com.gengoai.string.Strings;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Value;
 
@@ -17,6 +19,7 @@ import java.io.Serializable;
  * @author David B. Bracewell
  */
 @Value
+@NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 public class LexiconEntry implements Serializable, Comparable<LexiconEntry> {
    private static final long serialVersionUID = 1L;
    LyreExpression constraint;
@@ -24,20 +27,6 @@ public class LexiconEntry implements Serializable, Comparable<LexiconEntry> {
    double probability;
    String tag;
    int tokenLength;
-
-   private LexiconEntry(@NonNull String lemma,
-                        double probability,
-                        String tag,
-                        LyreExpression constraint,
-                        int tokenLength) {
-      Validation.checkArgument(tokenLength >= 0,
-                               "The lexicon token length must be greater than or equal to 0.");
-      this.lemma = lemma;
-      this.constraint = constraint;
-      this.probability = probability;
-      this.tag = tag;
-      this.tokenLength = tokenLength;
-   }
 
    /**
     * Helper method for  calculating the length in tokens of a phrase for a given language.
@@ -128,6 +117,20 @@ public class LexiconEntry implements Serializable, Comparable<LexiconEntry> {
     */
    public static LexiconEntry of(@NonNull String lemma, String tag, int tokenLength) {
       return new LexiconEntry(lemma, -1, tag, null, tokenLength);
+   }
+
+   private LexiconEntry(@NonNull String lemma,
+                        double probability,
+                        String tag,
+                        LyreExpression constraint,
+                        int tokenLength) {
+      Validation.checkArgument(tokenLength >= 0,
+                               "The lexicon token length must be greater than or equal to 0.");
+      this.lemma = lemma;
+      this.constraint = constraint;
+      this.probability = probability;
+      this.tag = tag;
+      this.tokenLength = tokenLength;
    }
 
    @Override
