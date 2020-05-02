@@ -25,13 +25,12 @@ package com.gengoai.hermes.lexicon;
 import com.gengoai.Language;
 import com.gengoai.Validation;
 import com.gengoai.hermes.Hermes;
-import com.gengoai.hermes.extraction.lyre.Lyre;
+import com.gengoai.hermes.extraction.lyre.LyreExpression;
 import com.gengoai.io.CSV;
 import com.gengoai.io.CSVReader;
 import com.gengoai.io.resource.Resource;
 import com.gengoai.json.Json;
 import com.gengoai.json.JsonEntry;
-import com.gengoai.json.JsonWriter;
 import com.gengoai.string.Strings;
 import lombok.NonNull;
 
@@ -95,7 +94,7 @@ public final class LexiconIO {
                lexicon.add(LexiconEntry.of(lemma,
                                            prob,
                                            tag,
-                                           Lyre.parse(row.get(parameters.constraint)),
+                                           LyreExpression.parse(row.get(parameters.constraint)),
                                            LexiconEntry.calculateTokenLength(lemma, language)));
             } else {
                lexicon.add(LexiconEntry.of(lemma, prob, tag, LexiconEntry.calculateTokenLength(lemma, language)));
@@ -129,11 +128,11 @@ public final class LexiconIO {
    public static Lexicon read(@NonNull String name, @NonNull Resource lexiconResource) throws IOException {
       Map<String, JsonEntry> lexJson = Json.parseObject(lexiconResource);
       Map<String, JsonEntry> spec = lexJson.getOrDefault(SPECIFICATION_SECTION, JsonEntry.from(new HashMap<>()))
-                                           .getAsMap();
-      final boolean isCaseSensitive = spec.getOrDefault(IS_CASE_SENSITIVE, JsonEntry.from(false)).getAsBoolean();
-      final String defaultTag = spec.getOrDefault(TAG, JsonEntry.nullValue()).getAsString();
+                                           .asMap();
+      final boolean isCaseSensitive = spec.getOrDefault(IS_CASE_SENSITIVE, JsonEntry.from(false)).asBoolean();
+      final String defaultTag = spec.getOrDefault(TAG, JsonEntry.nullValue()).asString();
       final Language language = spec.getOrDefault(LANGUAGE, JsonEntry.from(Hermes.defaultLanguage()))
-                                    .getAs(Language.class);
+                                    .as(Language.class);
       TrieLexicon lexicon = new TrieLexicon(name, isCaseSensitive);
       lexJson.get(ENTRIES_SECTION)
              .elementIterator()
@@ -148,7 +147,7 @@ public final class LexiconIO {
                    e.addProperty("tokenLength",
                                  LexiconEntry.calculateTokenLength(e.getStringProperty("lemma"), language));
                 }
-                lexicon.add(e.getAs(LexiconEntry.class));
+                lexicon.add(e.as(LexiconEntry.class));
              });
 
       return lexicon;
@@ -174,52 +173,52 @@ public final class LexiconIO {
     * @throws IOException Something went wrong writing the lexicon
     */
    public static void write(Lexicon lexicon, Resource lexiconResource, String defaultTag) throws IOException {
-      try(JsonWriter writer = Json.createWriter(lexiconResource)) {
-         writer.spaceIndent(2);
-         writer.beginDocument();
-         {
-            //Write Specification
-            writer.beginObject(SPECIFICATION_SECTION);
-            {
-               writer.name(IS_CASE_SENSITIVE);
-               writer.value(lexicon.isCaseSensitive());
-               if(defaultTag != null) {
-                  writer.name(TAG);
-                  writer.value(defaultTag);
-               }
-            }
-            writer.endObject();
-
-            //Write Entries
-            writer.beginArray(ENTRIES_SECTION);
-            {
-               for(LexiconEntry entry : lexicon.entries()) {
-                  writer.beginObject();
-                  {
-                     writer.name(LEMMA);
-                     writer.value(entry.getLemma());
-                     writer.name("tokenLength");
-                     writer.value(entry.getTokenLength());
-                     if(entry.getProbability() != 1.0) {
-                        writer.name(PROBABILITY);
-                        writer.value(entry.getProbability());
-                     }
-                     if(entry.getTag() != null && !entry.getTag().equals(defaultTag)) {
-                        writer.name(TAG);
-                        writer.value(entry.getTag());
-                     }
-                     if(entry.getConstraint() != null) {
-                        writer.name(CONSTRAINT);
-                        writer.value(entry.getConstraint().getPattern());
-                     }
-                  }
-                  writer.endObject();
-               }
-            }
-            writer.endArray();
-         }
-         writer.endDocument();
-      }
+//      try(JsonWriter writer = Json.createWriter(lexiconResource)) {
+      //         writer.spaceIndent(2);
+      //         writer.beginDocument();
+      //         {
+      //            //Write Specification
+      //            writer.beginObject(SPECIFICATION_SECTION);
+      //            {
+      //               writer.name(IS_CASE_SENSITIVE);
+      //               writer.value(lexicon.isCaseSensitive());
+      //               if(defaultTag != null) {
+      //                  writer.name(TAG);
+      //                  writer.value(defaultTag);
+      //               }
+      //            }
+      //            writer.endObject();
+      //
+      //            //Write Entries
+      //            writer.beginArray(ENTRIES_SECTION);
+      //            {
+      //               for(LexiconEntry entry : lexicon.entries()) {
+      //                  writer.beginObject();
+      //                  {
+      //                     writer.name(LEMMA);
+      //                     writer.value(entry.getLemma());
+      //                     writer.name("tokenLength");
+      //                     writer.value(entry.getTokenLength());
+      //                     if(entry.getProbability() != 1.0) {
+      //                        writer.name(PROBABILITY);
+      //                        writer.value(entry.getProbability());
+      //                     }
+      //                     if(entry.getTag() != null && !entry.getTag().equals(defaultTag)) {
+      //                        writer.name(TAG);
+      //                        writer.value(entry.getTag());
+      //                     }
+      //                     if(entry.getConstraint() != null) {
+      //                        writer.name(CONSTRAINT);
+      //                        writer.value(entry.getConstraint().getPattern());
+      //                     }
+      //                  }
+      //                  writer.endObject();
+      //               }
+      //            }
+      //            writer.endArray();
+      //         }
+      //         writer.endDocument();
+      //      }
    }
 
    /**

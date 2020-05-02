@@ -75,6 +75,10 @@ public class AnnotationSet implements Iterable<Annotation>, Serializable {
       return completed.keySet();
    }
 
+   public Map<AnnotatableType, String> getProviders() {
+      return completed;
+   }
+
    /**
     * Gets if the given annotation type is completed or not
     *

@@ -20,8 +20,8 @@
 package com.gengoai.hermes.ml.feature;
 
 import com.gengoai.Validation;
-import com.gengoai.apollo.ml.observation.Variable;
 import com.gengoai.apollo.ml.feature.Featurizer;
+import com.gengoai.apollo.ml.observation.Variable;
 import com.gengoai.conversion.Cast;
 import com.gengoai.function.SerializableFunction;
 import com.gengoai.function.SerializablePredicate;
@@ -104,6 +104,7 @@ public final class PredefinedFeatures {
       return predefinedFeature(name, Featurizer.valueFeaturizer(name, featurizer));
    }
 
+
    /**
     * Strict context string.
     *
@@ -177,6 +178,10 @@ public final class PredefinedFeatures {
          return features.get(name);
       }
 
+      @Override
+      public String toString() {
+         return name;
+      }
    }//END OF PredefinedFeaturizer
 
 }//END OF PredefinedFeatures

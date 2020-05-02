@@ -78,7 +78,7 @@ public class HStringDataSetGenerator extends DataSetGenerator<HString> {
    @Override
    public DataSet generate(@NonNull Collection<? extends HString> data) {
       if(datumAnnotationType != null) {
-         return super.generate(data.stream()
+         return super.generate(data.parallelStream()
                                    .flatMap(d -> d.annotationStream(datumAnnotationType))
                                    .collect(Collectors.toList()));
       }
@@ -88,7 +88,7 @@ public class HStringDataSetGenerator extends DataSetGenerator<HString> {
    @Override
    public DataSet generate(@NonNull MStream<? extends HString> data) {
       if(datumAnnotationType != null) {
-         return super.generate(data.flatMap(d -> d.annotationStream(datumAnnotationType)));
+         return super.generate(data.parallel().flatMap(d -> d.annotationStream(datumAnnotationType)));
       }
       return super.generate(data);
    }

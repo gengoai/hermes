@@ -19,7 +19,8 @@
 
 package com.gengoai.hermes.workflow;
 
-import com.gengoai.annotation.JsonHandler;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.gengoai.hermes.corpus.DocumentCollection;
 import lombok.NonNull;
 
@@ -39,7 +40,10 @@ import java.io.Serializable;
  * <p>Actions share a common key-value memory store, called a {@link Context}, in which information they require or
  * they generate can be added.</p>
  */
-@JsonHandler(WorkflowMarshaller.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
+@JsonSubTypes({
+      @JsonSubTypes.Type(value = SequentialWorkflow.class, name = "Sequential")
+})
 public interface Workflow extends Serializable {
 
    /**

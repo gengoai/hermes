@@ -19,6 +19,8 @@
 
 package com.gengoai.hermes.extraction;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Types;
 import lombok.NonNull;
@@ -43,7 +45,9 @@ public class RegexExtractor implements Extractor {
     * @param fuzzyMatch True - allow sub-word matching (i.e. "is" will be matched in "This"), False must match full
     *                   spans of text.
     */
-   public RegexExtractor(@NonNull Pattern pattern, boolean fuzzyMatch) {
+   @JsonCreator
+   public RegexExtractor(@JsonProperty("pattern") @NonNull Pattern pattern,
+                         @JsonProperty("fuzzyMatch") boolean fuzzyMatch) {
       this.pattern = pattern;
       this.fuzzyMatch = fuzzyMatch;
    }
@@ -56,12 +60,13 @@ public class RegexExtractor implements Extractor {
     * @param fuzzyMatch    True - allow sub-word matching (i.e. "is" will be matched in "This"), False must match full
     *                      spans of text.
     */
-   public RegexExtractor(@NonNull String pattern, boolean caseSensitive,
+   public RegexExtractor(@NonNull String pattern,
+                         boolean caseSensitive,
                          boolean fuzzyMatch) {
-      this.pattern = Pattern.compile(pattern,
-                                     caseSensitive
-                                     ? 0
-                                     : Pattern.CASE_INSENSITIVE);
+      if(!caseSensitive) {
+         pattern = "(?i)" + pattern;
+      }
+      this.pattern = Pattern.compile(pattern);
       this.fuzzyMatch = fuzzyMatch;
    }
 
@@ -82,4 +87,5 @@ public class RegexExtractor implements Extractor {
       }
       return Extraction.fromHStringList(matches);
    }
+
 }//END OF RegexExtractor

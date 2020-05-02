@@ -22,26 +22,32 @@
 
 package com.gengoai.hermes.extraction;
 
-import com.gengoai.annotation.JsonHandler;
 import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.AnnotationType;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.extraction.lyre.LyreExpression;
 import com.gengoai.hermes.ml.feature.ValueCalculator;
-import com.gengoai.json.JsonEntry;
+import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
-import java.lang.reflect.Type;
 import java.util.stream.Stream;
 
 /**
  * Implementation of the {@link MultiPhaseExtractor} for extracting terms where a term is a single annotation (TOKEN by
  * default).
  */
-@JsonHandler(value = TermExtractor.Marshaller.class)
 @EqualsAndHashCode(callSuper = true)
+@NoArgsConstructor(force = true, access = AccessLevel.PROTECTED)
 public class TermExtractor extends MultiPhaseExtractor {
    private static final long serialVersionUID = 1L;
+
+   /**
+    * @return A term extractor builder
+    */
+   public static Builder builder() {
+      return new Builder();
+   }
 
    private TermExtractor(AnnotationType[] annotationTypes,
                          LyreExpression filter,
@@ -50,13 +56,6 @@ public class TermExtractor extends MultiPhaseExtractor {
                          LyreExpression trim,
                          ValueCalculator valueCalculator) {
       super(annotationTypes, filter, prefix, toString, trim, valueCalculator);
-   }
-
-   /**
-    * @return A term extractor builder
-    */
-   public static Builder builder() {
-      return new Builder();
    }
 
    @Override
@@ -81,21 +80,5 @@ public class TermExtractor extends MultiPhaseExtractor {
          return new TermExtractor(annotationTypes, filter, prefix, toString, trim, valueCalculator);
       }
    }//END OF Builder
-
-   /**
-    * Marshaller for reading/writing TermExtractor to and from json
-    */
-   public static class Marshaller extends com.gengoai.json.JsonMarshaller<TermExtractor> {
-
-      @Override
-      protected TermExtractor deserialize(JsonEntry entry, Type type) {
-         return builder().fromJson(entry).build();
-      }
-
-      @Override
-      protected JsonEntry serialize(TermExtractor n, Type type) {
-         return n.toJson();
-      }
-   }
 
 }//END OF TermExtractor

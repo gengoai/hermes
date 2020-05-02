@@ -1,5 +1,7 @@
 package com.gengoai.hermes;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 import lombok.NonNull;
 
@@ -8,8 +10,8 @@ import java.io.Serializable;
 /**
  * <p>
  * Relations provide a mechanism to link two Annotations.  Relations are directional, i.e. they have a source and a
- * target, and form a directed graph between annotations on the document.  Relations can represent any type of link,
- * but often represent syntactic (e.g. dependency relations), semantic (e.g. semantic roles), or pragmatic (e.g. dialog
+ * target, and form a directed graph between annotations on the document.  Relations can represent any type of link, but
+ * often represent syntactic (e.g. dependency relations), semantic (e.g. semantic roles), or pragmatic (e.g. dialog
  * acts) information. Relations, like attributes, are stored as key value pairs with the key being the {@link
  * RelationType}  and the value being a String representing the label. Relations are associated with individual
  * annotations (i.e. tokens for dependency relations, entities for  co-reference).
@@ -31,7 +33,10 @@ public final class Relation implements Serializable {
     * @param value  the relation value
     * @param target the id of the target relation
     */
-   public Relation(@NonNull RelationType type, @NonNull String value, long target) {
+   @JsonCreator
+   public Relation(@JsonProperty("type") @NonNull RelationType type,
+                   @JsonProperty("value") @NonNull String value,
+                   @JsonProperty("target") long target) {
       this.type = type;
       this.value = value;
       this.target = target;

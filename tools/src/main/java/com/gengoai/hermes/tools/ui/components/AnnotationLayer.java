@@ -19,25 +19,26 @@
 
 package com.gengoai.hermes.tools.ui.components;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.gengoai.Tag;
-import com.gengoai.annotation.JsonHandler;
-import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.AnnotationType;
 import com.gengoai.hermes.AttributeType;
-import com.gengoai.hermes.Types;
 import com.gengoai.json.JsonEntry;
-import com.gengoai.json.JsonMarshaller;
 import com.gengoai.reflection.RMethod;
 import com.gengoai.reflection.Reflect;
 import com.gengoai.reflection.ReflectionException;
 import com.gengoai.reflection.TypeUtils;
 import com.gengoai.swing.Colors;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Value;
 
 import java.awt.Color;
 import java.io.Serializable;
-import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -46,7 +47,13 @@ import java.util.stream.Collectors;
  * The type Annotation layer.
  */
 @Value
-@JsonHandler(AnnotationLayer.Marshaller.class)
+@NoArgsConstructor(force = true, access = AccessLevel.PROTECTED)
+@JsonAutoDetect(
+      fieldVisibility = JsonAutoDetect.Visibility.NONE,
+      setterVisibility = JsonAutoDetect.Visibility.NONE,
+      getterVisibility = JsonAutoDetect.Visibility.NONE,
+      isGetterVisibility = JsonAutoDetect.Visibility.NONE
+)
 public class AnnotationLayer implements Serializable {
    private static final long serialVersionUID = 1L;
    /**
@@ -58,47 +65,7 @@ public class AnnotationLayer implements Serializable {
    AttributeType<? extends Tag> attributeType;
    Map<Tag, Color> tagColors = new ConcurrentHashMap<>();
    Set<Tag> validTags = new TreeSet<>(Comparator.comparing(Tag::name));
-
-   /**
-    * Instantiates a new Annotation layer.
-    *
-    * @param annotationType the annotation type
-    * @param attributeType  the attribute type
-    */
-   public AnnotationLayer(@NonNull String name,
-                          @NonNull AnnotationType annotationType,
-                          @NonNull AttributeType<? extends Tag> attributeType) {
-      this(name, annotationType, attributeType, generateAllKnownTagsFor(attributeType), Collections.emptyMap());
-   }
-
-   /**
-    * Instantiates a new Annotation layer.
-    *
-    * @param annotationType the annotation type
-    * @param attributeType  the attribute type
-    * @param validTags      the valid tags
-    * @param colors         the colors
-    */
-   public AnnotationLayer(@NonNull String name,
-                          @NonNull AnnotationType annotationType,
-                          @NonNull AttributeType<? extends Tag> attributeType,
-                          @NonNull Collection<? extends Tag> validTags,
-                          @NonNull Map<Tag, Color> colors) {
-      this.name = name;
-      this.annotationType = annotationType;
-      this.attributeType = attributeType;
-      this.validTags.addAll(validTags);
-      this.tagColors.putAll(colors);
-   }
-
-   /**
-    * Instantiates a new Annotation layer.
-    *
-    * @param annotationType the annotation type
-    */
-   public AnnotationLayer(@NonNull String name, @NonNull AnnotationType annotationType) {
-      this(name, annotationType, annotationType.getTagAttribute());
-   }
+   boolean includeAllTags;
 
    private static Collection<Tag> generateAllKnownTagsFor(@NonNull AttributeType<? extends Tag> attributeType) {
       try {
@@ -113,7 +80,72 @@ public class AnnotationLayer implements Serializable {
       }
    }
 
+   @JsonCreator
+   private AnnotationLayer(@JsonProperty("name") @NonNull String name,
+                           @JsonProperty("annotationType") @NonNull AnnotationType annotationType,
+                           @JsonProperty("attributeType") AttributeType<? extends Tag> attributeType,
+                           @JsonProperty("includeAllTags") boolean includeTagValues,
+                           @JsonProperty("tags") @NonNull Map<String, String> tags
+                          ) {
+      this.name = name;
+      this.annotationType = annotationType;
+      this.attributeType = attributeType == null
+                           ? annotationType.getTagAttribute()
+                           : attributeType;
+      this.includeAllTags = includeTagValues;
+      if(includeTagValues) {
+         validTags.addAll(generateAllKnownTagsFor(getAttributeType()));
+      }
+      tags.forEach((tagStr, colorStr) -> {
+         Tag tag = getAttributeType().decode(tagStr);
+         validTags.add(tag);
+         tagColors.put(tag, Colors.parseColor(colorStr));
+      });
+   }
 
+   /**
+    * Instantiates a new Annotation layer.
+    *
+    * @param annotationType the annotation type
+    * @param attributeType  the attribute type
+    */
+   public AnnotationLayer(@NonNull String name,
+                          @NonNull AnnotationType annotationType,
+                          @NonNull AttributeType<? extends Tag> attributeType) {
+      this(name, annotationType, attributeType, generateAllKnownTagsFor(attributeType), Collections.emptyMap(), true);
+
+   }
+
+   /**
+    * Instantiates a new Annotation layer.
+    *
+    * @param annotationType the annotation type
+    * @param attributeType  the attribute type
+    * @param validTags      the valid tags
+    * @param colors         the colors
+    */
+   public AnnotationLayer(@NonNull String name,
+                          @NonNull AnnotationType annotationType,
+                          @NonNull AttributeType<? extends Tag> attributeType,
+                          @NonNull Collection<? extends Tag> validTags,
+                          @NonNull Map<Tag, Color> colors,
+                          boolean includeAllTags) {
+      this.name = name;
+      this.annotationType = annotationType;
+      this.attributeType = attributeType;
+      this.validTags.addAll(validTags);
+      this.tagColors.putAll(colors);
+      this.includeAllTags = includeAllTags;
+   }
+
+   /**
+    * Instantiates a new Annotation layer.
+    *
+    * @param annotationType the annotation type
+    */
+   public AnnotationLayer(@NonNull String name, @NonNull AnnotationType annotationType) {
+      this(name, annotationType, annotationType.getTagAttribute());
+   }
 
    /**
     * Gets color.
@@ -220,55 +252,23 @@ public class AnnotationLayer implements Serializable {
       validTags.addAll(tagSet);
    }
 
-   /**
-    * The type Marshaller.
-    */
-   public static class Marshaller extends JsonMarshaller<AnnotationLayer> {
+   @JsonValue
+   protected JsonEntry toJson() {
+      JsonEntry obj = JsonEntry.object();
+      obj.addProperty("name", name);
+      obj.addProperty("annotationType", annotationType.name());
+      obj.addProperty("attributeType", attributeType.name());
+      obj.addProperty("includeAllTags", includeAllTags);
+      JsonEntry tags = JsonEntry.object();
+      tagColors.forEach((tag, color) -> tags.addProperty(tag.label(),
+                                                         Colors.toHexString(color)));
+      obj.addProperty("tags", tags);
+      return obj;
+   }
 
-      @Override
-      protected AnnotationLayer deserialize(JsonEntry entry, Type type) {
-         final AnnotationType annotationType = Types.annotation(entry.getStringProperty("annotationType"));
-         final AttributeType<? extends Tag> attributeType;
-         if(entry.hasProperty("attributeType")) {
-            attributeType = Cast.as(Types.attribute(entry.getStringProperty("attributeType")));
-         } else {
-            attributeType = annotationType.getTagAttribute();
-         }
-         final Collection<Tag> validTags;
-         if(entry.getBooleanProperty("includeAllTags", false)) {
-            validTags = new HashSet<>(generateAllKnownTagsFor(attributeType));
-         } else {
-            validTags = new ArrayList<>();
-         }
-         final Map<Tag, Color> colors = new HashMap<>();
-         if(entry.hasProperty("tags")) {
-            entry.getProperty("tags")
-                 .propertyIterator()
-                 .forEachRemaining(e -> {
-                    Tag tag = attributeType.decode(e.getKey());
-                    validTags.add(tag);
-                    colors.put(tag, Colors.parseColor(e.getValue().getAsString()));
-                 });
-         }
-
-         return new AnnotationLayer(entry.getStringProperty("name"), annotationType, attributeType, validTags, colors);
-      }
-
-      @Override
-      protected JsonEntry serialize(AnnotationLayer annotationLayer, Type type) {
-         JsonEntry obj = JsonEntry.object();
-         obj.addProperty("name", annotationLayer.name);
-         obj.addProperty("annotationType", annotationLayer.annotationType.name());
-         obj.addProperty("attributeType", annotationLayer.attributeType.name());
-         obj.addProperty("includeAllTags",
-                         annotationLayer.getValidTagLabels()
-                                        .size() == generateAllKnownTagsFor(annotationLayer.attributeType).size());
-         JsonEntry tags = JsonEntry.object();
-         annotationLayer.tagColors.forEach((tag, color) -> tags.addProperty(tag.label(),
-                                                                            Colors.toHexString(color)));
-         obj.addProperty("tags", tags);
-         return obj;
-      }
+   @Override
+   public String toString() {
+      return name;
    }
 
 }//END OF AnnotationLayer

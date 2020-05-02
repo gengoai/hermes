@@ -24,7 +24,7 @@ import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.hermes.extraction.FeaturizingExtractor;
 import com.gengoai.hermes.extraction.TermExtractor;
-import com.gengoai.hermes.extraction.lyre.Lyre;
+import com.gengoai.hermes.extraction.lyre.LyreExpression;
 import com.gengoai.hermes.workflow.Action;
 import com.gengoai.hermes.workflow.Context;
 import lombok.Getter;
@@ -104,7 +104,7 @@ public class TermCounts implements Action {
    }
 
    public void setExtractor(@NonNull String lyreExpression) {
-      this.extractor = Lyre.parse(lyreExpression);
+      this.extractor = LyreExpression.parse(lyreExpression);
    }
 
    @Override

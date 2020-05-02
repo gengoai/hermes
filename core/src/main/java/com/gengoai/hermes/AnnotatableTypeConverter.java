@@ -44,7 +44,7 @@ public class AnnotatableTypeConverter implements TypeConverter, Serializable {
    public Object convert(Object source, Type... parameters) throws TypeConversionException {
       Type target = parameters == null ? AnnotatableType.class : parameters[0];
       if (source instanceof JsonEntry) {
-         return Cast.<JsonEntry>as(source).getAs(target);
+         return Cast.<JsonEntry>as(source).as(target);
       }
       return AnnotatableType.valueOf(source.toString());
    }

@@ -22,6 +22,9 @@
 
 package com.gengoai.hermes.workflow;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.gengoai.config.Config;
 import com.gengoai.hermes.corpus.Corpus;
 import com.gengoai.hermes.corpus.DocumentCollection;
@@ -39,6 +42,8 @@ import java.io.Serializable;
  *
  * @author David B. Bracewell
  */
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public interface Action extends Serializable {
 
    /**
@@ -49,6 +54,7 @@ public interface Action extends Serializable {
     *
     * @return True force reprocessing, False try to load the previous state.
     */
+   @JsonIgnore
    default boolean getOverrideStatus() {
       return Config.get("processing.override.all")
                    .asBooleanValue(Config.get(this.getClass(), "override").asBooleanValue(false));

@@ -46,19 +46,6 @@ public class TrieWordList implements WordList, PrefixSearchable, Serializable {
    private final Trie<Boolean> words;
 
    /**
-    * Instantiates a new TrieWordList
-    *
-    * @param words the words
-    */
-   public TrieWordList(Set<String> words) {
-      this.words = new Trie<>(asHashMap(words, s -> Boolean.TRUE));
-   }
-
-   private TrieWordList() {
-      this.words = new Trie<>();
-   }
-
-   /**
     * <p>
     * Reads the word list from the given resource where each term is on its own line and "#" represents comments.
     * </p>
@@ -94,6 +81,31 @@ public class TrieWordList implements WordList, PrefixSearchable, Serializable {
          throw new IOException(e);
       }
       return twl;
+   }
+
+   /**
+    * Instantiates a new TrieWordList
+    *
+    * @param words the words
+    */
+   public TrieWordList(@NonNull Iterable<String> words) {
+      this.words = new Trie<>(asHashMap(words, s -> Boolean.TRUE));
+   }
+
+   /**
+    * Instantiates a new TrieWordList
+    *
+    * @param wordLists the wordLists
+    */
+   public TrieWordList(@NonNull WordList... wordLists) {
+      this.words = new Trie<>();
+      for(WordList wordList : wordLists) {
+         words.putAll(asHashMap(wordList, s -> Boolean.TRUE));
+      }
+   }
+
+   private TrieWordList() {
+      this.words = new Trie<>();
    }
 
    @Override

@@ -25,73 +25,43 @@ import com.gengoai.config.Config;
 import com.gengoai.conversion.Cast;
 import com.gengoai.json.Json;
 import com.gengoai.json.JsonEntry;
-import com.gengoai.json.JsonMarshaller;
 import com.gengoai.reflection.BeanMap;
 import com.gengoai.reflection.Reflect;
+import lombok.NonNull;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-class WorkflowMarshaller extends JsonMarshaller<Workflow> {
+/**
+ * @author David B. Bracewell
+ */
+public class BaseWorkflowIO {
 
-   protected static Action createBean(String name, JsonEntry entry, Map<String, Action> singletons) throws Exception {
+   public static Action createBean(String name, JsonEntry entry, Map<String, Action> singletons) throws Exception {
       boolean isSingleton = entry.getBooleanProperty("@singleton", false);
 
-      if (isSingleton && singletons.containsKey(name)) {
+      if(isSingleton && singletons.containsKey(name)) {
          return singletons.get(name);
       }
 
       BeanMap beanMap = new BeanMap(Reflect.onClass(entry.getStringProperty("@class")).create().get());
       Iterator<Map.Entry<String, JsonEntry>> itr = Iterators.filter(entry.propertyIterator(),
                                                                     e -> !e.getKey().startsWith("@"));
-      while (itr.hasNext()) {
+      while(itr.hasNext()) {
          Map.Entry<String, JsonEntry> e = itr.next();
-         beanMap.put(e.getKey(), resolve(e.getValue()).getAs(beanMap.getType(e.getKey())));
+         beanMap.put(e.getKey(), resolve(e.getValue()).as(beanMap.getType(e.getKey())));
       }
-      if (isSingleton) {
+      if(isSingleton) {
          singletons.put(name, Cast.as(beanMap.getBean()));
       }
       return Cast.as(beanMap.getBean());
    }
 
-   protected static JsonEntry resolve(JsonEntry e) {
-      if (e.isString()) {
-         String resolved = Config.resolveVariables(e.getAsString());
-         if (resolved.equals(e.getAsString())) {
-            return e;
-         }
-         try {
-            return Json.parse(resolved);
-         } catch (IOException ex) {
-            Json.asJsonEntry(resolved);
-         }
-      }
-      if (e.isArray()) {
-         return JsonEntry.array(Iterables.transform(e::elementIterator, WorkflowMarshaller::resolve));
-      }
-      if (e.isObject()) {
-         JsonEntry obj = JsonEntry.object();
-         e.propertyIterator().forEachRemaining(a -> obj.addProperty(a.getKey(), resolve(a.getValue())));
-         return obj;
-      }
-      return e;
-   }
-
-   @Override
-   protected Workflow deserialize(JsonEntry entry, Type type) {
-      switch (entry.getStringProperty("type", "Sequential").toLowerCase()) {
-         case "sequential":
-            return entry.getAs(SequentialWorkflow.class);
-      }
-      throw new IllegalStateException("Invalid Workflow type: '" + entry.getStringProperty("type") + "'");
-   }
-
-   protected Map<String, JsonEntry> readBeans(JsonEntry e) {
+   public static Map<String, JsonEntry> readBeans(JsonEntry e) {
       Map<String, JsonEntry> beans = new HashMap<>();
-      if (e.hasProperty("beans")) {
+      if(e.hasProperty("beans")) {
          e.getProperty("beans")
           .propertyIterator()
           .forEachRemaining(je -> {
@@ -101,9 +71,9 @@ class WorkflowMarshaller extends JsonMarshaller<Workflow> {
       return beans;
    }
 
-   protected Context readDefaultContext(JsonEntry e) {
+   public static Context readDefaultContext(JsonEntry e) {
       Context defaultContext = new Context();
-      if (e.hasProperty("context")) {
+      if(e.hasProperty("context")) {
          e.getProperty("context")
           .propertyIterator()
           .forEachRemaining(je -> {
@@ -114,11 +84,32 @@ class WorkflowMarshaller extends JsonMarshaller<Workflow> {
       return defaultContext;
    }
 
-   @Override
-   protected JsonEntry serialize(Workflow workflow, Type type) {
+   protected static JsonEntry resolve(JsonEntry e) {
+      if(e.isString()) {
+         String resolved = Config.resolveVariables(e.asString());
+         if(resolved.equals(e.asString())) {
+            return e;
+         }
+         try {
+            return Json.parse(resolved);
+         } catch(IOException ex) {
+            Json.asJsonEntry(resolved);
+         }
+      }
+      if(e.isArray()) {
+         return JsonEntry.array(Iterables.transform(e::elementIterator, BaseWorkflowIO::resolve));
+      }
+      if(e.isObject()) {
+         JsonEntry obj = JsonEntry.object();
+         e.propertyIterator().forEachRemaining(a -> obj.addProperty(a.getKey(), resolve(a.getValue())));
+         return obj;
+      }
+      return e;
+   }
+
+   public static JsonEntry serialize(@NonNull Workflow workflow) {
       return JsonEntry.object()
-                      .addProperty("type", workflow.getType())
                       .addProperty("context", workflow.getStartingContext());
    }
 
-}//END OF WorkflowMarshaller
+}//END OF BaseWorkflowIO

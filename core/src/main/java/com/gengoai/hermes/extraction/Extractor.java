@@ -22,7 +22,8 @@
 
 package com.gengoai.hermes.extraction;
 
-import com.gengoai.annotation.JsonHandler;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.gengoai.hermes.HString;
 import lombok.NonNull;
 
@@ -33,7 +34,8 @@ import lombok.NonNull;
  *
  * @author David B. Bracewell
  */
-@JsonHandler(value = ExtractorMarshaller.class, isHierarchical = false)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 public interface Extractor {
 
    /**

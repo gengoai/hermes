@@ -33,7 +33,7 @@ import java.io.Console;
  *
  * @author David B. Bracewell
  */
-public class EmbeddingQueryCLI extends HermesCLI {
+public class EmbeddingApp extends HermesCLI {
 
    @Option(description = "The embedding model to query.", required = true)
    private Resource model;
@@ -49,7 +49,7 @@ public class EmbeddingQueryCLI extends HermesCLI {
       System.arraycopy(args, 0, nargs, 0, args.length);
       nargs[nargs.length - 2] = "--input";
       nargs[nargs.length - 1] = "/dev/null";
-      new EmbeddingQueryCLI().run(nargs);
+      new EmbeddingApp().run(nargs);
    }
 
    @Override

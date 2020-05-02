@@ -22,17 +22,16 @@
 
 package com.gengoai.hermes;
 
-import com.gengoai.annotation.JsonHandler;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.gengoai.conversion.Cast;
 import com.gengoai.conversion.Val;
 import com.gengoai.json.Json;
-import com.gengoai.json.JsonEntry;
 import lombok.NonNull;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -42,7 +41,7 @@ import java.util.Map;
  *
  * @author David B. Bracewell
  */
-@JsonHandler(AttributeMap.AttributeMapMarshaller.class)
+@JsonDeserialize(keyUsing = AnnotatableType.KeyDeserializer.class)
 public class AttributeMap extends HashMap<AttributeType<?>, Object> {
    private static final long serialVersionUID = 1L;
 
@@ -86,6 +85,11 @@ public class AttributeMap extends HashMap<AttributeType<?>, Object> {
       return Cast.as(super.put(attributeType, attributeType.decode(value)));
    }
 
+   @JsonAnySetter
+   private void put(String a, Object o) {
+      put(AttributeType.make(a), o);
+   }
+
    @Override
    public void putAll(@NonNull Map<? extends AttributeType<?>, ?> map) {
       map.forEach(this::put);
@@ -97,27 +101,6 @@ public class AttributeMap extends HashMap<AttributeType<?>, Object> {
 
    private void writeObject(ObjectOutputStream oos) throws IOException {
       oos.writeUTF(Json.dumps(this));
-   }
-
-   static class AttributeMapMarshaller extends com.gengoai.json.JsonMarshaller<AttributeMap> {
-
-      @Override
-      protected AttributeMap deserialize(JsonEntry entry, Type type) {
-         AttributeMap map = new AttributeMap();
-         entry.propertyIterator()
-              .forEachRemaining(e -> {
-                 AttributeType<?> at = AttributeType.make(e.getKey());
-                 map.put(at, e.getValue().getAs(at.getValueType()));
-              });
-         return map;
-      }
-
-      @Override
-      protected JsonEntry serialize(AttributeMap attributeMap, Type type) {
-         JsonEntry map = JsonEntry.object();
-         attributeMap.forEach((k, v) -> map.addProperty(k.name(), v));
-         return map;
-      }
    }
 
 }//END OF AttributeMap

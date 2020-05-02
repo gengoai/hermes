@@ -41,18 +41,19 @@ import static com.gengoai.LogUtils.logSevere;
 
 @Application.Description(
       "===========================================================\n" +
-      "           Application for working with corpora.\n" +
-      "===========================================================\n" +
-      "                         Operations\n" +
-      "---------------------------------------------------------\n" +
-      "INFO -  Displays the number of documents and completed AnnotatableType for the corpus.\n" +
-      "QUERY - Queries the corpus with the given query returning the top 10 results.\n" +
-      "GET - Gets the given document (or a random one if *rnd* is given) in Json format.\n" +
-      "IMPORT - Imports the documents from the input document collection into the corpus.\n" +
-      "ANNOTATE - Annotates the corpus with the given annotatable types.\n" +
-      "FORMATS - List the available document formats and their parameters.\n" +
-      "---------------------------------------------------------\n" +
-      "\n                     Command Line Arguments "
+            "           Application for working with corpora.\n" +
+            "===========================================================\n" +
+            "                         Operations\n" +
+            "---------------------------------------------------------\n" +
+            "INFO -  Displays the number of documents and completed AnnotatableType for the corpus.\n" +
+            "QUERY - Queries the corpus with the given query returning the top 10 results.\n" +
+            "GET - Gets the given document (or a random one if *rnd* is given) in Json format.\n" +
+            "IMPORT - Imports the documents from the input document collection into the corpus.\n" +
+            "ANNOTATE - Annotates the corpus with the given annotatable types.\n" +
+            "FORMATS - List the available document formats and their parameters.\n" +
+            "SPLIT - Assigns a random split with the given % as TRAIN and the remaining as TEST\n" +
+            "---------------------------------------------------------\n" +
+            "\n                     Command Line Arguments "
 )
 @Log
 public class CorpusApp extends HermesCLI {
@@ -65,7 +66,7 @@ public class CorpusApp extends HermesCLI {
          aliases = {"c"})
    private String corpusLocation;
    @Option(description = "Annotations to add",
-         defaultValue = "Annotation.TOKEN,Annotation.SENTENCE,Attribute.PART_OF_SPEECH,Attribute.LEMMA,Relation.DEPENDENCY,Annotation.PHRASE_CHUNK,Annotation.ENTITY",
+         defaultValue = "Annotation.TOKEN,Annotation.SENTENCE,Attribute.PART_OF_SPEECH,Attribute.LEMMA,Relation.DEPENDENCY,Annotation.PHRASE_CHUNK,Annotation.ENTITY,Attribute.CATEGORY",
          aliases = "t")
    private String[] types;
 
@@ -80,6 +81,12 @@ public class CorpusApp extends HermesCLI {
       }
       try(Corpus corpus = getCorpus()) {
          corpus.annotate(stringToAnnotatableType());
+      }
+   }
+
+   private void corpusExport() throws Exception {
+      try(Corpus corpus = getCorpus()) {
+         corpus.export(documentCollectionSpec);
       }
    }
 
@@ -109,7 +116,7 @@ public class CorpusApp extends HermesCLI {
          final Set<AnnotatableType> completedAnnotations = corpus.getCompleted();
          System.out.println("                 Corpus Information");
          System.out.println("========================================================");
-         System.out.println("Corpus: " + documentCollectionSpec);
+         System.out.println("Corpus: " + corpusLocation);
          System.out.println("# of Documents: " + size);
          System.out.println("========================================================");
          System.out.println("              Completed AnnotatableTypes");
@@ -145,6 +152,13 @@ public class CorpusApp extends HermesCLI {
                        System.out.println("===============");
                     });
          System.out.println("========================================================");
+      }
+   }
+
+   private void corpusSplit() throws Exception {
+      double pct = Double.parseDouble(getPositionalArgs()[1]);
+      try(Corpus corpus = getCorpus()) {
+         corpus.assignRandomSplit(pct);
       }
    }
 
@@ -220,6 +234,12 @@ public class CorpusApp extends HermesCLI {
             break;
          case "ANNOTATE":
             corpusAnnotate();
+            break;
+         case "SPLIT":
+            corpusSplit();
+            break;
+         case "EXPORT":
+            corpusExport();
             break;
          default:
             logSevere(log, "Invalid Operation: {0}", operation);

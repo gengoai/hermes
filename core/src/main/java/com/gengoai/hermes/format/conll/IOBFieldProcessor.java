@@ -54,7 +54,7 @@ public abstract class IOBFieldProcessor implements CoNLLColumnProcessor {
     * @param annotationType the annotation type
     * @param attributeType  the attribute type
     */
-   public IOBFieldProcessor(AnnotationType annotationType, AttributeType attributeType) {
+   public IOBFieldProcessor(AnnotationType annotationType, AttributeType<?> attributeType) {
       this.annotationType = annotationType;
       this.attributeType = attributeType;
    }

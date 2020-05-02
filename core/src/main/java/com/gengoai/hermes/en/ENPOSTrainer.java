@@ -43,26 +43,26 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 import static com.gengoai.hermes.ml.feature.Features.LowerCaseWord;
-import static com.gengoai.hermes.ml.feature.Features.WordAndClass;
+import static com.gengoai.hermes.ml.feature.Features.WordClass;
 import static com.gengoai.hermes.ml.feature.PredefinedFeatures.strictContext;
 
 public class ENPOSTrainer extends SequenceTaggerTrainer<POSTagger> {
    private FeatureExtractor<HString> createFeatureExtractor() {
       return Featurizer.chain(new AffixFeaturizer(3, 3),
                               LowerCaseWord,
-                              WordAndClass,
-                              Features.IsPunctuation,
-                              Features.IsInitialCapital,
+                              WordClass,
+                              Features.punctuationType,
+                              Features.IsTitleCase,
                               Features.IsAllCaps,
-                              Features.IsInitialCapital,
+                              Features.IsTitleCase,
                               Features.IsDigit)
                        .withContext(
                              "LowerWord[-1]",
                              "~LowerWord[-2]",
                              "LowerWord[+1]",
                              "~LowerWord[+2]",
-                             strictContext(WordAndClass, -1),
-                             strictContext(WordAndClass, -2),
+                             strictContext(WordClass, -1),
+                             strictContext(WordClass, -2),
                              strictContext(LowerCaseWord, 1),
                              strictContext(LowerCaseWord, 2)
                                    );

@@ -31,7 +31,7 @@ import com.gengoai.hermes.AttributeType;
 import com.gengoai.hermes.Document;
 import com.gengoai.hermes.DocumentFactory;
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.corpus.Corpus;
+import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.io.CSV;
 import com.gengoai.io.CSVWriter;
 import com.gengoai.io.Resources;
@@ -211,7 +211,7 @@ public class CsvFormat extends WholeFileTextFormat implements Serializable {
    }
 
    @Override
-   public void write(Corpus corpus, Resource outputResource) throws IOException {
+   public void write(DocumentCollection corpus, Resource outputResource) throws IOException {
       try(DocCSVWriter writer = new DocCSVWriter(parameters, outputResource)) {
          for(Document document : corpus) {
             writer.write(document);

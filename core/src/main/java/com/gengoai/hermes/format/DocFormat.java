@@ -20,7 +20,7 @@
 package com.gengoai.hermes.format;
 
 import com.gengoai.hermes.Document;
-import com.gengoai.hermes.corpus.Corpus;
+import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.io.resource.Resource;
 import com.gengoai.stream.MStream;
 
@@ -57,11 +57,11 @@ public interface DocFormat {
    /**
     * Writes a corpus of documents in this format to the given output resource
     *
-    * @param corpus         the corpus
-    * @param outputResource the output resource
+    * @param documentCollection the corpus
+    * @param outputResource     the output resource
     * @throws IOException Something went wrong writing the corpus
     */
-   void write(Corpus corpus, Resource outputResource) throws IOException;
+   void write(DocumentCollection documentCollection, Resource outputResource) throws IOException;
 
    /**
     * Writes the given document in this format to the given output resource.

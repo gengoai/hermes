@@ -21,22 +21,29 @@
 
 package com.gengoai.hermes;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.gengoai.HierarchicalEnumValue;
 import com.gengoai.Language;
 import com.gengoai.LogUtils;
 import com.gengoai.Validation;
-import com.gengoai.annotation.JsonHandler;
 import com.gengoai.config.Config;
 import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.annotator.Annotator;
-import com.gengoai.json.JsonEntry;
 import com.gengoai.reflection.BeanUtils;
 import com.gengoai.reflection.Reflect;
 import com.gengoai.reflection.ReflectionException;
 import com.gengoai.string.Strings;
 import lombok.NonNull;
 
-import java.lang.reflect.Type;
+import java.io.IOException;
 
 import static com.gengoai.LogUtils.logFine;
 import static com.gengoai.collection.Arrays2.arrayOf;
@@ -49,7 +56,8 @@ import static com.gengoai.hermes.Hermes.HERMES_PACKAGE;
  *
  * @author David B. Bracewell
  */
-@JsonHandler(AnnotatableType.Marshaller.class)
+@JsonSerialize(using = AnnotatableType.Serializer.class)
+@JsonDeserialize(using = AnnotatableType.Deserializer.class)
 public interface AnnotatableType {
    /**
     * Package to look for default annotator implementations.
@@ -212,16 +220,32 @@ public interface AnnotatableType {
     */
    String type();
 
-   class Marshaller extends com.gengoai.json.JsonMarshaller<AnnotatableType> {
+   class KeyDeserializer extends com.fasterxml.jackson.databind.KeyDeserializer {
 
       @Override
-      protected AnnotatableType deserialize(JsonEntry entry, Type type) {
-         return valueOf(entry.getAsString());
+      public Object deserializeKey(String s, DeserializationContext deserializationContext) throws IOException {
+         return valueOf(s);
+      }
+   }
+
+   class Deserializer extends JsonDeserializer<AnnotatableType> {
+
+      @Override
+      public AnnotatableType deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws
+                                                                                                               IOException,
+                                                                                                               JsonProcessingException {
+         return valueOf(jsonParser.getText());
       }
 
+   }
+
+   class Serializer extends JsonSerializer<AnnotatableType> {
+
       @Override
-      protected JsonEntry serialize(AnnotatableType annotatableType, Type type) {
-         return JsonEntry.from(annotatableType.name());
+      public void serialize(AnnotatableType type,
+                            JsonGenerator jsonGenerator,
+                            SerializerProvider serializerProvider) throws IOException {
+         jsonGenerator.writeString(type.name());
       }
    }
 

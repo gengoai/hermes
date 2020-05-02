@@ -24,12 +24,14 @@ import com.gengoai.conversion.Cast;
 import com.gengoai.conversion.Val;
 import com.gengoai.hermes.*;
 import com.gengoai.io.resource.Resource;
+import com.gengoai.string.StringLike;
 import lombok.NonNull;
 import org.kohsuke.MetaInfServices;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -46,20 +48,59 @@ import static com.gengoai.tuple.Tuples.$;
 public class TaggedFormat extends WholeFileTextFormat implements OneDocPerFileFormat, Serializable {
    private static final long serialVersionUID = 1L;
    private static final Pattern TAG_PATTERN = Pattern.compile("<([a-z_]+)>([^<>]+)</\\1>", Pattern.CASE_INSENSITIVE);
+   private static final Pattern WORD_PATTERN = Pattern.compile("\\S+");
+
    /**
     * The constant ANNOTATION_TYPE.
     */
    public static final ParameterDef<AnnotationType> ANNOTATION_TYPE = ParameterDef.param("annotationType",
                                                                                          AnnotationType.class);
+   /**
+    * The constant IS_TOKENIZED.
+    */
+   public static final ParameterDef<Boolean> IS_TOKENIZED = ParameterDef.boolParam("isTokenized");
+
    private final TaggedParameters parameters;
 
+   /**
+    * Instantiates a new Tagged format.
+    *
+    * @param parameters the parameters
+    */
    TaggedFormat(TaggedParameters parameters) {
       this.parameters = parameters;
+   }
+
+   private int getNextEndOfLine(int start, StringLike cs) {
+      if(start >= cs.length()) {
+         return -1;
+      }
+      int end = cs.indexOf("\n", start);
+      if(end == -1 && end < cs.length()) {
+         end = cs.length();
+      }
+      return gobbleEndWhiteSpace(start, end, cs);
    }
 
    @Override
    public DocFormatParameters getParameters() {
       return parameters;
+   }
+
+   private int gobbleEndWhiteSpace(int start, int end, CharSequence cs) {
+      while(end - 1 >= start && Character.isWhitespace(cs.charAt(end - 1))) {
+         end--;
+      }
+      return end > start
+             ? end
+             : -1;
+   }
+
+   private int gobbleStartWhiteSpace(int start, CharSequence cs) {
+      while(start < cs.length() && Character.isWhitespace(cs.charAt(start))) {
+         start++;
+      }
+      return start;
    }
 
    protected Stream<Document> readSingleFile(String content) {
@@ -94,6 +135,31 @@ public class TaggedFormat extends WholeFileTextFormat implements OneDocPerFileFo
                                                   .as(annotationType.getTagAttribute().getValueType())))
                                   );
       }
+
+      if(parameters.isTokenized.value()) {
+         int sid = 0;
+         int start = gobbleStartWhiteSpace(0, document);
+         int end = getNextEndOfLine(start, document);
+         while(end >= 0) {
+            Annotation sentence = document.createAnnotation(Types.SENTENCE,
+                                                            start,
+                                                            end,
+                                                            hashMapOf($(Types.INDEX, sid)));
+            sid++;
+            Matcher m = WORD_PATTERN.matcher(sentence);
+            while(m.find()) {
+               document.createAnnotation(Types.TOKEN,
+                                         start + m.start(),
+                                         start + m.end(), Collections.emptyMap());
+            }
+            start = gobbleStartWhiteSpace(end + 1, document);
+            end = getNextEndOfLine(start, document);
+         }
+         document.setCompleted(Types.TOKEN, "Provided");
+         document.setCompleted(Types.SENTENCE, "Provided");
+      }
+
+      document.setCompleted(annotationType, "Provided");
       return Stream.of(document);
    }
 
@@ -157,5 +223,11 @@ public class TaggedFormat extends WholeFileTextFormat implements OneDocPerFileFo
        * The Annotation type.
        */
       public final Parameter<AnnotationType> annotationType = parameter(ANNOTATION_TYPE, Types.ENTITY);
+
+      /**
+       * The Is tokenized.
+       */
+      public final Parameter<Boolean> isTokenized = parameter(IS_TOKENIZED, false);
+
    }
 }//END OF TaggedFormat

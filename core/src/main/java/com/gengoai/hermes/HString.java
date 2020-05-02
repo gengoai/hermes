@@ -1,5 +1,6 @@
 package com.gengoai.hermes;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.gengoai.Language;
 import com.gengoai.Tag;
 import com.gengoai.Validation;
@@ -8,9 +9,9 @@ import com.gengoai.collection.Iterators;
 import com.gengoai.collection.tree.Span;
 import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.morphology.Lemmatizers;
-import com.gengoai.hermes.morphology.UniversalFeatureSet;
 import com.gengoai.hermes.morphology.PartOfSpeech;
 import com.gengoai.hermes.morphology.Stemmers;
+import com.gengoai.hermes.morphology.UniversalFeatureSet;
 import com.gengoai.reflection.TypeUtils;
 import com.gengoai.stream.Streams;
 import com.gengoai.string.StringLike;
@@ -34,15 +35,22 @@ import static com.gengoai.tuple.Tuples.$;
 /**
  * <p>
  * An HString (Hermes String) is a Java String on steroids. It represents the base type of all Hermes text objects.
- * Every HString has an associated span denoting its starting and ending character offset within the document.
- * HStrings implement the CharSequence interface allowing them to be used in many of Java's builtin String methods and
- * they have  similar methods as found on Java Strings.  Importantly, methods not modifying the underlying string, e.g.
- * substring and find, return an HString whereas methods that modify the string, e.g. toLowerCase, return a String
- * object. The String-Like operations are as follows:
+ * Every HString has an associated span denoting its starting and ending character offset within the document. HStrings
+ * implement the CharSequence interface allowing them to be used in many of Java's builtin String methods and they have
+ * similar methods as found on Java Strings.  Importantly, methods not modifying the underlying string, e.g. substring
+ * and find, return an HString whereas methods that modify the string, e.g. toLowerCase, return a String object. The
+ * String-Like operations are as follows:
  * </p>
  *
  * @author David B. Bracewell
  */
+@JsonAutoDetect(
+      fieldVisibility = JsonAutoDetect.Visibility.NONE,
+      setterVisibility = JsonAutoDetect.Visibility.NONE,
+      getterVisibility = JsonAutoDetect.Visibility.NONE,
+      isGetterVisibility = JsonAutoDetect.Visibility.NONE,
+      creatorVisibility = JsonAutoDetect.Visibility.NONE
+)
 public interface HString extends Span, StringLike, Serializable {
    /**
     * Helper function for converting an Object into an HString. Will construct fragments for nulls and strings. Objects
@@ -377,7 +385,8 @@ public interface HString extends Span, StringLike, Serializable {
     *
     * @param minOrder the minimum order
     * @param maxOrder the maximum order
-    * @return the list of character n-grams of order <code>minOrder</code> to <code>maxOrder</code> making up this HString
+    * @return the list of character n-grams of order <code>minOrder</code> to <code>maxOrder</code> making up this
+    * HString
     * @throws IllegalArgumentException If minOrder > maxOrder or minOrder <= 0
     */
    default List<HString> charNGrams(int minOrder, int maxOrder) {
@@ -674,6 +683,15 @@ public interface HString extends Span, StringLike, Serializable {
                                         : ""));
    }
 
+   default UniversalFeatureSet getMorphologicalFeatures() {
+      if(tokenLength() < 1) {
+         return new UniversalFeatureSet();
+      } else if(tokenLength() == 1) {
+         return attribute(Types.MORPHOLOGICAL_FEATURES, pos().getFeatures());
+      }
+      return new UniversalFeatureSet(tokenStream().map(HString::getMorphologicalFeatures).collect(Collectors.toList()));
+   }
+
    /**
     * Gets the stemmed version of the HString. Stems of token are determined using the <code>Stemmer</code> associated
     * with the language that the token is in. Tokens store their stem using the <code>STEM</code> attribute, so that the
@@ -717,7 +735,8 @@ public interface HString extends Span, StringLike, Serializable {
     *
     * @param type  the relation type
     * @param value the relation value
-    * @return True if there as an incoming relation to this HString or a sub-annotation of the given type with the given value.
+    * @return True if there as an incoming relation to this HString or a sub-annotation of the given type with the given
+    * value.
     */
    default boolean hasIncomingRelation(@NonNull RelationType type, String value) {
       return incoming(type, value, true).size() > 0;
@@ -739,7 +758,8 @@ public interface HString extends Span, StringLike, Serializable {
     *
     * @param type  the relation type
     * @param value the relation value
-    * @return True if there as an outgoing relation to this HString or a sub-annotation of the given type with the given value.
+    * @return True if there as an outgoing relation to this HString or a sub-annotation of the given type with the given
+    * value.
     */
    default boolean hasOutgoingRelation(@NonNull RelationType type, String value) {
       return outgoing(type, value, true).size() > 0;
@@ -996,7 +1016,8 @@ public interface HString extends Span, StringLike, Serializable {
     * Gets the last annotation overlapping this HString with the given annotation type.
     *
     * @param type the annotation type
-    * @return the last annotation of the given type overlapping this HString or a detached empty annotation if there is none.
+    * @return the last annotation of the given type overlapping this HString or a detached empty annotation if there is
+    * none.
     */
    default Annotation last(@NonNull AnnotationType type) {
       List<Annotation> annotations = annotations(type);
@@ -1327,8 +1348,8 @@ public interface HString extends Span, StringLike, Serializable {
    }
 
    /**
-    * Generates an HString representing the <code>windowSize</code> of given annotation types to the right of the end
-    * of this HString without going past the sentence end.
+    * Generates an HString representing the <code>windowSize</code> of given annotation types to the right of the end of
+    * this HString without going past the sentence end.
     *
     * @param type       the annotation type to create the context of.
     * @param windowSize the number of tokens in the context.
@@ -1434,8 +1455,7 @@ public interface HString extends Span, StringLike, Serializable {
     * @param relativeEnd   the relative end within this HString
     * @return the specified substring.
     * @throws IndexOutOfBoundsException - if the relativeStart is negative, or relativeEnd is larger than the length of
-    *                                   this HString object, or relativeStart is larger
-    *                                   than relativeEnd.
+    *                                   this HString object, or relativeStart is larger than relativeEnd.
     */
    default HString substring(int relativeStart, int relativeEnd) {
       Validation.checkPositionIndex(relativeStart, relativeEnd);
@@ -1495,15 +1515,6 @@ public interface HString extends Span, StringLike, Serializable {
             .stream()
             .map(t -> t.toString() + delimiter + t.attribute(Types.PART_OF_SPEECH, PartOfSpeech.ANY).tag())
             .collect(Collectors.joining(" "));
-   }
-
-   default UniversalFeatureSet getMorphologicalFeatures() {
-      if( tokenLength() < 1 ){
-         return new UniversalFeatureSet();
-      } else if (tokenLength() == 1){
-         return attribute(Types.MORPHOLOGICAL_FEATURES, pos().getFeatures());
-      }
-      return new UniversalFeatureSet(tokenStream().map(HString::getMorphologicalFeatures).collect(Collectors.toList()));
    }
 
    /**

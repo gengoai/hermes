@@ -51,9 +51,9 @@ public class ENTokenizer implements Tokenizer, Serializable {
     * Instantiates a new English tokenizer.
     */
    public ENTokenizer() {
-      this.abbreviations = ENTokenizerLexicons.getAbbreviations();
-      this.tlds = ENTokenizerLexicons.getTopLevelDomains();
-      this.emoticons = ENTokenizerLexicons.getEmoticons();
+      this.abbreviations = ENLexicons.ALL_ABBREVIATION.get();
+      this.tlds = ENLexicons.TLDS.get();
+      this.emoticons = ENLexicons.EMOTICONS.get();
    }
 
    @Override

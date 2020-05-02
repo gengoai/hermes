@@ -21,9 +21,10 @@
 
 package com.gengoai.hermes;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.gengoai.EnumValue;
 import com.gengoai.Registry;
-import com.gengoai.annotation.JsonHandler;
 import com.gengoai.config.Config;
 import com.gengoai.conversion.Cast;
 import com.gengoai.conversion.Converter;
@@ -59,19 +60,17 @@ import java.util.Collection;
  * @param <T> the type parameter
  * @author David B. Bracewell
  */
-@JsonHandler(value = AnnotatableType.Marshaller.class, isHierarchical = false)
-public final class AttributeType<T> extends EnumValue<AttributeType> implements AnnotatableType {
-   private static final Registry<AttributeType> registry = new Registry<>(AttributeType::new, AttributeType.class);
+@JsonSerialize(using = AnnotatableType.Serializer.class)
+@JsonDeserialize(using = AnnotatableType.Deserializer.class)
+public final class AttributeType<T> extends EnumValue<AttributeType<T>> implements AnnotatableType {
+   private static final Registry<AttributeType<?>> registry = new Registry<AttributeType<?>>(AttributeType::new,
+                                                                                             Cast.as(AttributeType.class));
    private static final long serialVersionUID = 1L;
    /**
     * Type information for AttributeType
     */
    public static final String TYPE = "Attribute";
    private volatile Type valueType;
-
-   private AttributeType(String name) {
-      super(name);
-   }
 
    /**
     * checks if an attribute with the given name is defined
@@ -142,8 +141,12 @@ public final class AttributeType<T> extends EnumValue<AttributeType> implements 
    /**
     * @return the collection of all known AttributeType in the enumeration.
     */
-   public static Collection<AttributeType> values() {
+   public static Collection<AttributeType<?>> values() {
       return registry.values();
+   }
+
+   private AttributeType(String name) {
+      super(name);
    }
 
    /**
@@ -171,8 +174,8 @@ public final class AttributeType<T> extends EnumValue<AttributeType> implements 
    }
 
    @Override
-   protected Registry<AttributeType> registry() {
-      return registry;
+   protected Registry<AttributeType<T>> registry() {
+      return Cast.as(registry);
    }
 
    /**

@@ -99,6 +99,8 @@ public interface Entities {
    // NUMBER ENTITY TYPES
    //-----------------------------------------------------------------------------------------
    EntityType NUMBER = EntityType.make("NUMBER");
+   EntityType CARDINAL = EntityType.make(NUMBER,"CARDINAL");
+   EntityType ORDINAL = EntityType.make(NUMBER,"ORDINAL");
    EntityType POINT = EntityType.make(NUMBER, "POINT");
    EntityType MONEY = EntityType.make(NUMBER, "MONEY");
    EntityType MULTIPLICATION = EntityType.make(NUMBER, "MULTIPLICATION");

@@ -21,7 +21,9 @@
 
 package com.gengoai.hermes;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.gengoai.string.Strings;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
 /**
@@ -30,10 +32,14 @@ import lombok.NonNull;
  *
  * @author David B. Bracewell
  */
+@NoArgsConstructor(force = true)
 abstract class BaseHString implements HString {
    private static final long serialVersionUID = 1L;
+   @JsonProperty("attributes")
    private final AttributeMap attributeMap = new AttributeMap();
+   @JsonProperty("end")
    private final int end;
+   @JsonProperty("start")
    private final int start;
 
    /**

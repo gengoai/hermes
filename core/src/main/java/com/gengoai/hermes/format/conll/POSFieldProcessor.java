@@ -30,12 +30,12 @@ import com.gengoai.hermes.format.CoNLLColumnProcessor;
 import com.gengoai.hermes.format.CoNLLRow;
 import com.gengoai.hermes.format.POSCorrection;
 import com.gengoai.hermes.morphology.PartOfSpeech;
-import com.gengoai.hermes.morphology.PartOfSpeech;
 import com.gengoai.tuple.Tuple2;
 import org.kohsuke.MetaInfServices;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.gengoai.hermes.format.CoNLLFormat.EMPTY_FIELD;
 
@@ -56,15 +56,23 @@ public final class POSFieldProcessor implements CoNLLColumnProcessor {
    public void processInput(Document document,
                             List<CoNLLRow> documentRows,
                             Map<Tuple2<Integer, Integer>, Long> sentenceIndexToAnnotationId) {
+      AtomicBoolean completed = new AtomicBoolean(true);
       documentRows.forEach(row -> {
          String posStr = row.getPos();
          if(posStr.contains("|")) {
             posStr = posStr.substring(0, posStr.indexOf('|'));
          }
-         document.annotation(row.getAnnotationID())
-                 .put(Types.PART_OF_SPEECH, PartOfSpeech.valueOf(POSCorrection.pos(row.getWord(), posStr)));
+         if(posStr.equals("XX")) { //SPECIAL CASE FOR ONTONOTES
+            completed.set(false);
+         } else {
+            document.annotation(row.getAnnotationID())
+                    .put(Types.PART_OF_SPEECH, PartOfSpeech.valueOf(POSCorrection.pos(row.getWord(), posStr)));
+         }
       });
-      document.setCompleted(Types.PART_OF_SPEECH, "PROVIDED");
+
+      if(completed.get()) {
+         document.setCompleted(Types.PART_OF_SPEECH, "PROVIDED");
+      }
    }
 
    @Override

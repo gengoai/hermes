@@ -1,0 +1,40 @@
+{
+  "@spec": {
+    "caseSensitive": false,
+    "tagAttribute": "ENTITY_TYPE"
+  },
+  "@entries": [
+    {
+      "lemma": "grandfather",
+      "tag": "GRANDPARENT"
+    },
+    {
+      "lemma": "grandmother",
+      "tag": "GRANDPARENT"
+    },
+    {
+      "lemma": "mother",
+      "tag": "PARENT"
+    },
+    {
+      "lemma": "father",
+      "tag": "PARENT"
+    },
+    {
+      "lemma": "sister",
+      "tag": "SIBLING"
+    },
+    {
+      "lemma": "brother",
+      "tag": "SIBLING"
+    },
+    {
+      "lemma": "student",
+      "tag": "OCCUPATION"
+    },
+    {
+      "lemma": "housewife",
+      "tag": "OCCUPATION"
+    }
+  ]
+}

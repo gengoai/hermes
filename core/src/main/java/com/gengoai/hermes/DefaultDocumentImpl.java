@@ -21,9 +21,14 @@
 
 package com.gengoai.hermes;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.gengoai.Language;
 import com.gengoai.Validation;
 import com.gengoai.collection.tree.Span;
+import com.gengoai.conversion.Cast;
 import com.gengoai.stream.Streams;
 import com.gengoai.string.Strings;
 import lombok.NonNull;
@@ -39,11 +44,15 @@ import java.util.stream.Collectors;
  *
  * @author David B. Bracewell
  */
+@JsonPropertyOrder({"id", "content"})
+@JsonIgnoreProperties({"start", "end"})
 class DefaultDocumentImpl extends BaseHString implements Document {
    private static final long serialVersionUID = 1L;
    AnnotationSet annotationSet;
    AtomicLong idGenerator = new AtomicLong(0);
+   @JsonProperty("content")
    private String content;
+   @JsonProperty("id")
    private String id;
    private transient volatile List<Annotation> tokens;
 
@@ -72,6 +81,30 @@ class DefaultDocumentImpl extends BaseHString implements Document {
       this.annotationSet = new AnnotationSet();
    }
 
+   @JsonCreator
+   private DefaultDocumentImpl(@JsonProperty("content") String content,
+                               @JsonProperty("id") String id,
+                               @JsonProperty("completed") Map<AnnotatableType, String> providers,
+                               @JsonProperty("attributes") AttributeMap attributeMap,
+                               @JsonProperty("annotations") List<Annotation> annotations) {
+      this(id, content);
+      if(providers != null) {
+         this.annotationSet.getProviders().putAll(providers);
+      }
+      if(attributeMap != null) {
+         this.attributeMap().putAll(attributeMap);
+      }
+      if(annotations != null) {
+         long i = 0;
+         for(Annotation annotation : annotations) {
+            Cast.<DefaultAnnotationImpl>as(annotation).setDocument(this);
+            annotationSet.add(annotation);
+            i = Math.max(i, annotation.getId());
+         }
+         idGenerator.set(i + 1);
+      }
+   }
+
    @Override
    public void annotate(AnnotatableType... types) {
       new AnnotationPipeline(types).annotate(this);
@@ -83,6 +116,7 @@ class DefaultDocumentImpl extends BaseHString implements Document {
    }
 
    @Override
+   @JsonProperty("annotations")
    public List<Annotation> annotations() {
       return Streams.asStream(annotationSet.iterator())
                     .collect(Collectors.toList());
@@ -127,6 +161,15 @@ class DefaultDocumentImpl extends BaseHString implements Document {
    @Override
    public char charAt(int index) {
       return content.charAt(index);
+   }
+
+   public Annotation cloneAnnotation(Annotation annotation) {
+      Annotation clone = new DefaultAnnotationImpl(this, annotation.getType(), annotation.start(), annotation.end());
+      annotation.setId(annotation.getId());
+      annotation.putAll(annotation.attributeMap());
+      annotation.addAll(annotation.outgoingRelations(false));
+      annotationSet.add(annotation);
+      return annotation;
    }
 
    @Override
@@ -192,6 +235,11 @@ class DefaultDocumentImpl extends BaseHString implements Document {
    @Override
    public Annotation previous(@NonNull Annotation annotation, @NonNull AnnotationType type) {
       return annotationSet.previous(annotation, type);
+   }
+
+   @Override
+   public Map<AnnotatableType, String> providers() {
+      return annotationSet.getProviders();
    }
 
    @Override

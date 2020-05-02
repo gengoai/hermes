@@ -23,7 +23,7 @@ import com.gengoai.hermes.AttributeMap;
 import com.gengoai.hermes.AttributeType;
 import com.gengoai.hermes.Hermes;
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.extraction.lyre.Lyre;
+import com.gengoai.hermes.extraction.lyre.LyreExpression;
 import com.gengoai.hermes.extraction.regex.TokenRegex;
 import com.gengoai.io.resource.Resource;
 import com.gengoai.parsing.*;
@@ -168,9 +168,9 @@ enum CaduceusParser implements TokenDef {
                capture = keyValue[0].substring(index + 1, keyValue[0].length() - 1);
             }
             if(keyValue[0].startsWith("@>")) {
-               builder.source($(capture, Lyre.parse(keyValue[1])));
+               builder.source($(capture, LyreExpression.parse(keyValue[1])));
             } else {
-               builder.target($(capture, Lyre.parse(keyValue[1])));
+               builder.target($(capture, LyreExpression.parse(keyValue[1])));
             }
          } else {
             throw new IllegalStateException("Invalid Key-Value: " + component);

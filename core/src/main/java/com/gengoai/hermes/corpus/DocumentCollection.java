@@ -19,16 +19,17 @@
 
 package com.gengoai.hermes.corpus;
 
-import com.gengoai.apollo.ml.DataSet;
 import com.gengoai.apollo.math.statistics.measure.Association;
 import com.gengoai.apollo.math.statistics.measure.ContingencyTable;
 import com.gengoai.apollo.math.statistics.measure.ContingencyTableCalculator;
+import com.gengoai.apollo.ml.DataSet;
 import com.gengoai.collection.counter.Counter;
 import com.gengoai.collection.multimap.ArrayListMultimap;
 import com.gengoai.collection.multimap.ListMultimap;
 import com.gengoai.collection.multimap.Multimap;
 import com.gengoai.function.SerializableConsumer;
 import com.gengoai.function.SerializableFunction;
+import com.gengoai.function.SerializablePredicate;
 import com.gengoai.hermes.AnnotatableType;
 import com.gengoai.hermes.AnnotationPipeline;
 import com.gengoai.hermes.Document;
@@ -39,6 +40,7 @@ import com.gengoai.hermes.extraction.caduceus.CaduceusProgram;
 import com.gengoai.hermes.extraction.regex.TokenMatch;
 import com.gengoai.hermes.extraction.regex.TokenMatcher;
 import com.gengoai.hermes.extraction.regex.TokenRegex;
+import com.gengoai.hermes.format.DocFormat;
 import com.gengoai.hermes.format.DocFormatService;
 import com.gengoai.hermes.lexicon.Lexicon;
 import com.gengoai.hermes.ml.HStringDataSetGenerator;
@@ -51,6 +53,7 @@ import com.gengoai.stream.StreamingContext;
 import com.gengoai.tuple.Tuple;
 import lombok.NonNull;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
@@ -130,7 +133,11 @@ public interface DocumentCollection extends Iterable<Document>, AutoCloseable {
     * @return the document collection
     */
    static DocumentCollection create(@NonNull String specification) {
-      return create(Specification.parse(specification));
+      try {
+         return create(Specification.parse(specification));
+      } catch(IllegalArgumentException e) {
+         return Corpus.open(specification);
+      }
    }
 
    /**
@@ -201,6 +208,15 @@ public interface DocumentCollection extends Iterable<Document>, AutoCloseable {
    }
 
    /**
+    * Caches any actions performed on this collection.
+    *
+    * @return the document collection
+    */
+   default DocumentCollection cache() {
+      return this;
+   }
+
+   /**
     * Calculates the document frequency of annotations of the given annotation type in the corpus. Annotations are
     * transformed into strings using the given toString function.
     *
@@ -219,6 +235,22 @@ public interface DocumentCollection extends Iterable<Document>, AutoCloseable {
       });
       progressLogger.report();
       return documentCounts.value();
+   }
+
+   default void export(String specification) throws IOException {
+      Specification spec = Specification.parse(specification);
+      DocFormat format = DocFormatService.create(spec);
+      format.write(this, Resources.from(spec.getPath()));
+   }
+
+   /**
+    * Filters the documents in the collection using the given predicate
+    *
+    * @param predicate the predicate
+    * @return the filtered document collection
+    */
+   default DocumentCollection filter(@NonNull SerializablePredicate<Document> predicate) {
+      return new MStreamDocumentCollection(stream().filter(predicate));
    }
 
    /**
@@ -242,7 +274,7 @@ public interface DocumentCollection extends Iterable<Document>, AutoCloseable {
    }
 
    /**
-    * Is empty boolean.
+    * Checks if the collection is empty
     *
     * @return True if this document collection has no documents.
     */
@@ -440,15 +472,6 @@ public interface DocumentCollection extends Iterable<Document>, AutoCloseable {
     */
    default DocumentCollection update(@NonNull CaduceusProgram program) {
       return update("ExecuteCaduceusProgram", program::execute);
-   }
-
-   /**
-    * Caches any actions performed on this collection.
-    *
-    * @return the document collection
-    */
-   default DocumentCollection cache(){
-      return this;
    }
 
 }//END OF DocumentCollection

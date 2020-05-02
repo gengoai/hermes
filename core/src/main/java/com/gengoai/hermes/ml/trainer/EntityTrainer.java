@@ -19,22 +19,26 @@
 
 package com.gengoai.hermes.ml.trainer;
 
+import com.gengoai.LogUtils;
 import com.gengoai.apollo.ml.DataSet;
 import com.gengoai.apollo.ml.Datum;
+import com.gengoai.apollo.ml.feature.FeatureExtractor;
+import com.gengoai.apollo.ml.feature.Featurizer;
 import com.gengoai.apollo.ml.model.FitParameters;
 import com.gengoai.apollo.ml.model.Model;
-import com.gengoai.apollo.ml.feature.Featurizer;
 import com.gengoai.apollo.ml.model.sequence.Crf;
 import com.gengoai.conversion.Cast;
+import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Types;
 import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.hermes.ml.HStringDataSetGenerator;
+import com.gengoai.hermes.ml.feature.BasicCategoryFeature;
 import lombok.NonNull;
+import lombok.extern.java.Log;
 
 import static com.gengoai.hermes.ml.feature.Features.*;
-import static com.gengoai.hermes.ml.feature.PredefinedFeatures.lenientContext;
-import static com.gengoai.hermes.ml.feature.PredefinedFeatures.strictContext;
 
+@Log
 public class EntityTrainer extends IOBTaggerTrainer {
 
    public EntityTrainer() {
@@ -43,49 +47,9 @@ public class EntityTrainer extends IOBTaggerTrainer {
 
    @Override
    protected void addInputs(@NonNull HStringDataSetGenerator.Builder builder) {
-      builder.tokenSequence(Datum.DEFAULT_INPUT,
-                            Featurizer.chain(LowerCaseWord,
-                                             IsInitialCapital,
-                                             IsAllCaps,
-                                             hasCapital,
-                                             IsDigit,
-                                             IsAlphaNumeric,
-                                             IsPunctuation,
-                                             PartOfSpeech,
-                                             IsLanguageName,
-                                             IsPlace,
-                                             IsStateOrPrefecture,
-                                             IsMonth,
-                                             IsOrganization,
-                                             IsHuman,
-                                             WordAndClass)
-                                      .withContext(lenientContext(LowerCaseWord, -1),
-                                                   strictContext(LowerCaseWord, -2),
-                                                   strictContext(PartOfSpeech, -1),
-                                                   strictContext(LowerCaseWord, -1, LowerCaseWord, 0),
-                                                   strictContext(PartOfSpeech, -1, LowerCaseWord, 0),
-                                                   strictContext(LowerCaseWord, -2, LowerCaseWord, -1),
-                                                   strictContext(LowerCaseWord, -2,
-                                                                 LowerCaseWord, -1,
-                                                                 LowerCaseWord, 0),
-                                                   strictContext(LowerCaseWord, -3,
-                                                                 LowerCaseWord, -2,
-                                                                 LowerCaseWord, -1,
-                                                                 LowerCaseWord, 0),
-                                                   lenientContext(LowerCaseWord, +1),
-                                                   strictContext(PartOfSpeech, +1),
-                                                   strictContext(LowerCaseWord, 0, LowerCaseWord, +1),
-                                                   strictContext(LowerCaseWord, +2),
-                                                   strictContext(LowerCaseWord, +1, LowerCaseWord, +2),
-                                                   strictContext(LowerCaseWord,
-                                                                 0,
-                                                                 LowerCaseWord,
-                                                                 +1,
-                                                                 LowerCaseWord,
-                                                                 +2),
-                                                   strictContext(LowerCaseWord, 0, PartOfSpeech, +1),
-                                                   strictContext(IsPlace, -1, IsPunctuation, 0, IsPlace, +1),
-                                                   strictContext(IsTime, -1, IsPunctuation, 0, IsTime, +1)));
+      FeatureExtractor<HString> fe = getFeaturizer();
+      LogUtils.logInfo(log, "\n{0}", fe);
+      builder.tokenSequence(Datum.DEFAULT_INPUT, fe);
    }
 
    @Override
@@ -97,6 +61,103 @@ public class EntityTrainer extends IOBTaggerTrainer {
    @Override
    protected Model createSequenceLabeler(FitParameters<?> fitParameters) {
       return new Crf(Cast.<Crf.Parameters>as(fitParameters));
+   }
+
+   private FeatureExtractor<HString> getFeaturizer() {
+      return Featurizer.chain(LowerCaseWord,
+                              PartOfSpeech,
+                              WordShape,
+                              WordClass,
+                              IsBeginOfSentence,
+                              IsEndOfSentence,
+                              IsDigit,
+                              IsPercent,
+                              IsCardinalNumber,
+                              IsOrdinalNumber,
+                              IsTitleCase, IsAllCaps, HasCapital,
+                              IsLanguageName,
+                              IsAlphaNumeric,
+                              IsCurrency,
+                              IsPunctuation,
+                              PhraseChunkBIO,
+                              new BasicCategoryFeature()
+                             )
+                       .withContext(
+                             "LowerWord[-1]",
+                             "~LowerWord[-2]|LowerWord[-1]",
+                             "LowerWord[+1]",
+                             "~LowerWord[+1]|LowerWord[+2]",
+                             "~LowerWord[-1]|LowerWord[+1]",
+                             "~LowerWord[-2]|LowerWord[-1]|LowerWord[+1]|LowerWord[+2]",
+
+                             "LowerWord[-1]|LowerWord[0]",
+                             "~LowerWord[-2]|LowerWord[-1]|LowerWord[0]",
+                             "LowerWord[0]|LowerWord[+1]",
+                             "~LowerWord[0]|LowerWord[+1]|LowerWord[+2]",
+
+                             "~LowerWord[-1]|LowerWord[0]|LowerWord[+1]",
+                             "~LowerWord[-2]|LowerWord[-1]|LowerWord[0]|LowerWord[+1]|LowerWord[+2]",
+
+                             "POS[-1]",
+                             "~POS[-2]|POS[-1]",
+                             "POS[+1]",
+                             "~POS[+1]|POS[+2]",
+                             "~POS[-1]|POS[+1]",
+                             "~POS[-2]|POS[-1]|POS[+1]|POS[+2]",
+
+                             "POS[-1]|LowerWord[0]",
+                             "~POS[-2]|POS[-1]|LowerWord[0]",
+                             "LowerWord[0]|POS[+1]",
+                             "~LowerWord[0]|POS[+1]|POS[+2]",
+
+                             "WordShape[-1]",
+                             "~WordShape[-2]|WordShape[-1]",
+                             "WordShape[+1]",
+                             "~WordShape[+1]|WordShape[+2]",
+                             "~WordShape[-1]|WordShape[+1]",
+                             "~WordShape[-2]|WordShape[-1]|WordShape[+1]|WordShape[+2]",
+
+                             "WordShape[-1]|LowerWord[0]",
+                             "~WordShape[-2]|WordShape[-1]|LowerWord[0]",
+                             "LowerWord[0]|WordShape[+1]",
+                             "~LowerWord[0]|WordShape[+1]|WordShape[+2]",
+
+                             "WordClass[-1]",
+                             "~WordClass[-2]|WordClass[-1]",
+                             "WordClass[+1]",
+                             "~WordClass[+1]|WordClass[+2]",
+                             "~WordClass[-1]|WordClass[+1]",
+                             "~WordClass[-2]|WordClass[-1]|WordClass[+1]|WordClass[+2]",
+
+                             "WordClass[-1]|LowerWord[0]",
+                             "~WordClass[-2]|WordClass[-1]|LowerWord[0]",
+                             "LowerWord[0]|WordClass[+1]",
+                             "~LowerWord[0]|WordClass[+1]|WordClass[+2]",
+
+                             "IsBeginOfSentence[-1]|LowerWord[0]",
+                             "LowerWord[0]|IsEndOfSentence[+1]",
+
+                             "IsDigit[-1]|IsDigit[0]",
+                             "IsPercent[-1]|IsPercent[0]",
+                             "IsDigit[-1]|IsOrdinal[0]",
+                             "IsOrdinal[-1]|IsOrdinal[0]",
+                             "IsCardinal[-1]|IsCardinal[0]",
+                             "IsOrdinal[-1]|POS[0]",
+                             "IsCardinal[-1]|POS[0]",
+
+                             "IsDigit[-1]|LowerWord[0]",
+                             "IsPercent[-1]|LowerWord[0]",
+                             "IsDigit[-1]|LowerWord[0]",
+                             "IsOrdinal[-1]|LowerWord[0]",
+                             "IsCardinal[-1]|LowerWord[0]",
+                             "IsOrdinal[-1]|LowerWord[0]",
+                             "IsCardinal[-1]|LowerWord[0]",
+
+                             "IsTitleCase[-1]|LowerWord[0]",
+                             "IsAllCaps[-1]|LowerWord[0]",
+                             "HasCapital[-1]|LowerWord[0]"
+
+                                   );
    }
 
    @Override

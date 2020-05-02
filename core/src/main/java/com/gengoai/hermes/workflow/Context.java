@@ -19,12 +19,15 @@
 
 package com.gengoai.hermes.workflow;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.gengoai.Copyable;
-import com.gengoai.annotation.JsonHandler;
 import com.gengoai.config.Config;
 import com.gengoai.conversion.Cast;
 import com.gengoai.conversion.Converter;
-import com.gengoai.json.JsonEntry;
+import com.gengoai.json.TypedObject;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
 import lombok.NonNull;
@@ -40,9 +43,16 @@ import java.util.Map;
  * internal storage and also fallback to checking for values in the global configuration.
  */
 @EqualsAndHashCode(callSuper = false)
-@JsonHandler(Context.JsonMarshaller.class)
+@JsonAutoDetect(
+      fieldVisibility = JsonAutoDetect.Visibility.NONE,
+      setterVisibility = JsonAutoDetect.Visibility.NONE,
+      getterVisibility = JsonAutoDetect.Visibility.NONE,
+      isGetterVisibility = JsonAutoDetect.Visibility.NONE,
+      creatorVisibility = JsonAutoDetect.Visibility.NONE
+)
 public class Context implements Serializable, Copyable<Context> {
-   private final Map<String, Object> properties = new HashMap<>();
+   @JsonValue
+   private final Map<String, TypedObject<?>> properties = new HashMap<>();
 
    /**
     * Instantiates a new Context.
@@ -57,8 +67,9 @@ public class Context implements Serializable, Copyable<Context> {
     * @param properties the properties
     */
    @Builder
-   public Context(@Singular @NonNull Map<String, ?> properties) {
-      this.properties.putAll(properties);
+   @JsonCreator
+   public Context(@JsonProperty @Singular @NonNull Map<String, ?> properties) {
+      properties.forEach(this::property);
    }
 
    @Override
@@ -73,7 +84,7 @@ public class Context implements Serializable, Copyable<Context> {
     * @return the value
     */
    public Object get(String name) {
-      return properties.get(name);
+      return properties.get(name).getValue();
    }
 
    /**
@@ -86,7 +97,7 @@ public class Context implements Serializable, Copyable<Context> {
     */
    public <T> T getAs(String name, @NonNull Class<T> clazz) {
       if(properties.containsKey(name)) {
-         return Cast.as(properties.get(name), clazz);
+         return Cast.as(properties.get(name).getValue(), clazz);
       }
       return Config.get(name).as(clazz);
 
@@ -102,7 +113,7 @@ public class Context implements Serializable, Copyable<Context> {
     */
    public <T> T getAs(String name, @NonNull Type type) {
       if(properties.containsKey(name)) {
-         return Converter.convertSilently(properties.get(name), type);
+         return Converter.convertSilently(properties.get(name).getValue(), type);
       }
       return Config.get(name).as(type);
 
@@ -120,7 +131,7 @@ public class Context implements Serializable, Copyable<Context> {
     */
    public <T> T getAs(String name, @NonNull Class<T> clazz, T defaultValue) {
       if(properties.containsKey(name)) {
-         return Cast.as(properties.getOrDefault(name, defaultValue), clazz);
+         return Cast.as(properties.get(name).getValue(), clazz);
       }
       return Config.get(name).as(clazz, defaultValue);
    }
@@ -204,38 +215,18 @@ public class Context implements Serializable, Copyable<Context> {
     * @param value the value
     */
    public void property(String name, Object value) {
-      this.properties.put(name, value);
+      if(value == null) {
+         this.properties.remove(name);
+      } else if(value instanceof TypedObject) {
+         this.properties.put(name, Cast.as(value));
+      } else {
+         this.properties.put(name, new TypedObject<>(value));
+      }
    }
 
    @Override
    public String toString() {
       return properties.toString();
-   }
-
-   /**
-    * The type Json marshaller.
-    */
-   public static class JsonMarshaller extends com.gengoai.json.JsonMarshaller<Context> {
-
-      @Override
-      protected Context deserialize(JsonEntry entry, Type type) {
-         Context context = new Context();
-         entry.propertyIterator()
-              .forEachRemaining(e -> context.properties.put(e.getKey(), e.getValue().get()));
-         return context;
-      }
-
-      @Override
-      protected JsonEntry serialize(Context context, Type type) {
-         JsonEntry entry = JsonEntry.object();
-         context.properties
-               .forEach((k, v) -> {
-                  if(v != null) {
-                     entry.addProperty(k, JsonEntry.object(v.getClass(), v));
-                  }
-               });
-         return entry;
-      }
    }
 
 }//END OF Context

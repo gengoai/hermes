@@ -20,7 +20,7 @@
 package com.gengoai.hermes.format;
 
 import com.gengoai.hermes.Document;
-import com.gengoai.hermes.corpus.Corpus;
+import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.io.resource.Resource;
 import com.gengoai.string.Strings;
 
@@ -35,7 +35,7 @@ import java.io.Serializable;
 public interface OneDocPerFileFormat extends DocFormat, Serializable {
 
    @Override
-   default void write(Corpus corpus, Resource outputResource) throws IOException {
+   default void write(DocumentCollection corpus, Resource outputResource) throws IOException {
       if(!outputResource.isDirectory()) {
          throw new IOException(outputResource.descriptor() + " must be a directory");
       }

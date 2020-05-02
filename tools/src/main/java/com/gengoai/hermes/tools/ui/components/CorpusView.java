@@ -40,6 +40,8 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Font;
 import java.text.DecimalFormat;
+import java.util.Collection;
+import java.util.Vector;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
@@ -53,24 +55,24 @@ public class CorpusView extends JPanel {
    private final Corpus corpus;
    @Getter
    private final String corpusSpecification;
-   private final JComboBox<AnnotationTask> cboxTasks;
+   private final JComboBox<AnnotationLayer> cboxTasks;
    private final AtomicReference<String> selectedDocumentId = new AtomicReference<>();
    @Setter
-   private BiConsumer<String, AnnotationTask> onDocumentOpen = (s, a) -> System.out.println(selectedDocumentId.get());
+   private BiConsumer<String, AnnotationLayer> onDocumentOpen = (s, a) -> System.out.println(selectedDocumentId.get());
 
    public CorpusView(String corpusSpecification, Corpus corpus) {
       this(corpusSpecification, corpus, null);
    }
 
-   public CorpusView(String corpusSpecification, Corpus corpus, AnnotationTask[] tasks) {
+   public CorpusView(String corpusSpecification, Corpus corpus, Collection<AnnotationLayer> tasks) {
       setLayout(new BorderLayout(0, 10));
       setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
       this.corpusSpecification = corpusSpecification;
       this.corpus = corpus;
-      if(tasks == null || tasks.length == 0) {
+      if(tasks == null || tasks.size() == 0) {
          this.cboxTasks = null;
       } else {
-         this.cboxTasks = new JComboBox<>(tasks);
+         this.cboxTasks = new JComboBox<>(new Vector<>(tasks));
       }
       add(createStatsPanel(), BorderLayout.NORTH);
       add(createDocumentPicker(), BorderLayout.CENTER);
@@ -172,7 +174,7 @@ public class CorpusView extends JPanel {
 
    private void performDocumentOpen() {
       if(onDocumentOpen != null) {
-         AnnotationTask task = Cast.as(cboxTasks.getSelectedItem());
+         AnnotationLayer task = Cast.as(cboxTasks.getSelectedItem());
          onDocumentOpen.accept(selectedDocumentId.get(), task);
       }
    }

@@ -19,20 +19,18 @@
 
 package com.gengoai.hermes;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.gengoai.Language;
-import com.gengoai.annotation.JsonHandler;
 import com.gengoai.collection.Collect;
 import com.gengoai.collection.tree.Span;
 import com.gengoai.json.Json;
-import com.gengoai.json.JsonEntry;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 
 import java.io.IOException;
-import java.lang.reflect.Type;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Predicate;
 
 /**
@@ -52,7 +50,7 @@ import java.util.function.Predicate;
  *
  * @author David B. Bracewell
  */
-@JsonHandler(Document.DocumentMarshaller.class)
+@JsonDeserialize(as = DefaultDocumentImpl.class)
 public interface Document extends HString {
 
    /**
@@ -382,6 +380,9 @@ public interface Document extends HString {
     */
    Annotation previous(Annotation annotation, AnnotationType type);
 
+   @JsonProperty("completed")
+   Map<AnnotatableType, String> providers();
+
    /**
     * Removes the given annotation from the document
     *
@@ -448,6 +449,7 @@ public interface Document extends HString {
          this.document = document;
          this.type = type;
       }
+
 
       /**
        * Sets the value of the given AttributeType on the new Annotation to the given value.
@@ -551,96 +553,4 @@ public interface Document extends HString {
 
    }//END OF AnnotationBuilder
 
-   /**
-    * The type Document marshaller.
-    */
-   class DocumentMarshaller extends com.gengoai.json.JsonMarshaller<Document> {
-
-      @Override
-      protected Document deserialize(JsonEntry entry, Type type) {
-         DefaultDocumentImpl document = new DefaultDocumentImpl(entry.getStringProperty("id"),
-                                                                entry.getStringProperty("content"));
-
-         if(entry.hasProperty("attributes")) {
-            document.attributeMap().putAll(entry.getProperty("attributes").getAs(AttributeMap.class));
-         }
-
-         AtomicLong id = new AtomicLong(0);
-         if(entry.hasProperty("completed")) {
-            entry.getProperty("completed")
-                 .propertyIterator()
-                 .forEachRemaining(e -> {
-                    AnnotatableType at = AnnotatableType.valueOf(e.getKey());
-                    document.setCompleted(at, e.getValue().getAsString());
-                 });
-         }
-
-         if(entry.hasProperty("annotations")) {
-            entry.getProperty("annotations")
-                 .elementIterator()
-                 .forEachRemaining(ae -> {
-                    Annotation annotation = new DefaultAnnotationImpl(document,
-                                                                      ae.getProperty("type")
-                                                                        .getAs(AnnotationType.class),
-                                                                      ae.getIntProperty("start"),
-                                                                      ae.getIntProperty("end"));
-                    long aid = ae.getLongProperty("id");
-                    annotation.setId(aid);
-                    if(aid > id.get()) {
-                       id.set(aid + 1);
-                    }
-                    if(ae.hasProperty("attributes")) {
-                       annotation.attributeMap().putAll(ae.getProperty("attributes").getAs(AttributeMap.class));
-                    }
-                    if(ae.hasProperty("relations")) {
-                       annotation.addAll(ae.getProperty("relations")
-                                           .getAsArray(Relation.class));
-                    }
-                    document.annotationSet.add(annotation);
-                 });
-         }
-
-         document.idGenerator.set(id.get());
-
-         return document;
-      }
-
-      @Override
-      protected JsonEntry serialize(Document document, Type type) {
-         JsonEntry entry = JsonEntry.object()
-                                    .addProperty("id", document.getId())
-                                    .addProperty("content", document.toString())
-                                    .addProperty("attributes", document.attributeMap());
-
-         Set<AnnotatableType> completedTypes = document.completed();
-         if(completedTypes.size() > 0) {
-            JsonEntry completed = JsonEntry.object();
-            for(AnnotatableType annotatableType : completedTypes) {
-               completed.addProperty(annotatableType.canonicalName(), document.getAnnotationProvider(annotatableType));
-            }
-            entry.addProperty("completed", completed);
-         }
-
-         if(document.numberOfAnnotations() > 0) {
-            final JsonEntry annotations = JsonEntry.array();
-            document.annotationStream().forEach(annotation -> {
-               JsonEntry aj = JsonEntry.object()
-                                       .addProperty("id", annotation.getId())
-                                       .addProperty("type", annotation.getType().name())
-                                       .addProperty("start", annotation.start())
-                                       .addProperty("end", annotation.end());
-               if(annotation.attributeMap().size() > 0) {
-                  aj.addProperty("attributes", annotation.attributeMap());
-               }
-               if(annotation.outgoingRelations(false).size() > 0) {
-                  aj.addProperty("relations", annotation.outgoingRelations(false));
-               }
-               annotations.addValue(aj);
-            });
-            entry.addProperty("annotations", annotations);
-         }
-
-         return entry;
-      }
-   }
 }//END OF Document

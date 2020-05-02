@@ -29,16 +29,11 @@ import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.AnnotationType;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.extraction.lyre.Lyre;
 import com.gengoai.hermes.extraction.lyre.LyreDSL;
 import com.gengoai.hermes.extraction.lyre.LyreExpression;
 import com.gengoai.hermes.ml.feature.ValueCalculator;
-import com.gengoai.json.JsonEntry;
 import com.gengoai.string.Strings;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NonNull;
+import lombok.*;
 
 import java.util.Arrays;
 import java.util.List;
@@ -66,6 +61,7 @@ import static com.gengoai.hermes.extraction.lyre.LyreExpressionType.STRING;
  */
 @Getter
 @AllArgsConstructor
+@NoArgsConstructor(force = true, access = AccessLevel.PROTECTED)
 @EqualsAndHashCode(callSuper = false)
 public abstract class MultiPhaseExtractor extends FeaturizingExtractor implements Copyable<FeaturizingExtractor> {
    private static final long serialVersionUID = 1L;
@@ -120,16 +116,6 @@ public abstract class MultiPhaseExtractor extends FeaturizingExtractor implement
     * @return the builder initialized with values from this extractor
     */
    public abstract MultiPhaseExtractorBuilder<?, ?> toBuilder();
-
-   protected JsonEntry toJson() {
-      return JsonEntry.object(getClass())
-                      .addProperty("toString", getToString())
-                      .addProperty("prefix", getPrefix())
-                      .addProperty("trim", getTrim())
-                      .addProperty("filter", getFilter())
-                      .addProperty("annotationTypes", getAnnotationTypes())
-                      .addProperty("valueCalculator", getValueCalculator());
-   }
 
    @Override
    public String toString() {
@@ -207,7 +193,7 @@ public abstract class MultiPhaseExtractor extends FeaturizingExtractor implement
          if(Strings.isNullOrBlank(expression)) {
             this.filter = null;
          } else {
-            filter(Lyre.parse(expression));
+            filter(LyreExpression.parse(expression));
          }
          return Cast.as(this);
       }
@@ -225,22 +211,6 @@ public abstract class MultiPhaseExtractor extends FeaturizingExtractor implement
                .prefix(extractor.prefix)
                .annotations(extractor.annotationTypes)
                .valueCalculator(extractor.valueCalculator);
-      }
-
-      /**
-       * Initializes this builder from the given JsonEntry.
-       *
-       * @param entry the json entry
-       * @return this builder
-       */
-      public V fromJson(@NonNull JsonEntry entry) {
-         return toString(entry.getStringProperty("toString", null))
-               .prefix(entry.getStringProperty("prefix", null))
-               .trim(entry.getStringProperty("trim", null))
-               .filter(entry.getStringProperty("filter", null))
-               .annotations(entry.getProperty("annotationTypes")
-                                 .getAsArray(AnnotationType.class))
-               .valueCalculator(entry.getProperty("valueCalculator", ValueCalculator.class));
       }
 
       /**
@@ -294,7 +264,7 @@ public abstract class MultiPhaseExtractor extends FeaturizingExtractor implement
          if(Strings.isNullOrBlank(expression)) {
             this.toString = LyreDSL.string;
          } else {
-            return toString(Lyre.parse(expression));
+            return toString(LyreExpression.parse(expression));
          }
          return Cast.as(this);
       }
@@ -326,7 +296,7 @@ public abstract class MultiPhaseExtractor extends FeaturizingExtractor implement
          if(Strings.isNullOrBlank(expression)) {
             this.trim = null;
          } else {
-            trim(Lyre.parse(expression));
+            trim(LyreExpression.parse(expression));
          }
          return Cast.as(this);
       }

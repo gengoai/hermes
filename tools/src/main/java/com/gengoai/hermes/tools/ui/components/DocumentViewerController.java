@@ -35,6 +35,7 @@ import com.gengoai.swing.component.SelectionChangeEvent;
 import com.gengoai.swing.component.listener.FluentAction;
 
 import javax.swing.*;
+import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Rectangle;
 import java.awt.event.KeyEvent;
@@ -46,7 +47,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static com.gengoai.function.Functional.with;
 import static com.gengoai.hermes.tools.ui.components.DocumentViewer.*;
+import static com.gengoai.swing.component.Components.dim;
+import static com.gengoai.swing.component.Components.panel;
 import static com.gengoai.swing.component.listener.SwingListeners.fluentAction;
 
 final class DocumentViewerController {
@@ -106,29 +110,30 @@ final class DocumentViewerController {
                                              KeyEvent.CTRL_DOWN_MASK));
    public final FluentAction FOCUS_ON_DOCUMENT_VIEW = fluentAction("FocusOnDocumentView",
                                                                    a -> view().documentView.focusOnEditor());
+   public final FluentAction SELECT_DOCUMENT_ATTRIBUTES_TABLE = fluentAction("SelectDocumentAttributesTable",
+                                                                             a -> view().tbPaneTools
+                                                                                   .setSelectedIndex(
+                                                                                         DOC_ATTRIBUTES_TABLE_INDEX))
+         .accelerator(KeyStroke.getKeyStroke(KeyEvent.VK_1,
+                                             KeyEvent.CTRL_DOWN_MASK));
    public final FluentAction SELECT_ANNOTATION_TABLE = fluentAction("SelectAnnotationTable",
                                                                     a -> view().tbPaneTools
                                                                           .setSelectedIndex(ANNOTATION_TABLE_INDEX))
-         .accelerator(KeyStroke.getKeyStroke(KeyEvent.VK_1,
+         .accelerator(KeyStroke.getKeyStroke(KeyEvent.VK_2,
                                              KeyEvent.CTRL_DOWN_MASK));
    public final FluentAction SELECT_SEARCH_RESULTS_TABLE = fluentAction("SelectSearchResultsTable",
                                                                         a -> view().tbPaneTools
                                                                               .setSelectedIndex(SEARCH_RESULTS_INDEX))
-         .accelerator(KeyStroke.getKeyStroke(KeyEvent.VK_2,
+         .accelerator(KeyStroke.getKeyStroke(KeyEvent.VK_3,
                                              KeyEvent.CTRL_DOWN_MASK));
    public final FluentAction SELECT_CONCORDANCE_TABLE = fluentAction("SelectConcordanceTable",
                                                                      a -> view().tbPaneTools
                                                                            .setSelectedIndex(CONCORDANCE_TABLE_INDEX))
-         .accelerator(KeyStroke.getKeyStroke(KeyEvent.VK_3,
+         .accelerator(KeyStroke.getKeyStroke(KeyEvent.VK_4,
                                              KeyEvent.CTRL_DOWN_MASK));
    public final FluentAction SELECT_SENTENCES_TABLE = fluentAction("SelectSentencesTable",
                                                                    a -> view().tbPaneTools
                                                                          .setSelectedIndex(SENTENCE_LIST_INDEX))
-         .accelerator(KeyStroke.getKeyStroke(KeyEvent.VK_4,
-                                             KeyEvent.CTRL_DOWN_MASK));
-   public final FluentAction SELECT_INSPECTION_WINDOW = fluentAction("SelectInspectionWindow",
-                                                                     a -> view().tbPaneTools
-                                                                           .setSelectedIndex(INSPECT_SELECTION_INDEX))
          .accelerator(KeyStroke.getKeyStroke(KeyEvent.VK_5,
                                              KeyEvent.CTRL_DOWN_MASK));
 
@@ -137,6 +142,9 @@ final class DocumentViewerController {
 
       InputMap inputMap = viewer.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
       ActionMap actionMap = viewer.getActionMap();
+
+      inputMap.put(SELECT_DOCUMENT_ATTRIBUTES_TABLE.getAccelerator(), SELECT_DOCUMENT_ATTRIBUTES_TABLE.getName());
+      actionMap.put(SELECT_DOCUMENT_ATTRIBUTES_TABLE.getName(), SELECT_DOCUMENT_ATTRIBUTES_TABLE);
 
       inputMap.put(SELECT_ANNOTATION_TABLE.getAccelerator(), SELECT_ANNOTATION_TABLE.getName());
       actionMap.put(SELECT_ANNOTATION_TABLE.getName(), SELECT_ANNOTATION_TABLE);
@@ -149,9 +157,6 @@ final class DocumentViewerController {
 
       inputMap.put(SELECT_SENTENCES_TABLE.getAccelerator(), SELECT_SENTENCES_TABLE.getName());
       actionMap.put(SELECT_SENTENCES_TABLE.getName(), SELECT_SENTENCES_TABLE);
-
-      inputMap.put(SELECT_INSPECTION_WINDOW.getAccelerator(), SELECT_INSPECTION_WINDOW.getName());
-      actionMap.put(SELECT_INSPECTION_WINDOW.getName(), SELECT_INSPECTION_WINDOW);
 
       inputMap.put(KeyStroke.getKeyStroke(KeyEvent.VK_INSERT, KeyEvent.CTRL_DOWN_MASK), FOCUS_ON_TAGVIEW.getName());
       actionMap.put(FOCUS_ON_TAGVIEW.getName(), FOCUS_ON_TAGVIEW);
@@ -274,7 +279,6 @@ final class DocumentViewerController {
             borderColor = background.darker();
             sectionColor = background.darker();
          }
-         _viewer.ttlInspectionWindow.heading(selection.toString());
          StringBuilder html = new StringBuilder("<html>");
          java.util.List<Annotation> styledSpans = documentView.getAnnotations(_viewer.annotationType,
                                                                               documentView.getSelectionStart(),
@@ -356,8 +360,30 @@ final class DocumentViewerController {
          }
 
          html.append("</html>");
-         _viewer.txtInspectionWindow.setText(html.toString());
-         _viewer.tbPaneTools.setSelectedIndex(INSPECT_SELECTION_INDEX);
+
+         var txt = new JTextPane();
+         txt.setEditable(false);
+         txt.setContentType("text/html");
+         txt.setText(html.toString());
+
+         JDialog dialog = new JDialog();
+         dialog.setTitle("Inspection View");
+         dialog.getContentPane().add(panel(p -> {
+                                        p.add(new JScrollPane(with(new JTextArea(_viewer.documentView.getSelectedText()), $ -> {
+                                           $.setPreferredSize(dim(0, 16 * 4));
+                                           $.setLineWrap(true);
+                                           $.setWrapStyleWord(true);
+                                           $.setEditable(false);
+                                        })), BorderLayout.NORTH);
+                                        p.add(new JScrollPane(txt), BorderLayout.CENTER);
+                                     })
+                                    );
+         dialog.setMinimumSize(dim(800, 600));
+         dialog.pack();
+         dialog.setLocationRelativeTo(null);
+         dialog.setModal(true);
+         dialog.setVisible(true);
+
       }
    }
 

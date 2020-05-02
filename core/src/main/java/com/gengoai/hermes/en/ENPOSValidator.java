@@ -40,7 +40,7 @@ public class ENPOSValidator implements SequenceValidator {
                           String previousLabel,
                           Observation instance) {
 
-      Variable wordFeature = instance.asVariableCollection().getVariableByPrefix("WORD");
+      Variable wordFeature = instance.asVariableCollection().getVariableByPrefix("LowerWord");
       String word = wordFeature == null
                     ? Strings.EMPTY
                     : wordFeature.getSuffix();

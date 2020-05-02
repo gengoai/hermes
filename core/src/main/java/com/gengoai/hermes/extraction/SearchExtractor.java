@@ -19,6 +19,8 @@
 
 package com.gengoai.hermes.extraction;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Types;
 import com.gengoai.string.StringMatcher;
@@ -44,7 +46,10 @@ public class SearchExtractor implements Extractor {
     * @param fuzzyMatch    True - allow sub-word matching (i.e. "is" will be matched in "This"), False must match full
     *                      spans of text.
     */
-   public SearchExtractor(@NonNull String searchText, boolean caseSensitive, boolean fuzzyMatch) {
+   @JsonCreator
+   public SearchExtractor(@JsonProperty("searchText") @NonNull String searchText,
+                          @JsonProperty("caseSensitive") boolean caseSensitive,
+                          @JsonProperty("fuzzyMatch") boolean fuzzyMatch) {
       this.caseSensitive = caseSensitive;
       this.searchText = caseSensitive
                         ? searchText

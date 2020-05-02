@@ -1,7 +1,6 @@
 {
   "name": "Extended Named Entity Annotation",
   "annotationType": "ENTITY",
-  "view": "Document",
   "includeTagValues": true,
   "tags": {
     "ORGANIZATION": {

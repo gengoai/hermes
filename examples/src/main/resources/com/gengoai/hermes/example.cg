@@ -1,0 +1,23 @@
+## ==============================================================================================
+## Detect "Spook" events requiring an agent doing the spooking and a patient being spooked
+## ==============================================================================================
+[spook_event]
+trigger: /^spook/ & #VERB
+annotation: capture=*
+            type=EVENT
+            $TAG=SPOOK_EVENT
+            requires=spooker
+            requires=spookee
+relation: spookee
+          type=EVENT_ROLE
+          value=SPOOKEE
+          requires=spooker
+          @>=filter(@PHRASE_CHUNK(@<dep{'dobj'}), #NOUN)
+          @<=$_
+relation: spooker
+          type=EVENT_ROLE
+          value=SPOOKER
+          requires=spookee
+          @>=filter(@PHRASE_CHUNK(@<dep{'nsubj'}), #NOUN)
+          @<=$_
+## === [spook_event] ==============================================================================

@@ -25,9 +25,9 @@ import com.gengoai.Language;
 import com.gengoai.StringTag;
 import com.gengoai.Tag;
 import com.gengoai.annotation.Preload;
-import com.gengoai.hermes.morphology.UniversalFeatureSet;
 import com.gengoai.hermes.morphology.PartOfSpeech;
 import com.gengoai.hermes.morphology.TokenType;
+import com.gengoai.hermes.morphology.UniversalFeatureSet;
 import com.gengoai.string.Strings;
 import lombok.NonNull;
 
@@ -72,10 +72,6 @@ public interface Types {
     * added, but instead NON_TERMINAL_NODE annotation and, SYNTACTIC_HEAD relations are.
     */
    AnnotationType CONSTITUENT_PARSE = AnnotationType.make("CONSTITUENT_PARSE");
-   /**
-    * The functional part of a syntactic pos tag
-    */
-   AttributeType<String> SYNTACTIC_FUNCTION = AttributeType.make("SYNTACTIC_FUNCTION");
    /**
     * RelationType defining dependency relations.
     */
@@ -161,10 +157,15 @@ public interface Types {
     * String attribute defining a correction to the spelling of the associated word/phrase.
     */
    AttributeType<String> SPELLING_CORRECTION = AttributeType.make("SPELLING", String.class);
+   AttributeType<String> SPLIT = AttributeType.make("SPLIT", String.class);
    /**
     * String attribute denoting the stemmed version of the word/phrase.
     */
    AttributeType<String> STEM = AttributeType.make("STEM", String.class);
+   /**
+    * The functional part of a syntactic pos tag
+    */
+   AttributeType<String> SYNTACTIC_FUNCTION = AttributeType.make("SYNTACTIC_FUNCTION");
    /**
     * Relation type denoting that the target is the syntactic head of the source
     */
@@ -185,7 +186,7 @@ public interface Types {
     * Token annotation type
     */
    AnnotationType TOKEN = AnnotationType.make("TOKEN", PART_OF_SPEECH);
-   AnnotatableType[] BASE_ANNOTATIONS = {Types.TOKEN, Types.SENTENCE, Types.PART_OF_SPEECH, Types.CATEGORY, Types.PHRASE_CHUNK, Types.ENTITY};
+   AnnotatableType[] BASE_ANNOTATIONS = {Types.TOKEN, Types.SENTENCE, Types.PART_OF_SPEECH, Types.CATEGORY, Types.PHRASE_CHUNK, Types.ENTITY, Types.DEPENDENCY};
    /**
     * TokenType attribute defining the type of token.
     */

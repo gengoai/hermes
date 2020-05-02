@@ -19,6 +19,9 @@
 
 package com.gengoai.hermes;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIdentityReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.gengoai.Validation;
 import com.gengoai.conversion.Cast;
 import lombok.NonNull;
@@ -30,9 +33,10 @@ class DefaultAnnotationImpl extends BaseHString implements Annotation {
    private static final long serialVersionUID = 1L;
 
    final Set<Relation> incomingRelations = new HashSet<>();
+   @JsonProperty("relations")
    final Set<Relation> outgoingRelations = new HashSet<>();
    private final AnnotationType annotationType;
-   private final Document owner;
+   private Document owner;
    private long id = DETACHED_ID;
    private volatile transient Annotation[] tokens;
 
@@ -47,6 +51,25 @@ class DefaultAnnotationImpl extends BaseHString implements Annotation {
                             ? AnnotationType.ROOT
                             : type;
       this.owner = owner;
+   }
+
+   @JsonCreator
+   private DefaultAnnotationImpl(@JsonProperty("start") int start,
+                                 @JsonProperty("end") int end,
+                                 @JsonProperty("type") AnnotationType type,
+                                 @JsonProperty("id") long id,
+                                 @JsonProperty("attributes") AttributeMap attributeMap,
+                                 @JsonProperty("relations") List<Relation> relations) {
+      super(start, end);
+      this.annotationType = type;
+      this.owner = null;
+      this.id = id;
+      if(attributeMap != null) {
+         this.attributeMap().putAll(attributeMap);
+      }
+      if(relations != null) {
+         relations.forEach(this::add);
+      }
    }
 
    protected DefaultAnnotationImpl(@NonNull HString string, @NonNull AnnotationType annotationType) {
@@ -79,6 +102,7 @@ class DefaultAnnotationImpl extends BaseHString implements Annotation {
    }
 
    @Override
+   @JsonIdentityReference(alwaysAsId = true)
    public Document document() {
       return owner;
    }
@@ -126,6 +150,10 @@ class DefaultAnnotationImpl extends BaseHString implements Annotation {
       if(outgoingRelations.remove(relation)) {
          relation.getTarget(this).removeRelation(new Relation(relation.getType(), relation.getValue(), getId()));
       }
+   }
+
+   protected void setDocument(Document d) {
+      this.owner = d;
    }
 
    @Override

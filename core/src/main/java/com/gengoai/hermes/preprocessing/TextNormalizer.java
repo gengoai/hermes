@@ -21,21 +21,18 @@
 
 package com.gengoai.hermes.preprocessing;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.gengoai.Language;
-import com.gengoai.annotation.JsonHandler;
 import com.gengoai.config.Config;
-import com.gengoai.json.JsonEntry;
-import com.gengoai.reflection.Reflect;
 
 import java.io.Serializable;
-import java.lang.reflect.Type;
 
 /**
  * Defines a methodology for normalizing a string.
  *
  * @author David B. Bracewell
  */
-@JsonHandler(TextNormalizer.Marshaller.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
 public abstract class TextNormalizer implements Serializable {
    private static final long serialVersionUID = 1L;
 
@@ -61,25 +58,5 @@ public abstract class TextNormalizer implements Serializable {
     * @return The post-processed text
     */
    protected abstract String performNormalization(String input, Language language);
-
-   /**
-    * The type Marshaller.
-    */
-   public static class Marshaller extends com.gengoai.json.JsonMarshaller<TextNormalizer> {
-
-      @Override
-      protected TextNormalizer deserialize(JsonEntry entry, Type type) {
-         try {
-            return Reflect.onClass(entry.getAsString()).create().get();
-         } catch(Exception e) {
-            throw new RuntimeException(e);
-         }
-      }
-
-      @Override
-      protected JsonEntry serialize(TextNormalizer textNormalizer, Type type) {
-         return JsonEntry.from(textNormalizer.getClass().getName());
-      }
-   }
 
 }//END OF TextPreprocessor

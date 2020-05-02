@@ -21,9 +21,10 @@
 
 package com.gengoai.hermes;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.gengoai.EnumValue;
 import com.gengoai.Registry;
-import com.gengoai.annotation.JsonHandler;
 
 import java.util.Collection;
 
@@ -33,18 +34,15 @@ import java.util.Collection;
  *
  * @author David B. Bracewell
  */
-@JsonHandler(value = AnnotatableType.Marshaller.class, isHierarchical = false)
-public final class RelationType extends EnumValue implements AnnotatableType {
+@JsonSerialize(using = AnnotatableType.Serializer.class)
+@JsonDeserialize(using = AnnotatableType.Deserializer.class)
+public final class RelationType extends EnumValue<RelationType> implements AnnotatableType {
    private static final Registry<RelationType> registry = new Registry<>(RelationType::new, RelationType.class);
    private static final long serialVersionUID = 1L;
    /**
     * The constant TYPE.
     */
    public static final String TYPE = "Relation";
-
-   private RelationType(String name) {
-      super(name);
-   }
 
    /**
     * Is defined boolean.
@@ -83,6 +81,10 @@ public final class RelationType extends EnumValue implements AnnotatableType {
     */
    public static Collection<RelationType> values() {
       return registry.values();
+   }
+
+   private RelationType(String name) {
+      super(name);
    }
 
    @Override

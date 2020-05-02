@@ -39,6 +39,7 @@ import com.gengoai.hermes.ml.trainer.SequenceTaggerTrainer;
 import com.gengoai.io.Resources;
 import com.gengoai.io.resource.Resource;
 import com.gengoai.io.resource.StringResource;
+import com.gengoai.parsing.ParseException;
 import com.gengoai.string.Strings;
 import lombok.extern.java.Log;
 
@@ -81,14 +82,25 @@ public class TaggerApp extends HermesCLI {
    @Option(description = "Print a Confusion Matrix",
          defaultValue = "false")
    private boolean printCM;
+   @Option(description = "Query to generate data",
+         defaultValue = "")
+   private String query;
 
    public static void main(String[] args) {
       new TaggerApp().run(args);
    }
 
    private DocumentCollection getDocumentCollection() {
-      return DocumentCollection.create(notNullOrBlank(documentCollectionSpec,
-                                                      "No Document Collection Specified!"));
+      DocumentCollection docs = DocumentCollection.create(notNullOrBlank(documentCollectionSpec,
+                                                                         "No Document Collection Specified!"));
+      if(Strings.isNotNullOrBlank(query)) {
+         try {
+            docs = docs.query(query);
+         } catch(ParseException e) {
+            throw new RuntimeException(e);
+         }
+      }
+      return docs;
    }
 
    private SequenceTaggerTrainer<?> getTrainer() {
@@ -191,6 +203,9 @@ public class TaggerApp extends HermesCLI {
       logInfo(log, "                         Train");
       logInfo(log, "========================================================");
       logInfo(log, "   Data: {0}", documentCollectionSpec);
+      if(Strings.isNotNullOrBlank(query)){
+         logInfo(log, "  Query: {0}", query);
+      }
       logInfo(log, "Trainer: {0}", sequenceTagger);
       logInfo(log, "  Model: {0}", model);
       logInfo(log, "========================================================");

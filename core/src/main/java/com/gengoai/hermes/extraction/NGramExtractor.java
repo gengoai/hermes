@@ -22,22 +22,22 @@
 
 package com.gengoai.hermes.extraction;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.gengoai.Validation;
-import com.gengoai.annotation.JsonHandler;
 import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.AnnotationType;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.extraction.lyre.LyreExpression;
 import com.gengoai.hermes.ml.feature.ValueCalculator;
-import com.gengoai.json.JsonEntry;
 import com.gengoai.stream.Streams;
 import com.gengoai.tuple.Tuple;
 import com.gengoai.tuple.Tuple0;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
-import java.lang.reflect.Type;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -53,24 +53,12 @@ import static com.gengoai.tuple.Tuples.$;
  * @author David B. Bracewell
  */
 @Getter
-@JsonHandler(value = NGramExtractor.Marshaller.class)
+@NoArgsConstructor(force = true, access = AccessLevel.PROTECTED)
+@JsonDeserialize(as = NGramExtractor.class)
 public class NGramExtractor extends MultiPhaseExtractor {
    private static final long serialVersionUID = 1L;
    private int maxOrder;
    private int minOrder;
-
-   private NGramExtractor(int minOrder,
-                          int maxOrder,
-                          AnnotationType[] annotationTypes,
-                          LyreExpression filter,
-                          String prefix,
-                          LyreExpression toString,
-                          LyreExpression trim,
-                          ValueCalculator valueCalculator) {
-      super(annotationTypes, filter, prefix, toString, trim, valueCalculator);
-      this.minOrder = minOrder;
-      this.maxOrder = maxOrder;
-   }
 
    /**
     * @return @return An builder initialized for bigrams
@@ -114,6 +102,19 @@ public class NGramExtractor extends MultiPhaseExtractor {
       return builder(3, 3);
    }
 
+   private NGramExtractor(int minOrder,
+                          int maxOrder,
+                          AnnotationType[] annotationTypes,
+                          LyreExpression filter,
+                          String prefix,
+                          LyreExpression toString,
+                          LyreExpression trim,
+                          ValueCalculator valueCalculator) {
+      super(annotationTypes, filter, prefix, toString, trim, valueCalculator);
+      this.minOrder = minOrder;
+      this.maxOrder = maxOrder;
+   }
+
    @Override
    protected Stream<HString> createStream(HString hString) {
       return Streams.asStream(new NGramHStringIterator(hString.interleaved(getAnnotationTypes())));
@@ -133,13 +134,6 @@ public class NGramExtractor extends MultiPhaseExtractor {
    @Override
    public Builder toBuilder() {
       return builder().fromExtractor(this);
-   }
-
-   @Override
-   protected JsonEntry toJson() {
-      return super.toJson()
-                  .addProperty("minOrder", minOrder)
-                  .addProperty("maxOrder", maxOrder);
    }
 
    @Override
@@ -211,13 +205,6 @@ public class NGramExtractor extends MultiPhaseExtractor {
                      .maxOrder(nge.maxOrder);
       }
 
-      @Override
-      public Builder fromJson(@NonNull JsonEntry entry) {
-         return super.fromJson(entry)
-                     .minOrder(entry.getIntProperty("minOrder"))
-                     .maxOrder(entry.getIntProperty("maxOrder"));
-      }
-
       /**
        * Sets the maximum n-gram order.
        *
@@ -242,22 +229,6 @@ public class NGramExtractor extends MultiPhaseExtractor {
          this.minOrder = minOrder;
          this.maxOrder = Math.max(minOrder, maxOrder);
          return this;
-      }
-   }
-
-   /**
-    * Marshaller for reading/writing NGramExtractor to and from json
-    */
-   public static class Marshaller extends com.gengoai.json.JsonMarshaller<NGramExtractor> {
-
-      @Override
-      protected NGramExtractor deserialize(JsonEntry entry, Type type) {
-         return builder().fromJson(entry).build();
-      }
-
-      @Override
-      protected JsonEntry serialize(NGramExtractor n, Type type) {
-         return n.toJson();
       }
    }
 

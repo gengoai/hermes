@@ -22,6 +22,7 @@ package com.gengoai.hermes.corpus;
 import com.gengoai.LogUtils;
 import com.gengoai.config.Config;
 import com.gengoai.function.SerializableConsumer;
+import com.gengoai.function.SerializablePredicate;
 import com.gengoai.hermes.Document;
 import com.gengoai.stream.MStream;
 import com.gengoai.stream.StreamingContext;
@@ -45,6 +46,11 @@ class MStreamDocumentCollection implements DocumentCollection {
    @Override
    public void close() throws Exception {
       stream.close();
+   }
+
+   @Override
+   public DocumentCollection filter(@NonNull SerializablePredicate<Document> predicate) {
+      return new MStreamDocumentCollection(stream.filter(predicate));
    }
 
    @Override

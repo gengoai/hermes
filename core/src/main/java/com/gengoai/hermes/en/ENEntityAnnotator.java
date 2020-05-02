@@ -41,7 +41,7 @@ public class ENEntityAnnotator extends SubTypeAnnotator implements Serializable 
     * Instantiates a new ENEntityAnnotator.
     */
    public ENEntityAnnotator() {
-      super(Types.ENTITY, false, Arrays.asList(Types.TOKEN_TYPE_ENTITY, Types.ML_ENTITY));
+      super(Types.ENTITY, true, Arrays.asList(Types.TOKEN_TYPE_ENTITY, Types.ML_ENTITY));
    }
 
    @Override

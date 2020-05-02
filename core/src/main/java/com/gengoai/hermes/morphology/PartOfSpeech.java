@@ -19,16 +19,16 @@
 
 package com.gengoai.hermes.morphology;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import com.gengoai.Tag;
 import com.gengoai.Validation;
-import com.gengoai.annotation.JsonHandler;
 import com.gengoai.annotation.Preload;
 import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Types;
-import com.gengoai.json.JsonEntry;
-import com.gengoai.json.JsonMarshaller;
 import com.gengoai.string.Strings;
 import com.gengoai.tuple.Tuple2;
 import lombok.Getter;
@@ -36,7 +36,6 @@ import lombok.NonNull;
 
 import java.io.ObjectStreamException;
 import java.io.Serializable;
-import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -47,9 +46,9 @@ import static com.gengoai.hermes.morphology.PennTreeBank.*;
 
 /**
  * <p>
- * Interface defining a part-of-speech. A part-of-speech has an associated name representing a human-readable label,
- * a tag which is used in annotated corpora, and a {@link UniversalFeatureSet} set relating to the features the
- * tag invokes.
+ * Interface defining a part-of-speech. A part-of-speech has an associated name representing a human-readable label, a
+ * tag which is used in annotated corpora, and a {@link UniversalFeatureSet} set relating to the features the tag
+ * invokes.
  * </p>
  * <p>
  * Out-of-the-box Hermes provides the Universal and Penn Treebank tag sets. New tags can be created by calling {@link
@@ -60,8 +59,14 @@ import static com.gengoai.hermes.morphology.PennTreeBank.*;
  * "myNN". Note: This means your training and testing corpora will need to be modified to include the prefix.
  * </p>
  */
-@JsonHandler(PartOfSpeech.Marshaller.class)
 @Preload
+@JsonAutoDetect(
+      fieldVisibility = JsonAutoDetect.Visibility.NONE,
+      setterVisibility = JsonAutoDetect.Visibility.NONE,
+      getterVisibility = JsonAutoDetect.Visibility.NONE,
+      isGetterVisibility = JsonAutoDetect.Visibility.NONE,
+      creatorVisibility = JsonAutoDetect.Visibility.NONE
+)
 public final class PartOfSpeech implements Tag, Serializable {
    private static final Map<String, PartOfSpeech> tags = new ConcurrentHashMap<>();
    private static final long serialVersionUID = 1L;
@@ -97,20 +102,6 @@ public final class PartOfSpeech implements Tag, Serializable {
    private final boolean isUniversalTag;
    private final String name;
    private final String tag;
-
-   private PartOfSpeech(String name,
-                        String tag,
-                        PartOfSpeech parent,
-                        boolean isPhraseTag,
-                        boolean isUniversalTag,
-                        UniversalFeatureSet features) {
-      this.features = features;
-      this.isPhraseTag = isPhraseTag;
-      this.isUniversalTag = isUniversalTag;
-      this.parent = parent;
-      this.name = name;
-      this.tag = tag;
-   }
 
    private static PartOfSpeech create(String name,
                                       String tag,
@@ -205,6 +196,7 @@ public final class PartOfSpeech implements Tag, Serializable {
     * @param nameOrTag the name or tag of the PartOfSpeech we want
     * @return the PartOfSpeech
     */
+   @JsonCreator
    public static PartOfSpeech valueOf(String nameOrTag) {
       nameOrTag = nameOrTag.toUpperCase();
       if(tags.containsKey(nameOrTag)) {
@@ -245,6 +237,20 @@ public final class PartOfSpeech implements Tag, Serializable {
     */
    public static Collection<PartOfSpeech> values() {
       return Collections.unmodifiableCollection(tags.values());
+   }
+
+   private PartOfSpeech(String name,
+                        String tag,
+                        PartOfSpeech parent,
+                        boolean isPhraseTag,
+                        boolean isUniversalTag,
+                        UniversalFeatureSet features) {
+      this.features = features;
+      this.isPhraseTag = isPhraseTag;
+      this.isUniversalTag = isUniversalTag;
+      this.parent = parent;
+      this.name = name;
+      this.tag = tag;
    }
 
    @Override
@@ -414,6 +420,7 @@ public final class PartOfSpeech implements Tag, Serializable {
    }
 
    @Override
+   @JsonValue
    public String name() {
       return name;
    }
@@ -437,17 +444,5 @@ public final class PartOfSpeech implements Tag, Serializable {
    public String toString() {
       return name;
    }
-
-   public static class Marshaller extends JsonMarshaller<PartOfSpeech> {
-      @Override
-      protected PartOfSpeech deserialize(JsonEntry entry, Type type) {
-         return PartOfSpeech.valueOf(entry.getAsString());
-      }
-
-      @Override
-      protected JsonEntry serialize(PartOfSpeech partOfSpeech, Type type) {
-         return JsonEntry.from(partOfSpeech.name());
-      }
-   }//END OF PartOfSpeechMarshaller
 
 }//END OF PartOfSpeech

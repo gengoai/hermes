@@ -26,7 +26,7 @@ package com.gengoai.hermes.ml.feature;
  *
  * @author David B. Bracewell
  */
-public class StringPattern {
+class StringPattern {
 
    private static final int INITAL_CAPITAL_LETTER = 0x1;
    private static final int ALL_CAPITAL_LETTER = 0x1 << 1;
@@ -45,72 +45,87 @@ public class StringPattern {
 
    private final int digits;
 
+   /**
+    * Recognize string pattern.
+    *
+    * @param token the token
+    * @return the string pattern
+    */
+   public static StringPattern recognize(String token) {
+
+      int pattern = ALL_CAPITAL_LETTER | ALL_LOWERCASE_LETTER | ALL_DIGIT | ALL_LETTERS;
+
+      int digits = 0;
+
+      for(int i = 0; i < token.length(); i++) {
+         final char ch = token.charAt(i);
+
+         final int letterType = Character.getType(ch);
+
+         boolean isLetter = letterType == Character.UPPERCASE_LETTER ||
+               letterType == Character.LOWERCASE_LETTER ||
+               letterType == Character.TITLECASE_LETTER ||
+               letterType == Character.MODIFIER_LETTER ||
+               letterType == Character.OTHER_LETTER;
+
+         if(isLetter) {
+            pattern |= CONTAINS_LETTERS;
+            pattern &= ~ALL_DIGIT;
+
+            if(letterType == Character.UPPERCASE_LETTER) {
+               if(i == 0) {
+                  pattern |= INITAL_CAPITAL_LETTER;
+               }
+
+               pattern |= CONTAINS_UPPERCASE;
+
+               pattern &= ~ALL_LOWERCASE_LETTER;
+            } else {
+               pattern &= ~ALL_CAPITAL_LETTER;
+            }
+         } else {
+            // contains chars other than letter, this means
+            // it can not be one of these:
+            pattern &= ~ALL_LETTERS;
+            pattern &= ~ALL_CAPITAL_LETTER;
+            pattern &= ~ALL_LOWERCASE_LETTER;
+
+            if(letterType == Character.DECIMAL_DIGIT_NUMBER) {
+               pattern |= CONTAINS_DIGIT;
+               digits++;
+            } else {
+               pattern &= ~ALL_DIGIT;
+            }
+
+            switch(ch) {
+               case ',':
+                  pattern |= CONTAINS_COMMA;
+                  break;
+
+               case '.':
+                  pattern |= CONTAINS_PERIOD;
+                  break;
+
+               case '/':
+                  pattern |= CONTAINS_SLASH;
+                  break;
+
+               case '-':
+                  pattern |= CONTAINS_HYPHEN;
+                  break;
+
+               default:
+                  break;
+            }
+         }
+      }
+
+      return new StringPattern(pattern, digits);
+   }
+
    private StringPattern(int pattern, int digits) {
       this.pattern = pattern;
       this.digits = digits;
-   }
-
-   /**
-    * Is all letter boolean.
-    *
-    * @return true if all characters are letters.
-    */
-   public boolean isAllLetter() {
-      return (pattern & ALL_LETTERS) > 0;
-   }
-
-   /**
-    * Is initial capital letter boolean.
-    *
-    * @return true if first letter is capital.
-    */
-   public boolean isInitialCapitalLetter() {
-      return (pattern & INITAL_CAPITAL_LETTER) > 0;
-   }
-
-   /**
-    * Is all capital letter boolean.
-    *
-    * @return true if all letters are capital.
-    */
-   public boolean isAllCapitalLetter() {
-      return (pattern & ALL_CAPITAL_LETTER) > 0;
-   }
-
-   /**
-    * Is all lower case letter boolean.
-    *
-    * @return true if all letters are lower case.
-    */
-   public boolean isAllLowerCaseLetter() {
-      return (pattern & ALL_LOWERCASE_LETTER) > 0;
-   }
-
-   /**
-    * Is all digit boolean.
-    *
-    * @return true if all chars are digits.
-    */
-   public boolean isAllDigit() {
-      return (pattern & ALL_DIGIT) > 0;
-   }
-
-   /**
-    * Retrieves the number of digits.
-    *
-    * @return the int
-    */
-   public int digits() {
-      return digits;
-   }
-
-   /**
-    * Contains period boolean.
-    *
-    * @return the boolean
-    */
-   public boolean containsPeriod() {
-      return (pattern & CONTAINS_PERIOD) > 0;
    }
 
    /**
@@ -120,15 +135,6 @@ public class StringPattern {
     */
    public boolean containsComma() {
       return (pattern & CONTAINS_COMMA) > 0;
-   }
-
-   /**
-    * Contains slash boolean.
-    *
-    * @return the boolean
-    */
-   public boolean containsSlash() {
-      return (pattern & CONTAINS_SLASH) > 0;
    }
 
    /**
@@ -159,80 +165,74 @@ public class StringPattern {
    }
 
    /**
-    * Recognize string pattern.
+    * Contains period boolean.
     *
-    * @param token the token
-    * @return the string pattern
+    * @return the boolean
     */
-   public static StringPattern recognize(String token) {
+   public boolean containsPeriod() {
+      return (pattern & CONTAINS_PERIOD) > 0;
+   }
 
-      int pattern = ALL_CAPITAL_LETTER | ALL_LOWERCASE_LETTER | ALL_DIGIT | ALL_LETTERS;
+   /**
+    * Contains slash boolean.
+    *
+    * @return the boolean
+    */
+   public boolean containsSlash() {
+      return (pattern & CONTAINS_SLASH) > 0;
+   }
 
-      int digits = 0;
+   /**
+    * Retrieves the number of digits.
+    *
+    * @return the int
+    */
+   public int digits() {
+      return digits;
+   }
 
-      for (int i = 0; i < token.length(); i++) {
-         final char ch = token.charAt(i);
+   /**
+    * Is all capital letter boolean.
+    *
+    * @return true if all letters are capital.
+    */
+   public boolean isAllCapitalLetter() {
+      return (pattern & ALL_CAPITAL_LETTER) > 0;
+   }
 
-         final int letterType = Character.getType(ch);
+   /**
+    * Is all digit boolean.
+    *
+    * @return true if all chars are digits.
+    */
+   public boolean isAllDigit() {
+      return (pattern & ALL_DIGIT) > 0;
+   }
 
-         boolean isLetter = letterType == Character.UPPERCASE_LETTER ||
-               letterType == Character.LOWERCASE_LETTER ||
-               letterType == Character.TITLECASE_LETTER ||
-               letterType == Character.MODIFIER_LETTER ||
-               letterType == Character.OTHER_LETTER;
+   /**
+    * Is all letter boolean.
+    *
+    * @return true if all characters are letters.
+    */
+   public boolean isAllLetter() {
+      return (pattern & ALL_LETTERS) > 0;
+   }
 
-         if (isLetter) {
-            pattern |= CONTAINS_LETTERS;
-            pattern &= ~ALL_DIGIT;
+   /**
+    * Is all lower case letter boolean.
+    *
+    * @return true if all letters are lower case.
+    */
+   public boolean isAllLowerCaseLetter() {
+      return (pattern & ALL_LOWERCASE_LETTER) > 0;
+   }
 
-            if (letterType == Character.UPPERCASE_LETTER) {
-               if (i == 0) {
-                  pattern |= INITAL_CAPITAL_LETTER;
-               }
-
-               pattern |= CONTAINS_UPPERCASE;
-
-               pattern &= ~ALL_LOWERCASE_LETTER;
-            } else {
-               pattern &= ~ALL_CAPITAL_LETTER;
-            }
-         } else {
-            // contains chars other than letter, this means
-            // it can not be one of these:
-            pattern &= ~ALL_LETTERS;
-            pattern &= ~ALL_CAPITAL_LETTER;
-            pattern &= ~ALL_LOWERCASE_LETTER;
-
-            if (letterType == Character.DECIMAL_DIGIT_NUMBER) {
-               pattern |= CONTAINS_DIGIT;
-               digits++;
-            } else {
-               pattern &= ~ALL_DIGIT;
-            }
-
-            switch (ch) {
-               case ',':
-                  pattern |= CONTAINS_COMMA;
-                  break;
-
-               case '.':
-                  pattern |= CONTAINS_PERIOD;
-                  break;
-
-               case '/':
-                  pattern |= CONTAINS_SLASH;
-                  break;
-
-               case '-':
-                  pattern |= CONTAINS_HYPHEN;
-                  break;
-
-               default:
-                  break;
-            }
-         }
-      }
-
-      return new StringPattern(pattern, digits);
+   /**
+    * Is initial capital letter boolean.
+    *
+    * @return true if first letter is capital.
+    */
+   public boolean isInitialCapitalLetter() {
+      return (pattern & INITAL_CAPITAL_LETTER) > 0;
    }
 }//END OF StringPattern

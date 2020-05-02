@@ -75,6 +75,10 @@ public class ENPOSTagger extends POSTagger {
          } else {
             token.put(Types.PART_OF_SPEECH, PartOfSpeech.valueOf(result.get(i).asVariable().getName()));
          }
+
+         //Morphology
+         String lower = token.toLowerCase();
+
       }
    }
 

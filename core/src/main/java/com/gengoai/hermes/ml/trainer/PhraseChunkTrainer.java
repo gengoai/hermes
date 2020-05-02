@@ -22,9 +22,9 @@ package com.gengoai.hermes.ml.trainer;
 import com.gengoai.Stopwatch;
 import com.gengoai.apollo.ml.DataSet;
 import com.gengoai.apollo.ml.Datum;
+import com.gengoai.apollo.ml.feature.Featurizer;
 import com.gengoai.apollo.ml.model.FitParameters;
 import com.gengoai.apollo.ml.model.Model;
-import com.gengoai.apollo.ml.feature.Featurizer;
 import com.gengoai.apollo.ml.model.sequence.Crf;
 import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.Types;
@@ -52,7 +52,7 @@ public class PhraseChunkTrainer extends IOBTaggerTrainer {
    @Override
    protected void addInputs(HStringDataSetGenerator.Builder builder) {
       builder.tokenSequence(Datum.DEFAULT_INPUT,
-                            Featurizer.chain(LowerCaseWord, PartOfSpeech, WordAndClass)
+                            Featurizer.chain(LowerCaseWord, PartOfSpeech, WordClass)
                                       .withContext(lenientContext(LowerCaseWord, -1),
                                                    strictContext(LowerCaseWord, -1, LowerCaseWord, 0),
                                                    lenientContext(LowerCaseWord, -2),

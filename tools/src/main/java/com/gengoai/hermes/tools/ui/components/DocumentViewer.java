@@ -48,18 +48,17 @@ import static com.gengoai.function.Functional.with;
 import static com.gengoai.hermes.tools.ui.components.DocumentViewerModel.*;
 import static com.gengoai.swing.Menus.menuItem;
 import static com.gengoai.swing.Menus.popupMenu;
-import static com.gengoai.swing.component.Components.panel;
-import static com.gengoai.swing.component.Components.splitPaneHorizontal;
+import static com.gengoai.swing.component.Components.*;
 import static com.gengoai.tuple.Tuples.$;
 import static java.awt.BorderLayout.CENTER;
 import static java.awt.BorderLayout.NORTH;
 
 public class DocumentViewer extends JPanel {
-   public static final int ANNOTATION_TABLE_INDEX = 0;
-   public static final int CONCORDANCE_TABLE_INDEX = 2;
-   public static final int INSPECT_SELECTION_INDEX = 4;
-   public static final int SEARCH_RESULTS_INDEX = 1;
-   public static final int SENTENCE_LIST_INDEX = 3;
+   public static final int ANNOTATION_TABLE_INDEX = 1;
+   public static final int CONCORDANCE_TABLE_INDEX = 3;
+   public static final int DOC_ATTRIBUTES_TABLE_INDEX = 0;
+   public static final int SEARCH_RESULTS_INDEX = 2;
+   public static final int SENTENCE_LIST_INDEX = 4;
    final Document document;
    final HStringViewer documentView;
    final JTabbedPane tbPaneTools;
@@ -69,10 +68,9 @@ public class DocumentViewer extends JPanel {
    final MangoTable tblAnnotations;
    final MangoTable tblSentences;
    final MangoTable tblSearchResults;
+   final MangoTable tblDocumentAttributes;
    final AnnotationType annotationType;
-   final JTextPane txtInspectionWindow;
    final AnnotationFloatWindow dlgFloatingWindow;
-   final MangoTitlePane ttlInspectionWindow;
    final DocumentViewerController controller;
    private final AtomicBoolean hasChanged = new AtomicBoolean(false);
    @Getter
@@ -94,23 +92,27 @@ public class DocumentViewer extends JPanel {
       this.tblConcordance = initConcordanceView();
       this.tblAnnotations = initAnnotationTable();
       this.tblSentences = initSentenceListView();
-      this.txtInspectionWindow = initInspectionView();
+      this.tblDocumentAttributes = initDocumentAttributes();
       this.searchBar = new SearchBar(document);
-      this.ttlInspectionWindow = with(new MangoTitlePane("", false, new JScrollPane(txtInspectionWindow)),
-                                      $ -> $.setHeadingFont(getFont().deriveFont(Font.BOLD, 20)));
+
       this.tbPaneTools = with(new JTabbedPane(), $ -> {
          $.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
          $.setTabPlacement(JTabbedPane.BOTTOM);
+
+         $.addTab("Document Attributes", new JScrollPane(tblDocumentAttributes));
+         $.setToolTipTextAt(DOC_ATTRIBUTES_TABLE_INDEX, "Ctrl+" + (DOC_ATTRIBUTES_TABLE_INDEX + 1));
+
          $.addTab("Annotation Table", new JScrollPane(tblAnnotations));
-         $.setToolTipTextAt(0, "Ctrl+1");
+         $.setToolTipTextAt(ANNOTATION_TABLE_INDEX, "Ctrl+" + (ANNOTATION_TABLE_INDEX + 1));
+
          $.addTab("Search Results", new JScrollPane(tblSearchResults));
-         $.setToolTipTextAt(1, "Ctrl+2");
+         $.setToolTipTextAt(SEARCH_RESULTS_INDEX, "Ctrl+" + (SEARCH_RESULTS_INDEX + 1));
+
          $.addTab("Concordance", new JScrollPane(tblConcordance));
-         $.setToolTipTextAt(2, "Ctrl+3");
+         $.setToolTipTextAt(CONCORDANCE_TABLE_INDEX, "Ctrl+" + (CONCORDANCE_TABLE_INDEX + 1));
+
          $.addTab("Sentence List", new JScrollPane(tblSentences));
-         $.setToolTipTextAt(3, "Ctrl+4");
-         $.addTab("Inspection Window", ttlInspectionWindow);
-         $.setToolTipTextAt(4, "Ctrl+5");
+         $.setToolTipTextAt(SENTENCE_LIST_INDEX, "Ctrl+" + (SENTENCE_LIST_INDEX + 1));
       });
       var splitPane = with(new JSplitPane(JSplitPane.VERTICAL_SPLIT, documentView, tbPaneTools), $ -> {
          $.setDividerLocation(400);
@@ -118,6 +120,7 @@ public class DocumentViewer extends JPanel {
          $.setResizeWeight(1);
       });
       var ttlTagTitlePane = new MangoTitlePane("Tag Search", false, tagView);
+      ttlTagTitlePane.setPreferredSize(dim(300, 0));
       add(splitPaneHorizontal(0, panel($(NORTH, searchBar), $(CENTER, splitPane)), ttlTagTitlePane), CENTER);
       searchBar.setVisible(false);
       documentView.scrollToTopLeft();
@@ -229,6 +232,20 @@ public class DocumentViewer extends JPanel {
       return table;
    }
 
+   private MangoTable initDocumentAttributes() {
+      MangoTable tbl = with(new MangoTable("Attribute", "Value"), $ -> {
+         Fonts.setFontSize($, 16f);
+         $.setRowHeight($.getRowHeight() + 3);
+         $.setShowGrid(true);
+         $.setFillsViewportHeight(true);
+         $.setAutoCreateRowSorter(true);
+         $.getTableHeader().setReorderingAllowed(false);
+         $.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
+      });
+      document.attributeMap().forEach((a, v) -> tbl.addRow(a.name(), v));
+      return tbl;
+   }
+
    private HStringViewer initDocumentViewer() {
       var view = with(new HStringViewer(document), $ -> {
          $.setAllowZoom(true);
@@ -276,13 +293,6 @@ public class DocumentViewer extends JPanel {
       }));
       view.setComponentPopupMenu(menu);
       return view;
-   }
-
-   private JTextPane initInspectionView() {
-      var txt = new JTextPane();
-      txt.setEditable(false);
-      txt.setContentType("text/html");
-      return txt;
    }
 
    private MangoTable initSearchResultView() {

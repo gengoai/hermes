@@ -41,6 +41,14 @@ public class Annotate implements Action {
    private static final long serialVersionUID = 1L;
    private AnnotatableType[] types = {Types.SENTENCE, Types.LEMMA, Types.PHRASE_CHUNK, Types.DEPENDENCY, Types.ENTITY};
 
+   public Annotate() {
+
+   }
+
+   public Annotate(@NonNull AnnotatableType... types) {
+      this.types = types;
+   }
+
    /**
     * Get types string [ ].
     *

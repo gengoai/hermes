@@ -59,6 +59,7 @@ public class DefaultDependencyAnnotator extends SentenceLevelAnnotator {
       ConcurrentMaltParserModel model = getModel(sentence.getLanguage());
       List<Annotation> tokens = sentence.tokens();
       String[] input = new String[tokens.size()];
+
       for(int i = 0; i < tokens.size(); i++) {
          Annotation token = tokens.get(i);
          input[i] = (i + 1) + "\t" + token.toString() + "\t" + token.getLemma() + "\t" + token.pos().tag() + "\t" +

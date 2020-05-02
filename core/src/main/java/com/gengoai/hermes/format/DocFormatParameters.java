@@ -74,7 +74,7 @@ public class DocFormatParameters extends ParamMap<DocFormatParameters> {
     */
    public final Parameter<List<TextNormalizer>> normalizers = parameter(NORMALIZERS,
                                                                         TextNormalization.configuredInstance()
-                                                                                         .getPreprocessors());
+                                                                                         .getNormalizers());
 
    /**
     * @return Creates a document factory based on the this set of parameters

@@ -22,14 +22,17 @@
 
 package com.gengoai.hermes.extraction.lyre;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.gengoai.Validation;
-import com.gengoai.annotation.JsonHandler;
 import com.gengoai.apollo.ml.observation.Variable;
 import com.gengoai.collection.Lists;
 import com.gengoai.collection.counter.Counter;
 import com.gengoai.collection.counter.Counters;
 import com.gengoai.conversion.Cast;
 import com.gengoai.conversion.Converter;
+import com.gengoai.function.CheckedFunction;
 import com.gengoai.function.SerializableFunction;
 import com.gengoai.function.SerializablePredicate;
 import com.gengoai.hermes.HString;
@@ -37,13 +40,11 @@ import com.gengoai.hermes.extraction.Extraction;
 import com.gengoai.hermes.extraction.FeaturizingExtractor;
 import com.gengoai.hermes.lexicon.WordList;
 import com.gengoai.hermes.morphology.PartOfSpeech;
-import com.gengoai.json.JsonEntry;
 import com.gengoai.math.Math2;
-import com.gengoai.parsing.Expression;
+import com.gengoai.parsing.*;
 import com.gengoai.string.Strings;
 import lombok.NonNull;
 
-import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -51,6 +52,7 @@ import java.util.stream.Collectors;
 
 import static com.gengoai.hermes.HString.toHString;
 import static com.gengoai.hermes.extraction.lyre.LyreExpressionType.*;
+import static com.gengoai.parsing.ParserGenerator.parserGenerator;
 import static com.gengoai.reflection.TypeUtils.parameterizedType;
 
 /**
@@ -61,13 +63,39 @@ import static com.gengoai.reflection.TypeUtils.parameterizedType;
  *
  * @author David B. Bracewell
  */
-@JsonHandler(value = LyreExpression.Marshaller.class)
 public final class LyreExpression extends FeaturizingExtractor implements Expression,
                                                                           SerializableFunction<HString, String>,
                                                                           SerializablePredicate<HString> {
+   private static final Evaluator<LyreExpression> evaluator = new Evaluator<>() {
+      {
+         $(LyreExpression.class, CheckedFunction.identity());
+      }
+   };
+   private static final ParserGenerator PARSER_GENERATOR = parserGenerator(new Grammar(LyreType.values()),
+                                                                           Lexer.create(LyreType.values()));
    private final SerializableFunction<Object, Object> function;
    private final String pattern;
    private final LyreExpressionType type;
+
+   /**
+    * Parse the given pattern into a {@link LyreExpression}.
+    *
+    * @param pattern the pattern
+    * @return the LyreExpression Expression
+    */
+   @JsonCreator
+   public static LyreExpression parse(@JsonProperty("pattern") String pattern) {
+      try {
+         List<LyreExpression> expressions = PARSER_GENERATOR.create(pattern).evaluateAll(evaluator);
+         if(expressions.size() != 1) {
+            throw new ParseException(
+                  "Invalid number of expressions parsed (" + expressions.size() + "): " + expressions);
+         }
+         return expressions.get(0);
+      } catch(ParseException e) {
+         throw new RuntimeException(e);
+      }
+   }
 
    LyreExpression(String pattern, LyreExpressionType type, SerializableFunction<Object, Object> function) {
       this.pattern = pattern;
@@ -247,11 +275,13 @@ public final class LyreExpression extends FeaturizingExtractor implements Expres
     *
     * @return the Lyre pattern
     */
+   @JsonProperty
    public String getPattern() {
       return toString();
    }
 
    @Override
+   @JsonIgnore
    public LyreExpressionType getType() {
       return type;
    }
@@ -294,22 +324,4 @@ public final class LyreExpression extends FeaturizingExtractor implements Expres
       return pattern;
    }
 
-   /**
-    * Marshaller for reading/writing LyreExpressions to and from json
-    */
-   public static class Marshaller extends com.gengoai.json.JsonMarshaller<LyreExpression> {
-
-      @Override
-      protected LyreExpression deserialize(JsonEntry entry, Type type) {
-         if(entry.isArray() && entry.size() == 1) {
-            return Lyre.parse(entry.getAsArray().get(0).getAsString());
-         }
-         return Lyre.parse(entry.getAsString());
-      }
-
-      @Override
-      protected JsonEntry serialize(LyreExpression lyreExpression, Type type) {
-         return JsonEntry.from(lyreExpression.toString());
-      }
-   }
 }//END OF LyreExpression

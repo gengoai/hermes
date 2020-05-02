@@ -1,0 +1,104 @@
+#!/bin/bash
+
+work_dir=$(pwd)
+CLASSPATH='lib/*'
+
+
+declare -A descriptions
+descriptions[corpus]="Application for working with corpora."
+descriptions[tagger]="Application for training sequence taggers."
+descriptions[annotation_gui]="Annotate documents for a given task using a Swing-based gui."
+
+if [ -z "$JAVA_OPTS" ]
+then
+	JAVA_OPTS="-Xmx8g"
+fi
+
+if [ -z "$HERMES_RESOURCES" ]
+then
+	HERMES_RESOURCES="--hermes.resources.dir=$work_dir/resources"
+fi
+
+if [ -z "$SPARK_HOME" ]
+then
+	SPARK_HOME="$work_dir/spark/"
+fi
+
+
+function help() {
+  echo "This is the help"
+}
+
+function run() {
+  java "$JAVA_OPTS" -cp "$CLASSPATH" "$1" "${@:2}" "$HERMES_RESOURCES"
+}
+
+function spark() {
+  if [ "$1" == "LOCAL" ]; then
+    java "$JAVA_OPTS" -cp "$CLASSPATH:spark/*" "$2"  "${@:3}" "$HERMES_RESOURCES"
+  else
+    echo "DISTRIBUTED"
+  fi
+}
+
+function download() {
+  mkdir -p "$work_dir/resources/"
+  LANGUAGE=$(echo "${1}" | tr "[:lower:]" "[:upper:]")
+  if [[ "$LANGUAGE" == "ENGLISH" || "$LANGUAGE" == "EN" ]]
+  then
+    echo "Downloading models for $LANGUAGE"
+  else
+    echo "Unfortunately, $LANGUAGE is not supported at this time."
+  fi
+}
+
+function find_program() {
+    if [ ${programs[$1]+_} ]
+    then
+      echo "${programs[$1]}"
+    else
+      echo "$1"
+    fi
+}
+
+ACTION=$(echo "$1" | tr A-Z a-z)
+if [[ "$2" != "" ]]
+then
+  PROGRAM=$(find_program "$2")
+fi
+
+
+case $ACTION in
+    corpus)
+      run "com.gengoai.hermes.tools.CorpusApp" "${@:2}"
+      ;;
+    tagger)
+      run "com.gengoai.hermes.tools.TaggerApp" "${@:2}"
+      ;;
+    -ls)
+      if [[ "$PROGRAM" == "-ls" ]]
+      then
+        echo "============================================================================"
+        echo "                       Applications available to run"
+        echo "============================================================================"
+        for KEY in "${!descriptions[@]}"; do
+            echo "$KEY: ${descriptions[$KEY]}"
+        done
+        exit
+      fi   
+      ;;
+    spark)
+      spark "DISTRIBUTED" "$PROGRAM" "${@:3:}"
+      ;;
+    spark-local)
+      spark "LOCAL" "$PROGRAM" "${@:3:}"
+      ;;
+    download)
+      download "$PROGRAM"
+      ;;
+    help | -h | *)
+      help
+      ;;
+esac
+
+

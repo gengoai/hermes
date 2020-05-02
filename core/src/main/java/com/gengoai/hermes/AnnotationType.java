@@ -21,10 +21,11 @@
 
 package com.gengoai.hermes;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.gengoai.HierarchicalEnumValue;
 import com.gengoai.HierarchicalRegistry;
 import com.gengoai.Tag;
-import com.gengoai.annotation.JsonHandler;
 import com.gengoai.config.Config;
 import com.gengoai.conversion.Cast;
 
@@ -51,7 +52,8 @@ import java.util.Collection;
  * </pre>
  * </p>
  */
-@JsonHandler(value = AnnotatableType.Marshaller.class, isHierarchical = false)
+@JsonSerialize(using = AnnotatableType.Serializer.class)
+@JsonDeserialize(using = AnnotatableType.Deserializer.class)
 public final class AnnotationType extends HierarchicalEnumValue<AnnotationType> implements AnnotatableType {
    private static final HierarchicalRegistry<AnnotationType> registry = new HierarchicalRegistry<>(
          AnnotationType::new,

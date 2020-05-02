@@ -21,15 +21,14 @@
 
 package com.gengoai.hermes.preprocessing;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.gengoai.Language;
 import com.gengoai.Validation;
-import com.gengoai.annotation.JsonHandler;
 import com.gengoai.config.Config;
-import com.gengoai.json.JsonEntry;
 import lombok.extern.java.Log;
 
 import java.io.Serializable;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -44,25 +43,12 @@ import static com.gengoai.LogUtils.logFine;
  *
  * @author David B. Bracewell
  */
-@JsonHandler(TextNormalization.Marshaller.class)
 @Log
 public class TextNormalization implements Serializable {
    private static final long serialVersionUID = 1L;
    private static final String LIST_CONFIG = "hermes.preprocessing.normalizers";
    private static volatile TextNormalization INSTANCE;
    private final List<TextNormalizer> preprocessors;
-
-   private TextNormalization() {
-      preprocessors = new ArrayList<>();
-   }
-
-   private TextNormalization(Collection<? extends TextNormalizer> normalizers) {
-      if(normalizers == null) {
-         preprocessors = Collections.emptyList();
-      } else {
-         preprocessors = new ArrayList<>(normalizers);
-      }
-   }
 
    /**
     * Configured instance text normalization.
@@ -102,7 +88,20 @@ public class TextNormalization implements Serializable {
       return factory;
    }
 
-   public List<TextNormalizer> getPreprocessors() {
+   private TextNormalization() {
+      preprocessors = new ArrayList<>();
+   }
+
+   @JsonCreator
+   private TextNormalization(@JsonProperty("normalizers") Collection<? extends TextNormalizer> normalizers) {
+      if(normalizers == null) {
+         preprocessors = Collections.emptyList();
+      } else {
+         preprocessors = new ArrayList<>(normalizers);
+      }
+   }
+
+   public List<TextNormalizer> getNormalizers() {
       return Collections.unmodifiableList(preprocessors);
    }
 
@@ -136,22 +135,6 @@ public class TextNormalization implements Serializable {
          finalString = textNormalizer.apply(finalString, language);
       }
       return finalString;
-   }
-
-   /**
-    * The type Marshaller.
-    */
-   public static class Marshaller extends com.gengoai.json.JsonMarshaller<TextNormalization> {
-
-      @Override
-      protected TextNormalization deserialize(JsonEntry entry, Type type) {
-         return new TextNormalization(entry.getAsArray(TextNormalizer.class));
-      }
-
-      @Override
-      protected JsonEntry serialize(TextNormalization textNormalization, Type type) {
-         return JsonEntry.from(textNormalization.preprocessors);
-      }
    }
 
 }//END OF TextNormalizer

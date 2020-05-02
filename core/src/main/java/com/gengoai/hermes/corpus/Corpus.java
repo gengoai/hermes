@@ -44,6 +44,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * <p>
@@ -125,6 +126,17 @@ public interface Corpus extends DocumentCollection {
       return Cast.as(DocumentCollection.super.apply(pattern, onMatch));
    }
 
+   default void assignRandomSplit(double pct) {
+      AtomicLong train = new AtomicLong((int) Math.floor(pct * size()));
+      update("AssignSplit", d -> {
+         if(train.decrementAndGet() > 0) {
+            d.attribute(Types.SPLIT, "TRAIN");
+         } else {
+            d.attribute(Types.SPLIT, "TEST");
+         }
+      });
+   }
+
    /**
     * Compacts the storage used for the corpus.
     *
@@ -133,6 +145,8 @@ public interface Corpus extends DocumentCollection {
    default Corpus compact() {
       return this;
    }
+
+
 
    /**
     * Gets a count of the values for the given attribute across documents in the corpus.

@@ -21,7 +21,7 @@ package com.gengoai.hermes.format;
 
 import com.gengoai.function.Unchecked;
 import com.gengoai.hermes.Document;
-import com.gengoai.hermes.corpus.Corpus;
+import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.io.MultiFileWriter;
 import com.gengoai.io.resource.Resource;
 import com.gengoai.io.resource.StringResource;
@@ -59,7 +59,7 @@ class OPLFormat implements DocFormat, Serializable {
    }
 
    @Override
-   public void write(Corpus corpus, Resource outputResource) throws IOException {
+   public void write(DocumentCollection corpus, Resource outputResource) throws IOException {
       if(outputResource.isDirectory()) {
          outputResource.mkdirs();
          int nFiles = (int) corpus.size() / 1000;

@@ -22,19 +22,17 @@
 
 package com.gengoai.hermes.workflow;
 
+import com.fasterxml.jackson.annotation.*;
 import com.gengoai.LogUtils;
 import com.gengoai.Stopwatch;
-import com.gengoai.annotation.JsonHandler;
 import com.gengoai.application.Option;
 import com.gengoai.collection.Lists;
-import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.json.Json;
 import com.gengoai.json.JsonEntry;
 import lombok.NonNull;
 import lombok.ToString;
 
-import java.lang.reflect.Type;
 import java.util.*;
 
 import static com.gengoai.LogUtils.logInfo;
@@ -50,8 +48,15 @@ import static com.gengoai.LogUtils.logInfo;
  *
  * @author David B. Bracewell
  */
-@JsonHandler(SequentialWorkflow.SequentialWorkflowMarshaller.class)
 @ToString
+@JsonTypeName("Sequential")
+@JsonAutoDetect(
+      fieldVisibility = JsonAutoDetect.Visibility.NONE,
+      setterVisibility = JsonAutoDetect.Visibility.NONE,
+      getterVisibility = JsonAutoDetect.Visibility.NONE,
+      isGetterVisibility = JsonAutoDetect.Visibility.NONE,
+      creatorVisibility = JsonAutoDetect.Visibility.NONE
+)
 public final class SequentialWorkflow implements Workflow {
    private static final long serialVersionUID = 1L;
    public static final String TYPE = "Sequential";
@@ -72,6 +77,33 @@ public final class SequentialWorkflow implements Workflow {
     */
    public SequentialWorkflow(@NonNull Iterable<Action> actions) {
       this.actions = Lists.asArrayList(actions);
+   }
+
+   @JsonCreator
+   private SequentialWorkflow(@JsonProperty JsonEntry entry) {
+      startingContext = BaseWorkflowIO.readDefaultContext(entry);
+      Map<String, JsonEntry> beans = BaseWorkflowIO.readBeans(entry);
+      Map<String, Action> singletons = new HashMap<>();
+      Iterator<JsonEntry> itr = entry.getProperty("actions").elementIterator();
+      try {
+         int idx = 0;
+         while(itr.hasNext()) {
+            JsonEntry a = itr.next();
+            if(a.isString()) {
+               String name = a.asString();
+               Action action = BaseWorkflowIO.createBean(name, beans.get(name), singletons);
+               actions.add(action);
+            } else {
+               actions.add(BaseWorkflowIO.createBean("idx-" + idx, a, singletons));
+            }
+            idx++;
+         }
+         for(Action action : actions) {
+            System.out.println(action);
+         }
+      } catch(Exception e) {
+         throw new RuntimeException(e);
+      }
    }
 
    @Override
@@ -131,47 +163,17 @@ public final class SequentialWorkflow implements Workflow {
       this.startingContext = context.copy();
    }
 
-   public static class SequentialWorkflowMarshaller extends WorkflowMarshaller {
-
-      @Override
-      protected Workflow deserialize(JsonEntry entry, Type type) {
-         SequentialWorkflow workflow = new SequentialWorkflow();
-         workflow.startingContext = readDefaultContext(entry);
-         Map<String, JsonEntry> beans = readBeans(entry);
-         Map<String, Action> singletons = new HashMap<>();
-         Iterator<JsonEntry> itr = entry.getProperty("actions").elementIterator();
-         try {
-            int idx = 0;
-            while(itr.hasNext()) {
-               JsonEntry a = itr.next();
-               if(a.isString()) {
-                  String name = a.getAsString();
-                  Action action = createBean(name, beans.get(name), singletons);
-                  workflow.actions.add(action);
-               } else {
-                  workflow.actions.add(createBean("idx-" + idx, a, singletons));
-               }
-               idx++;
-            }
-         } catch(Exception e) {
-            throw new RuntimeException(e);
-         }
-         return workflow;
+   @JsonValue
+   protected JsonEntry toEntry() {
+      JsonEntry obj = BaseWorkflowIO.serialize(this);
+      JsonEntry actionArray = JsonEntry.array();
+      for(Action action : actions) {
+         JsonEntry ao = JsonEntry.object();
+         ao.mergeObject(Json.asJsonEntry(action));
+         actionArray.addValue(ao);
       }
-
-      @Override
-      protected JsonEntry serialize(Workflow workflow, Type type) {
-         JsonEntry obj = super.serialize(workflow, type);
-         SequentialWorkflow sw = Cast.as(workflow);
-         JsonEntry actionArray = JsonEntry.array();
-         for(Action action : sw.actions) {
-            JsonEntry ao = JsonEntry.object(action.getClass());
-            ao.mergeObject(Json.asJsonEntry(action));
-            actionArray.addValue(ao);
-         }
-         obj.addProperty("actions", actionArray);
-         return obj;
-      }
+      obj.addProperty("actions", actionArray);
+      return obj;
    }
 
 }//END OF Controller

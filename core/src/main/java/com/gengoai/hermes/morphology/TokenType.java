@@ -21,11 +21,8 @@ package com.gengoai.hermes.morphology;
 
 import com.gengoai.EnumValue;
 import com.gengoai.Registry;
-import com.gengoai.annotation.JsonHandler;
 import com.gengoai.annotation.Preload;
-import com.gengoai.json.JsonEntry;
 
-import java.lang.reflect.Type;
 import java.util.Collection;
 
 /**
@@ -33,7 +30,6 @@ import java.util.Collection;
  *
  * @author David B. Bracewell
  */
-@JsonHandler(value = TokenType.TokenTypeMarshaller.class, isHierarchical = false)
 @Preload
 public final class TokenType extends EnumValue<TokenType> {
    private static final long serialVersionUID = 1L;
@@ -115,10 +111,6 @@ public final class TokenType extends EnumValue<TokenType> {
     */
    public static final TokenType URL = make("URL");
 
-   private TokenType(String name) {
-      super(name);
-   }
-
    /**
     * Makes a new or retrieves an existing TokenType with the given name
     *
@@ -138,25 +130,13 @@ public final class TokenType extends EnumValue<TokenType> {
       return registry.values();
    }
 
+   private TokenType(String name) {
+      super(name);
+   }
+
    @Override
    protected Registry<TokenType> registry() {
       return registry;
-   }
-
-   /**
-    * The type Token type marshaller.
-    */
-   public static class TokenTypeMarshaller extends com.gengoai.json.JsonMarshaller<TokenType> {
-
-      @Override
-      protected TokenType deserialize(JsonEntry entry, Type type) {
-         return TokenType.make(entry.getAsString());
-      }
-
-      @Override
-      protected JsonEntry serialize(TokenType tokenType, Type type) {
-         return JsonEntry.from(tokenType.name());
-      }
    }
 
 }//END OF TokenType
