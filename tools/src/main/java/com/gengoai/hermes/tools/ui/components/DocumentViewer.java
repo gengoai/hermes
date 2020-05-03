@@ -113,15 +113,21 @@ public class DocumentViewer extends JPanel {
 
          $.addTab("Sentence List", new JScrollPane(tblSentences));
          $.setToolTipTextAt(SENTENCE_LIST_INDEX, "Ctrl+" + (SENTENCE_LIST_INDEX + 1));
+
+         $.setSelectedIndex(ANNOTATION_TABLE_INDEX);
       });
+
       var splitPane = with(new JSplitPane(JSplitPane.VERTICAL_SPLIT, documentView, tbPaneTools), $ -> {
          $.setDividerLocation(400);
          $.setDividerSize(5);
          $.setResizeWeight(1);
       });
+
       var ttlTagTitlePane = new MangoTitlePane("Tag Search", false, tagView);
       ttlTagTitlePane.setPreferredSize(dim(300, 0));
-      add(splitPaneHorizontal(0, panel($(NORTH, searchBar), $(CENTER, splitPane)), ttlTagTitlePane), CENTER);
+      var hzSplit = splitPaneHorizontal(0, panel($(NORTH, searchBar), $(CENTER, splitPane)), ttlTagTitlePane);
+      hzSplit.setDividerLocation(750);
+      add(hzSplit, CENTER);
       searchBar.setVisible(false);
       documentView.scrollToTopLeft();
       dlgFloatingWindow = new AnnotationFloatWindow(this);

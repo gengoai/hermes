@@ -133,7 +133,7 @@ public class SubTypeAnnotator extends Annotator {
       return a1;
    }
 
-   private List<Annotation> getAnnotations(HString fragment) {
+   protected List<Annotation> getAnnotations(HString fragment) {
       List<Annotation> annotations = new ArrayList<>();
       for(AnnotationType subType : subTypes) {
          annotations.addAll(fragment.annotations(subType));
