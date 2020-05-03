@@ -47,3 +47,6 @@ We provide two distributions:
 2.1+| Run Hermes local to one computer or with Spark in Standalone mode. Also have the option of running on your own Spark Cluster.
 |===
 
+
+== User Guide
+See https://www.gengoai.com/hermes/
