@@ -66,9 +66,9 @@ We provide two distributions:
 
 [grid="rows",stripes="odd"]
 |===
-| Local Mode - No Spark | http://download.com
+| Local Mode - No Spark | https://github.com/gengoai/hermes/releases/download/hermes-pom-1.0/hermes_no_spark.tar.gz
 2.1+e| Run Hermes local to one computer or bring your own Spark cluster.
-| Local Mode - No Spark  |
+| Local Mode - Spark  | https://github.com/gengoai/hermes/releases/download/hermes-pom-1.0/hermes_spark.tar.gz
 2.1+| Run Hermes local to one computer or with Spark in Standalone mode. Also have the option of running on your own Spark Cluster.
 |===
 

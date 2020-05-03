@@ -94,7 +94,8 @@ case $ACTION in
       spark "LOCAL" "$PROGRAM" "${@:3:}"
       ;;
     download)
-      download "$PROGRAM"
+      #download "$PROGRAM"
+      echo "Currently not implemented please see the Hermes releases on https://github.com/gengoai/hermes/releases to download"
       ;;
     help | -h | *)
       help
