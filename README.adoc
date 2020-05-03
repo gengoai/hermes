@@ -1,0 +1,49 @@
+image::https://github.com/gengoai/hermes/blob/master/docs/images/hermes.png?raw=true[align="center"]
+
+Hermes is a Natural Language Processing framework for Java inspired by the http://cs.nyu.edu/cs/faculty/grishman/tipster.html[Tipster Architecture]  and licensed under the http://cs.nyu.edu/cs/faculty/grishman/tipster.html[Apache License, Version 2.0] making it free for all uses.
+The goal of Hermes is to ease the development and use of NLP technologies by providing easy access to and construction of linguistic annotations on documents using multiple cores or multiple machines (using http://spark.apache.org/[Apache Spark]).
+Hermes is designed to aid users in analyzing large textual data sources making it easy define and perform complex workflows to extract, analyze, aggregate, and distill information and knowledge.
+Conceptually, text in Hermes is represented as a <<HString>> (short for Hermes String) which is a _CharSequence_ that provides access to the:
+
+* Overlapping or enclosed annotations.
+* Attributes defining aspects of the text.
+* Relations to other HStrings in the same document.
+* Character offsets within the document
+* Spatial relations (e.g. overlaps, encloses) with other HStrings.
+
+HStrings can be easily manipulated in a fluent manner or by using Lyre a robust extraction and transformation language that facilitates extraction, filtering, feature generation, counting, and transformation into other objects.
+Additionally, Hermes provides extraction based on:
+
+* Lexicons
+* Token-based regular expressions
+* Machine Learning
+* Trigger-based matching via the Caduceus relation-extraction relation.
+
+Throughout Hermes data can be stored and processed in-memory, on-disk, or distributed.
+This combination facilitates working with corpora of all sizes.
+Additionally, Hermes is tightly integrated with GengoAI’s https://github.com/gengoai/apollo[Apollo] machine learning framework allowing easy training of ml models, including word embeddings (e.g. Glove and Word2Vec), topics (Latent Dirichlet Allocation), and supervised classification of attributes (e.g. sentiment, part-of-speech).
+
+== Installation
+
+Hermes requires Java 11 and is available via the maven central repository at:
+
+[source,xml]
+----
+<dependency>
+     <groupId>com.gengoai</groupId>
+     <artifactId>hermes</artifactId>
+     <version>1.0</version>
+</dependency>
+----
+
+Additionally, you can download a Hermes distribution, which provides easy access to a number of command line and gui applications for processing, annotating, and performing analytics over documents and corpora.
+We provide two distributions:
+
+[grid="rows",stripes="odd"]
+|===
+| Local Mode - No Spark | https://github.com/gengoai/hermes/releases/download/hermes-pom-1.0/hermes_no_spark.tar.gz
+2.1+e| Run Hermes local to one computer or bring your own Spark cluster.
+| Local Mode - Spark  | https://github.com/gengoai/hermes/releases/download/hermes-pom-1.0/hermes_spark.tar.gz
+2.1+| Run Hermes local to one computer or with Spark in Standalone mode. Also have the option of running on your own Spark Cluster.
+|===
+
