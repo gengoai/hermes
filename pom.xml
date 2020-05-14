@@ -18,7 +18,8 @@
      ~ specific language governing permissions and limitations
      ~ under the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.gengoai</groupId>
@@ -58,6 +59,7 @@
         <module>core</module>
         <module>tools</module>
         <module>examples</module>
+        <module>wordnet</module>
     </modules>
     <dependencyManagement>
         <dependencies>
@@ -73,6 +75,11 @@
             </dependency>
             <dependency>
                 <groupId>com.gengoai</groupId>
+                <artifactId>hermes-wordnet</artifactId>
+                <version>1.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.gengoai</groupId>
                 <artifactId>mango</artifactId>
                 <version>1.1-SNAPSHOT</version>
             </dependency>
@@ -80,6 +87,17 @@
                 <groupId>com.gengoai</groupId>
                 <artifactId>mango-swing-ui</artifactId>
                 <version>1.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.gengoai</groupId>
+                <artifactId>apollo</artifactId>
+                <version>1.1-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>com.gengoai</groupId>
+                <artifactId>mango-annotations</artifactId>
+                <version>1.1-SNAPSHOT</version>
+                <scope>provided</scope>
             </dependency>
             <dependency>
                 <groupId>com.ibm.icu</groupId>
@@ -97,17 +115,6 @@
                 <artifactId>metainf-services</artifactId>
                 <version>1.8</version>
                 <optional>true</optional>
-                <scope>provided</scope>
-            </dependency>
-            <dependency>
-                <groupId>com.gengoai</groupId>
-                <artifactId>apollo</artifactId>
-                <version>1.1-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>com.gengoai</groupId>
-                <artifactId>mango-annotations</artifactId>
-                <version>1.1-SNAPSHOT</version>
                 <scope>provided</scope>
             </dependency>
             <dependency>

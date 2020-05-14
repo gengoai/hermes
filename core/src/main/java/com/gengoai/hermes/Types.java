@@ -25,6 +25,7 @@ import com.gengoai.Language;
 import com.gengoai.StringTag;
 import com.gengoai.Tag;
 import com.gengoai.annotation.Preload;
+import com.gengoai.apollo.math.linalg.NDArray;
 import com.gengoai.hermes.morphology.PartOfSpeech;
 import com.gengoai.hermes.morphology.TokenType;
 import com.gengoai.hermes.morphology.UniversalFeatureSet;
@@ -76,6 +77,7 @@ public interface Types {
     * RelationType defining dependency relations.
     */
    RelationType DEPENDENCY = RelationType.make("DEPENDENCY");
+   AttributeType<NDArray> EMBEDDING = AttributeType.make("EMBEDDING", NDArray.class);
    /**
     * Attribute defining the type of entity for Entity annotations
     */
@@ -145,6 +147,7 @@ public interface Types {
     * LocalDateTime attributed defining when a piece of content was published
     */
    AttributeType<LocalDateTime> PUBLICATION_DATE = AttributeType.make("PUBLICATION_DATE", LocalDateTime.class);
+   AttributeType<Double> SCORE = AttributeType.make("SCORE", double.class);
    /**
     * Sentence annotation type
     */
@@ -204,6 +207,7 @@ public interface Types {
     */
    AttributeType<Set<String>> WIKI_CATEGORIES = AttributeType.make("WIKI_CATEGORIES",
                                                                    parameterizedType(Set.class, String.class));
+   AnnotationType WORD_SENSE = AnnotationType.make("WORD_SENSE");
 
    /**
     * Annotation annotation type.

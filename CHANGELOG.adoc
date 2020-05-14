@@ -1,0 +1,20 @@
+= Hermes Changelog
+
+== Version 1.1
+
+Release Date:
+
+=== Machine Learning
+
+* Added HStringMLModel and BaseHStringMLModel for easing the creation of ml models that work over HString
+* SequenceTaggers are now HStringMLModels
+* EN Models updated to correspond to new HStringMLModel format and the new model io from Apollo
+
+=== Keyword Extraction
+
+* Added implementation of the TextRank algorithm
+
+== Version 1.0
+
+Release Date: 05/03/2020
+

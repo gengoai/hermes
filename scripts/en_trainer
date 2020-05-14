@@ -5,43 +5,63 @@ HERMES_RESOURCE_DIR=/data/hermes/
 CORPUS_DIR=/data/corpora/hermes_data
 
 declare -A models
-models[POS]="--model=$HERMES_RESOURCE_DIR/$LANG/models/pos.model.bin"
-models[PHRASE_CHUNK]="--model=$HERMES_RESOURCE_DIR/$LANG/models/phrase_chunk.model.bin"
-models[ENTITY]="--model=$HERMES_RESOURCE_DIR/$LANG/models/ner.model.bin"
+models[POS]="--model=$HERMES_RESOURCE_DIR/$LANG/models/pos/"
+models[PHRASE_CHUNK]="--model=$HERMES_RESOURCE_DIR/$LANG/models/phrase_chunk"
+models[ENTITY]="--model=$HERMES_RESOURCE_DIR/$LANG/models/ner"
+models[TF_ENTITY]="--model=/home/ik/test_model2"
 
 declare -A tagger
 tagger[POS]="--tagger=EN_POS"
 tagger[PHRASE_CHUNK]="--tagger=PHRASE_CHUNK"
 tagger[ENTITY]="--tagger=ENTITY"
+tagger[TF_ENTITY]="--tagger=TF_ENTITY"
 
 declare -A production
 production[POS]="--df=pos_opl::/$CORPUS_DIR/$LANG/part_of_speech/combined.txt"
 production[PHRASE_CHUNK]="--df=conll::$CORPUS_DIR/$LANG/phrase_chunk/combined.txt "
 production[ENTITY]="--df=hjson_opl::$CORPUS_DIR/$LANG/named_entity/ontonotes_all_entities.json_opl"
+production[TF_ENTITY]="--df=hjson_opl::$CORPUS_DIR/$LANG/named_entity/ontonotes_all_entities.json_opl"
 
 declare -A train
 train[POS]="--df=pos_opl::/$CORPUS_DIR/$LANG/part_of_speech/penn_treebank_train.txt"
 train[PHRASE_CHUNK]="--df=conll::$CORPUS_DIR/$LANG/phrase_chunk/train.txt "
 train[ENTITY]="--df=hjson_opl::$CORPUS_DIR/$LANG/named_entity/train.json_opl"
-#train[ENTITY]="--df=/data/corpora/hermes_data/ontonotes_ner --query $SPLIT=TRAIN"
+train[TF_ENTITY]="--df=hjson_opl::$CORPUS_DIR/$LANG/named_entity/train.json_opl"
 
 declare -A testd
 testd[POS]="--df=pos_opl::/$CORPUS_DIR/$LANG/part_of_speech/penn_treebank_test.txt"
 testd[PHRASE_CHUNK]="--df=conll::$CORPUS_DIR/$LANG/phrase_chunk/test.txt "
 testd[ENTITY]="--df=hjson_opl::$CORPUS_DIR/$LANG/named_entity/test.json_opl"
-#testd[ENTITY]="--df=/data/corpora/hermes_data/ontonotes_ner --query $SPLIT=TEST"
+testd[TF_ENTITY]="--df=hjson_opl::$CORPUS_DIR/$LANG/named_entity/test.json_opl"
 
 model=$(echo $1 | tr a-z A-Z)
-[ "$1" == "" ] && echo "Usage en_trainer [POS|PHRASE_CHUNK|ENTITY]"
+[ "$1" == "" ] && echo "Usage en_trainer [POS|PHRASE_CHUNK|ENTITY|TF_ENTITY]"
 ACTION=$(echo "${2:-PRODUCTION}" | tr a-z A-Z)
 
 case $ACTION in
+
 PRODUCTION)
   cd tools && jexec TaggerApp TRAIN ${production[$model]} ${tagger[$model]} ${models[$model]} "${@:2}"
   ;;
-TEST)
+
+EVALUATE)
   cd tools || exit
   jexec TaggerApp TRAIN ${train[$model]} ${tagger[$model]} ${models[$model]} "${@:2}"
   jexec TaggerApp TEST ${testd[$model]} ${tagger[$model]} ${models[$model]} --printCM=true "${@:2}"
   ;;
+
+TEST)
+  cd tools || exit
+  jexec TaggerApp TEST ${testd[$model]} ${tagger[$model]} ${models[$model]} --printCM=true "${@:2}"
+  ;;
+
+TRAIN)
+  cd tools || exit
+  jexec TaggerApp TRAIN ${train[$model]} ${tagger[$model]} ${models[$model]} "${@:2}"
+  ;;
+
+*)
+  echo "$ACTION is invalid please choose PRODUCTION, EVALUATE, TRAIN, or TEST"
+  ;;
+
 esac

@@ -103,7 +103,7 @@ public class ENStopWords extends StopWords {
       if(token.hasAttribute(Types.PART_OF_SPEECH)) {
          PartOfSpeech tag = token.pos();
          if(tag != null) {
-            if(tag.isInstance(PartOfSpeech.ADJECTIVE, PartOfSpeech.ADVERB, PartOfSpeech.NOUN, PartOfSpeech.VERB)) {
+            if(tag.isInstance(PartOfSpeech.ADJECTIVE, PartOfSpeech.ADVERB, PartOfSpeech.NOUN, PartOfSpeech.VERB, PartOfSpeech.PROPER_NOUN)) {
                return isStopWord(token.toString()) || isStopWord(token.getLemma());
             }
             return true;

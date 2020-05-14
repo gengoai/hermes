@@ -55,8 +55,9 @@ public interface POSCorrection {
             return "-RCB-";
       }
 
-      if(pos.equals("HYPH")) {
-         return ":";
+      switch(pos) {
+         case "HYPH":
+            return ":";
       }
 
       if(StringMatcher.HasLetterOrDigit.negate().test(word) && pos.startsWith("NN")) {

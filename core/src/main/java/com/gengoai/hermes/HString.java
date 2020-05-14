@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.gengoai.Language;
 import com.gengoai.Tag;
 import com.gengoai.Validation;
+import com.gengoai.apollo.math.linalg.NDArray;
+import com.gengoai.apollo.math.linalg.VectorCompositions;
 import com.gengoai.collection.Iterables;
 import com.gengoai.collection.Iterators;
 import com.gengoai.collection.tree.Span;
@@ -67,6 +69,13 @@ public interface HString extends Span, StringLike, Serializable {
          return Fragments.stringWrapper(o.toString());
       }
       return Fragments.orphanedAnnotation(AnnotationType.ROOT);
+   }
+
+   default NDArray embedding(){
+      if(hasAttribute(Types.EMBEDDING)){
+         return attribute(Types.EMBEDDING);
+      }
+      return VectorCompositions.Average.compose(tokenStream().map(t -> t.attribute(Types.EMBEDDING)).collect(Collectors.toList()));
    }
 
    /**

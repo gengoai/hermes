@@ -40,14 +40,14 @@ import java.util.Set;
  */
 public class DefaultMlEntityAnnotator extends SentenceLevelAnnotator {
    private static final Cache<Language, IOBTagger> cache = ResourceType.MODEL.createCache("Annotation.ML_ENTITY",
-                                                                                          "ner.model.bin");
+                                                                                          "ner");
    private static final long serialVersionUID = 1L;
 
    @Override
    protected void annotate(Annotation sentence) {
       IOBTagger tagger = cache.get(sentence.getLanguage());
       if(tagger != null) {
-         tagger.tag(sentence);
+         tagger.apply(sentence);
       }
    }
 

@@ -19,63 +19,98 @@
 
 package com.gengoai.hermes.tools.swing;
 
+import com.gengoai.SystemInfo;
+import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.corpus.Corpus;
 import com.gengoai.hermes.tools.ui.components.AnnotationLayer;
 import com.gengoai.hermes.tools.ui.components.AvailableAnnotationLayers;
 import com.gengoai.hermes.tools.ui.components.CorpusView;
 import com.gengoai.hermes.tools.ui.components.DocumentViewer;
 import com.gengoai.io.Resources;
+import com.gengoai.io.resource.Resource;
 import com.gengoai.string.Strings;
 import com.gengoai.swing.FontAwesome;
+import com.gengoai.swing.Menus;
 import com.gengoai.swing.component.MangoLoggingWindow;
 import com.gengoai.swing.component.MangoTabbedPane;
 import com.gengoai.swing.component.MangoTitlePane;
+import com.gengoai.swing.component.listener.FluentAction;
+import com.gengoai.swing.component.listener.SwingListeners;
 
-import javax.swing.Box;
-import javax.swing.JLabel;
-import javax.swing.JSplitPane;
+import javax.swing.*;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.util.ArrayList;
-import java.util.List;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.io.File;
 
 import static com.gengoai.swing.component.Components.dim;
 import static com.gengoai.swing.component.Components.label;
 
 public class AnnotationGUI extends HermesGUI {
+   private final JFileChooser openDialog = new JFileChooser();
    private JLabel lblCorpusName;
    private JLabel lblAnnotationLayer;
-   private List<DocumentViewer> tabs = new ArrayList<>();
+   private CorpusView corpusView;
    private MangoTabbedPane tbPane;
-   private CorpusView cView;
+   private final FluentAction openCorpus = SwingListeners.fluentAction("Open", this::onOpenCorpus)
+                                                         .mnemonic('O')
+                                                         .accelerator(KeyStroke.getKeyStroke('O',
+                                                                                             KeyEvent.CTRL_DOWN_MASK));
 
    public static void main(String[] args) {
       runApplication(AnnotationGUI::new, "AnnotationGUI", args);
    }
 
+   private void closeAll() {
+      for(int i = tbPane.getTabCount() - 1; i >= 0; i--) {
+         if(tbPane.getComponentAt(i) instanceof DocumentViewer) {
+            DocumentViewer documentViewer = Cast.as(tbPane.getComponentAt(i));
+            if(documentViewer.isDirty()) {
+               corpusView.getCorpus().update(documentViewer.getDocument());
+            }
+         }
+         tbPane.remove(i);
+      }
+   }
+
    @Override
    protected void initControls() throws Exception {
-      AvailableAnnotationLayers.loadFrom(Resources.fromClasspath("annotation/layers/"));
-      tbPane = new MangoTabbedPane();
-      cView = new CorpusView("/data/kant_corpus/",
-                             Corpus.open("/data/kant_corpus/"),
-                             AvailableAnnotationLayers.values());
-      cView.setOnDocumentOpen(this::openDocument);
-      tbPane.addTab("Corpus", cView);
+      openDialog.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+      openDialog.setCurrentDirectory(properties.get("open_dialog_directory").as(File.class,
+                                                                                new File(SystemInfo.USER_HOME)));
+      menuBar(Menus.menu("File", 'F',
+                         Menus.menuItem(openCorpus)));
 
-      MangoLoggingWindow loggingWindow = new MangoLoggingWindow();
-      loggingWindow.setMinimumSize(dim(0, 300));
-      var tp = new MangoTitlePane("Logs", true, loggingWindow);
-      tp.setVisible(false);
-      var sp = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tbPane, tp);
+      tbPane = new MangoTabbedPane();
+      tbPane.addTabClosedListener(t -> {
+         if(t == corpusView) {
+            closeAll();
+         } else {
+            DocumentViewer documentViewer = Cast.as(t);
+            if(documentViewer.isDirty()) {
+               corpusView.getCorpus().update(documentViewer.getDocument());
+            }
+         }
+      });
+      AvailableAnnotationLayers.loadFrom(Resources.fromClasspath("annotation/layers/"));
+      Resource layerDir = Resources.from("annotation_layers");
+      if(layerDir.exists()) {
+         AvailableAnnotationLayers.loadFrom(layerDir);
+      }
+
+      var loggingWindow = initLoggingWindow();
+      var sp = new JSplitPane(JSplitPane.VERTICAL_SPLIT,
+                              tbPane,
+                              loggingWindow);
       sp.setResizeWeight(0);
       sp.setContinuousLayout(true);
       setCenterComponent(sp);
 
       var btn = FontAwesome.WINDOW_MAXIMIZE.createButton(12);
       btn.addActionListener(a -> {
-         tp.setVisible(!tp.isVisible());
-         if(tp.isVisible()) {
+         loggingWindow.setVisible(!loggingWindow.isVisible());
+         if(loggingWindow.isVisible()) {
             sp.setDividerLocation(mainWindowFrame.getHeight() - 300);
          }
       });
@@ -86,7 +121,35 @@ public class AnnotationGUI extends HermesGUI {
                 Box.createHorizontalGlue(),
                 btn
                );
-      lblCorpusName.setText("Corpus: " + "/data/news_1m_sentences");
+   }
+
+   private MangoTitlePane initLoggingWindow() {
+      MangoLoggingWindow loggingWindow = new MangoLoggingWindow();
+      loggingWindow.setMinimumSize(dim(0, 300));
+      var tp = new MangoTitlePane("Logs", true, loggingWindow);
+      tp.setVisible(false);
+      return tp;
+   }
+
+   @Override
+   protected void onClose() throws Exception {
+      super.onClose();
+      if(openDialog.getSelectedFile() != null) {
+         properties.set("open_dialog_directory", openDialog.getSelectedFile().getParentFile().getAbsolutePath());
+      }
+   }
+
+   private void onOpenCorpus(ActionEvent a) {
+      if(openDialog.showDialog(null, "OK") == JFileChooser.APPROVE_OPTION) {
+         closeAll();
+         File dir = openDialog.getSelectedFile();
+         lblCorpusName.setText("Corpus: " + dir.getAbsolutePath());
+         corpusView = new CorpusView(dir.getAbsolutePath(),
+                                     Corpus.open(dir.getAbsolutePath()),
+                                     AvailableAnnotationLayers.values());
+         tbPane.addTab("Corpus", corpusView);
+         corpusView.setOnDocumentOpen(this::openDocument);
+      }
    }
 
    private void openDocument(String id, AnnotationLayer layer) {
@@ -98,7 +161,7 @@ public class AnnotationGUI extends HermesGUI {
          }
       }
       if(index == -1) {
-         tbPane.addTab(Strings.abbreviate(id, 7), new DocumentViewer(cView.getCorpus().getDocument(id), layer));
+         tbPane.addTab(Strings.abbreviate(id, 7), new DocumentViewer(corpusView.getCorpus().getDocument(id), layer));
          index = tbPane.getTabCount() - 1;
          tbPane.setToolTipTextAt(index, id);
       }

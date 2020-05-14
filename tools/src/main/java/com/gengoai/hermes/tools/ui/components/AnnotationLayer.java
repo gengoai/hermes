@@ -31,6 +31,7 @@ import com.gengoai.reflection.RMethod;
 import com.gengoai.reflection.Reflect;
 import com.gengoai.reflection.ReflectionException;
 import com.gengoai.reflection.TypeUtils;
+import com.gengoai.string.Strings;
 import com.gengoai.swing.Colors;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -85,7 +86,7 @@ public class AnnotationLayer implements Serializable {
                            @JsonProperty("annotationType") @NonNull AnnotationType annotationType,
                            @JsonProperty("attributeType") AttributeType<? extends Tag> attributeType,
                            @JsonProperty("includeAllTags") boolean includeTagValues,
-                           @JsonProperty("tags") @NonNull Map<String, String> tags
+                           @JsonProperty("tags") Map<String, String> tags
                           ) {
       this.name = name;
       this.annotationType = annotationType;
@@ -99,7 +100,11 @@ public class AnnotationLayer implements Serializable {
       tags.forEach((tagStr, colorStr) -> {
          Tag tag = getAttributeType().decode(tagStr);
          validTags.add(tag);
-         tagColors.put(tag, Colors.parseColor(colorStr));
+         if(Strings.isNullOrBlank(colorStr)) {
+            tagColors.put(tag, Colors.randomColor());
+         } else {
+            tagColors.put(tag, Colors.parseColor(colorStr));
+         }
       });
    }
 

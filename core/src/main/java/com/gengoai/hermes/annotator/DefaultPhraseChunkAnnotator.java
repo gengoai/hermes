@@ -44,17 +44,17 @@ public class DefaultPhraseChunkAnnotator extends SentenceLevelAnnotator {
 
    @Override
    protected void annotate(Annotation sentence) {
-      cache.get(sentence.getLanguage()).tag(sentence);
-   }
-
-   @Override
-   public String getProvider(Language language) {
-      return "IOBTagger v" + cache.get(language).getVersion();
+      cache.get(sentence.getLanguage()).apply(sentence);
    }
 
    @Override
    protected Set<AnnotatableType> furtherRequires() {
       return Collections.singleton(Types.PART_OF_SPEECH);
+   }
+
+   @Override
+   public String getProvider(Language language) {
+      return "IOBTagger v" + cache.get(language).getVersion();
    }
 
    @Override

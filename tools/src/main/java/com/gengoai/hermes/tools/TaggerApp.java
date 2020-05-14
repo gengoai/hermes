@@ -21,21 +21,22 @@ package com.gengoai.hermes.tools;
 
 import com.gengoai.Stopwatch;
 import com.gengoai.apollo.ml.DataSet;
-import com.gengoai.apollo.ml.evaluation.PerInstanceEvaluation;
+import com.gengoai.apollo.ml.evaluation.ClassifierEvaluation;
+import com.gengoai.apollo.ml.evaluation.Evaluation;
 import com.gengoai.apollo.ml.evaluation.SequenceLabelerEvaluation;
 import com.gengoai.apollo.ml.model.FitParameters;
+import com.gengoai.apollo.ml.model.ModelIO;
 import com.gengoai.application.Option;
 import com.gengoai.config.Config;
+import com.gengoai.conversion.Cast;
 import com.gengoai.conversion.Converter;
 import com.gengoai.conversion.TypeConversionException;
 import com.gengoai.hermes.corpus.DocumentCollection;
-import com.gengoai.hermes.en.ENPOSTrainer;
-import com.gengoai.hermes.ml.CoNLLEvaluation;
-import com.gengoai.hermes.ml.IOBTagger;
-import com.gengoai.hermes.ml.SequenceTagger;
-import com.gengoai.hermes.ml.trainer.EntityTrainer;
-import com.gengoai.hermes.ml.trainer.PhraseChunkTrainer;
-import com.gengoai.hermes.ml.trainer.SequenceTaggerTrainer;
+import com.gengoai.hermes.en.ENPOSTagger;
+import com.gengoai.hermes.ml.EntityTagger;
+import com.gengoai.hermes.ml.HStringMLModel;
+import com.gengoai.hermes.ml.NERTensorFlowModel;
+import com.gengoai.hermes.ml.PhraseChunkTagger;
 import com.gengoai.io.Resources;
 import com.gengoai.io.resource.Resource;
 import com.gengoai.io.resource.StringResource;
@@ -61,12 +62,11 @@ import static com.gengoai.tuple.Tuples.$;
 public class TaggerApp extends HermesCLI {
    private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
 
-   private static final Map<String, SequenceTaggerTrainer<?>> NAMED_TRAINERS =
-         Collections.unmodifiableMap(hashMapOf(
-               $("PHRASE_CHUNK", new PhraseChunkTrainer()),
-               $("ENTITY", new EntityTrainer()),
-               $("EN_POS", new ENPOSTrainer())
-                                              ));
+   private static final Map<String, HStringMLModel> NAMED_TRAINERS =
+         Collections.unmodifiableMap(hashMapOf($("PHRASE_CHUNK", new PhraseChunkTagger()),
+                                               $("ENTITY", new EntityTagger()),
+                                               $("TF_ENTITY", new NERTensorFlowModel()),
+                                               $("EN_POS", new ENPOSTagger())));
 
    @Option(description = "The specification or location the corpus or document collection to process.",
          name = "docFormat",
@@ -103,12 +103,12 @@ public class TaggerApp extends HermesCLI {
       return docs;
    }
 
-   private SequenceTaggerTrainer<?> getTrainer() {
+   private HStringMLModel getTrainer() {
       if(NAMED_TRAINERS.containsKey(sequenceTagger.toUpperCase())) {
          return NAMED_TRAINERS.get(sequenceTagger.toUpperCase());
       }
       try {
-         return Converter.convert(sequenceTagger, SequenceTaggerTrainer.class);
+         return Converter.convert(sequenceTagger, HStringMLModel.class);
       } catch(TypeConversionException e) {
          throw new RuntimeException(e);
       }
@@ -134,11 +134,11 @@ public class TaggerApp extends HermesCLI {
       switch(getPositionalArgs()[0].toUpperCase()) {
          case "TRAIN":
             checkState(Strings.isNotNullOrBlank(model), "No Model Specified!");
-            train(getDocumentCollection()).write(Resources.from(model));
+            ModelIO.save(train(getDocumentCollection()), Resources.from(model));
             break;
          case "TEST":
             checkState(Strings.isNotNullOrBlank(model), "No Model Specified!");
-            test(getDocumentCollection(), SequenceTagger.read(Resources.from(model)));
+            test(getDocumentCollection(), Cast.as(ModelIO.load(Resources.from(model))));
             break;
          case "PARAMETERS":
             logFitParameters(getTrainer().getFitParameters());
@@ -150,7 +150,7 @@ public class TaggerApp extends HermesCLI {
       }
    }
 
-   private void test(DocumentCollection testingCollection, SequenceTagger tagger) {
+   private void test(DocumentCollection testingCollection, HStringMLModel tagger) {
       logInfo(log, "========================================================");
       logInfo(log, "                         TEST");
       logInfo(log, "========================================================");
@@ -158,17 +158,11 @@ public class TaggerApp extends HermesCLI {
       logInfo(log, " Tagger: {0}", model);
       logInfo(log, "========================================================");
       logInfo(log, "Loading data set");
-      DataSet testingData = getTrainer().createDataset(testingCollection);
-      SequenceLabelerEvaluation evaluation;
-      if(tagger instanceof IOBTagger) {
-         evaluation = new CoNLLEvaluation(tagger.getOutputName());
-      } else {
-         evaluation = new PerInstanceEvaluation(tagger.getOutputName());
-      }
+      DataSet testingData = tagger.getDataGenerator().generate(testingCollection.parallelStream());
+      Evaluation evaluation = tagger.getEvaluator();
       Stopwatch stopwatch = Stopwatch.createStarted();
-      logInfo(log, "Testing Started at {0}",
-              LocalDateTime.now().format(TIME_FORMATTER));
-      evaluation.evaluate(tagger.getLabeler(), testingData);
+      logInfo(log, "Testing Started at {0}", LocalDateTime.now().format(TIME_FORMATTER));
+      evaluation.evaluate(tagger.delegate(), testingData);
       stopwatch.stop();
       logInfo(log, "Testing Stopped at {0} ({1})",
               LocalDateTime.now().format(TIME_FORMATTER),
@@ -177,7 +171,13 @@ public class TaggerApp extends HermesCLI {
       Resource stdOut = new StringResource();
       try(OutputStream os = stdOut.outputStream();
           PrintStream printStream = new PrintStream(os)) {
-         evaluation.output(printStream, printCM);
+         if(evaluation instanceof SequenceLabelerEvaluation) {
+            ((SequenceLabelerEvaluation) evaluation).output(printStream, printCM);
+         } else if(evaluation instanceof ClassifierEvaluation) {
+            ((ClassifierEvaluation) evaluation).output(printStream, printCM);
+         } else {
+            evaluation.output(printStream);
+         }
       } catch(IOException e) {
          throw new RuntimeException(e);
       }
@@ -188,8 +188,8 @@ public class TaggerApp extends HermesCLI {
       }
    }
 
-   private SequenceTagger train(DocumentCollection trainingData) {
-      SequenceTaggerTrainer<?> trainer = getTrainer();
+   private HStringMLModel train(DocumentCollection trainingData) {
+      HStringMLModel trainer = getTrainer();
 
       //--Fill in parameters based on command line settings
       FitParameters<?> parameters = trainer.getFitParameters();
@@ -203,7 +203,7 @@ public class TaggerApp extends HermesCLI {
       logInfo(log, "                         Train");
       logInfo(log, "========================================================");
       logInfo(log, "   Data: {0}", documentCollectionSpec);
-      if(Strings.isNotNullOrBlank(query)){
+      if(Strings.isNotNullOrBlank(query)) {
          logInfo(log, "  Query: {0}", query);
       }
       logInfo(log, "Trainer: {0}", sequenceTagger);
@@ -214,11 +214,11 @@ public class TaggerApp extends HermesCLI {
       logInfo(log,
               "Training Started at {0}",
               LocalDateTime.now().format(TIME_FORMATTER));
-      SequenceTagger tagger = trainer.fit(getDocumentCollection(), parameters);
+      trainer.estimate(trainingData);
       stopwatch.stop();
       logInfo(log, "Training Stopped at {0} ({1})",
               LocalDateTime.now().format(TIME_FORMATTER),
               stopwatch);
-      return tagger;
+      return trainer;
    }
 }//END OF TaggerApp

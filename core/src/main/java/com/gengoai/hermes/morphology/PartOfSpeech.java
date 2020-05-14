@@ -228,6 +228,8 @@ public final class PartOfSpeech implements Tag, Serializable {
          return SYMBOL;
       } else if(nameOrTag.equalsIgnoreCase("ANY")) {
          return ANY;
+      }  else if(nameOrTag.equalsIgnoreCase("URL")) {
+         return NN;
       }
       throw new IllegalArgumentException(nameOrTag + " is not a known PartOfSpeech");
    }
@@ -328,10 +330,13 @@ public final class PartOfSpeech implements Tag, Serializable {
    @Override
    public boolean isInstance(@NonNull Tag tag) {
       if(tag == ANY) {
-         return false;
+         return true;
       }
       if(tag instanceof PartOfSpeech) {
          PartOfSpeech p = this;
+         if(p == PROPER_NOUN && tag == NOUN) {
+            return true;
+         }
          while(p != null) {
             if(p.name().equalsIgnoreCase(tag.name())) {
                return true;
@@ -353,7 +358,7 @@ public final class PartOfSpeech implements Tag, Serializable {
     * @return True if this PartOfSpeech is a Noun
     */
    public boolean isNoun() {
-      return isInstance(NOUN);
+      return isInstance(NOUN) || isInstance(PROPER_NOUN);
    }
 
    /**

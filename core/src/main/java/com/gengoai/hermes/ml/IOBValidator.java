@@ -1,7 +1,7 @@
 package com.gengoai.hermes.ml;
 
-import com.gengoai.apollo.ml.observation.Observation;
 import com.gengoai.apollo.ml.model.sequence.SequenceValidator;
+import com.gengoai.apollo.ml.observation.Observation;
 
 /**
  * <p>Sequence validator ensuring correct IOB tag output</p>
@@ -10,6 +10,7 @@ import com.gengoai.apollo.ml.model.sequence.SequenceValidator;
  */
 public class IOBValidator implements SequenceValidator {
    private static final long serialVersionUID = 1L;
+   public static final IOBValidator INSTANCE = new IOBValidator();
 
    @Override
    public boolean isValid(String label, String previousLabel, Observation instance) {

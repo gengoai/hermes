@@ -19,7 +19,7 @@
 
 package com.gengoai.hermes.ml;
 
-import com.gengoai.apollo.ml.DataSetGenerator;
+import com.gengoai.apollo.ml.Datum;
 import com.gengoai.apollo.ml.model.Model;
 import com.gengoai.apollo.ml.observation.Sequence;
 import com.gengoai.hermes.Annotation;
@@ -35,7 +35,7 @@ import lombok.NonNull;
  *
  * @author David B. Bracewell
  */
-public class POSTagger extends SequenceTagger {
+public class POSTagger extends BaseHStringMLModel {
    private static final long serialVersionUID = 1L;
 
    /**
@@ -43,30 +43,18 @@ public class POSTagger extends SequenceTagger {
     *
     * @param inputGenerator the generator to convert HString into input for the model
     * @param labeler        the model to use to perform the part-of-speech tagging
-    * @param version        the version of the model to be used as part of the provider of the part-of-speech.
     */
-   public POSTagger(@NonNull DataSetGenerator<HString> inputGenerator,
-                    @NonNull Model labeler,
-                    @NonNull String version) {
-      super(inputGenerator, labeler, version);
-   }
-
-   /**
-    * Methodology for attaching POS to the token.
-    *
-    * @param sentence the sentence
-    * @param result   the result
-    */
-   protected void addPOS(Annotation sentence, Sequence<?> result) {
-      for(int i = 0; i < sentence.tokenLength(); i++) {
-         Annotation token = sentence.tokenAt(i);
-         token.put(Types.PART_OF_SPEECH, PartOfSpeech.valueOf(result.get(i).asVariable().getName()));
-      }
+   public POSTagger(@NonNull HStringDataSetGenerator inputGenerator, @NonNull Model labeler) {
+      super(labeler, inputGenerator);
    }
 
    @Override
-   public final void tag(Annotation sentence) {
-      addPOS(sentence, labeler.transform(inputGenerator.apply(sentence)).get(outputName).asSequence());
+   protected void onEstimate(HString sentence, Datum result) {
+      Sequence<?> sequence = result.get(getOutput()).asSequence();
+      for(int i = 0; i < sentence.tokenLength(); i++) {
+         Annotation token = sentence.tokenAt(i);
+         token.put(Types.PART_OF_SPEECH, PartOfSpeech.valueOf(sequence.get(i).asVariable().getName()));
+      }
    }
 
 }// END OF POSTagger

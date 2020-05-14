@@ -21,12 +21,11 @@
 
 package com.gengoai.hermes.ml;
 
+import com.gengoai.apollo.ml.Datum;
+import com.gengoai.apollo.ml.evaluation.Evaluation;
 import com.gengoai.apollo.ml.model.Model;
-import com.gengoai.apollo.ml.observation.Sequence;
-import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.AnnotationType;
 import com.gengoai.hermes.HString;
-import com.gengoai.hermes.Types;
 import lombok.Getter;
 import lombok.NonNull;
 
@@ -37,7 +36,7 @@ import lombok.NonNull;
  *
  * @author David B. Bracewell
  */
-public class IOBTagger extends SequenceTagger {
+public class IOBTagger extends BaseHStringMLModel {
    private static final long serialVersionUID = 1L;
    /**
     * The Annotation type.
@@ -51,53 +50,22 @@ public class IOBTagger extends SequenceTagger {
     * @param inputGenerator the generator to convert HString into input for the model
     * @param annotationType the type of annotation to add during tagging.
     * @param labeler        the model to use to perform the IOB tagging
-    * @param version        the version of the model to be used as part of the provider of the annotation.
     */
    public IOBTagger(@NonNull HStringDataSetGenerator inputGenerator,
                     @NonNull AnnotationType annotationType,
-                    @NonNull Model labeler,
-                    @NonNull String version) {
-      super(inputGenerator, labeler, version);
+                    @NonNull Model labeler) {
+      super(labeler, inputGenerator);
       this.annotationType = annotationType;
    }
 
-   /**
-    * Tags the given Sentence adding annotations of a predefined type and setting the tag and confidence based on the
-    * underlying Model using the IOB tag scheme.
-    *
-    * @param sentence the sentence to tag
-    */
    @Override
-   public void tag(@NonNull Annotation sentence) {
-      Sequence<?> result = labeler.transform(inputGenerator.apply(sentence))
-                                  .get(outputName)
-                                  .asSequence();
-      for(int i = 0; i < sentence.tokenLength(); ) {
-         String label = result.get(i).asVariable().getName();
-         double score = result.get(i).asVariable().getValue();
-         if(label.equals("O")) {
-            i++;
-         } else {
-            Annotation start = sentence.tokenAt(i);
-            String type = label.substring(2);
-            double p = score;
-            i++;
-            final String insideType = "I-" + type;
-            while(i < sentence.tokenLength() && result.get(i).asVariable().getName().equals(insideType)) {
-               p *= score;
-               i++;
-            }
-            Annotation end = sentence.tokenAt(i - 1);
-            HString span = start.union(end);
-            Annotation entity = sentence.document()
-                                        .annotationBuilder(annotationType)
-                                        .bounds(span)
-                                        .createAttached();
-            entity.put(annotationType.getTagAttribute(),
-                       annotationType.getTagAttribute().decode(type));
-            entity.put(Types.CONFIDENCE, p);
-         }
-      }
+   public Evaluation getEvaluator() {
+      return new CoNLLEvaluation(getOutput());
+   }
+
+   @Override
+   protected void onEstimate(HString sentence, Datum datum) {
+      IOB.decode(sentence, datum.get(getOutput()).asSequence(), annotationType);
    }
 
 }// END OF IOBTagger

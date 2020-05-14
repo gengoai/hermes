@@ -43,7 +43,7 @@ public class DefaultCategoryAnnotator extends Annotator {
       Lexicon lexicon = cache.get(document.getLanguage());
       lexicon.extract(document)
              .forEach(h -> {
-                if(h.pos().isNoun()) {
+                if(!h.pos().isVerb()) {
                    for(Annotation token : h.tokens()) {
                       token.putAdd(Types.CATEGORY, lexicon.match(h).stream()
                                                           .map(LexiconEntry::getTag)

@@ -42,15 +42,14 @@ public class DefaultPartOfSpeechAnnotator extends SentenceLevelAnnotator {
    private static final Cache<Language, POSTagger> cache = ResourceType.MODEL.createCache("Attribute.PART_OF_SPEECH",
                                                                                           "pos");
 
+   @Override
+   protected void annotate(Annotation sentence) {
+      cache.get(sentence.getLanguage()).apply(sentence);
+   }
 
    @Override
    public String getProvider(Language language) {
       return "POSTagger v" + cache.get(language).getVersion();
-   }
-
-   @Override
-   protected void annotate(Annotation sentence) {
-      cache.get(sentence.getLanguage()).tag(sentence);
    }
 
    @Override

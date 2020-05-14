@@ -59,6 +59,7 @@ public class DocumentViewer extends JPanel {
    public static final int DOC_ATTRIBUTES_TABLE_INDEX = 0;
    public static final int SEARCH_RESULTS_INDEX = 2;
    public static final int SENTENCE_LIST_INDEX = 4;
+   @Getter
    final Document document;
    final HStringViewer documentView;
    final JTabbedPane tbPaneTools;
@@ -126,7 +127,10 @@ public class DocumentViewer extends JPanel {
       var ttlTagTitlePane = new MangoTitlePane("Tag Search", false, tagView);
       ttlTagTitlePane.setPreferredSize(dim(300, 0));
       var hzSplit = splitPaneHorizontal(0, panel($(NORTH, searchBar), $(CENTER, splitPane)), ttlTagTitlePane);
-      hzSplit.setDividerLocation(750);
+      addComponentListener(SwingListeners.componentResized(e -> {
+         hzSplit.setDividerLocation(0.80);
+         splitPane.setDividerLocation(0.80);
+      }));
       add(hzSplit, CENTER);
       searchBar.setVisible(false);
       documentView.scrollToTopLeft();
@@ -355,6 +359,7 @@ public class DocumentViewer extends JPanel {
          for(Annotation sentence : document.sentences()) {
             $.addRow(sentence.<Integer>attribute(Types.INDEX), sentence);
          }
+         $.setComponentPopupMenu(Menus.popupMenu(controller.INSPECT_SENTENCE));
       });
    }
 

@@ -20,6 +20,7 @@
 package com.gengoai.hermes;
 
 import com.gengoai.Language;
+import com.gengoai.apollo.ml.model.ModelIO;
 import com.gengoai.cache.Cache;
 import com.gengoai.config.Config;
 import com.gengoai.conversion.Cast;
@@ -70,11 +71,13 @@ public enum ResourceType {
    /**
     * Machine Learning Model resources
     */
-   MODEL("models", ".model.bin") {
+   MODEL("models") {
       @Override
-      public <T> T load(@NonNull String configKey, @NonNull String resourceName, @NonNull Language language) {
+      public <T> T load(@NonNull String configKey,
+                        @NonNull String resourceName,
+                        @NonNull Language language) {
          return Cast.as(locate(configKey, resourceName, language)
-                              .map(Unchecked.function(Resource::readObject))
+                              .map(Unchecked.function(ModelIO::load))
                               .orElseThrow(() -> new RuntimeException(resourceName + " does not exist.")));
       }
    },
@@ -104,7 +107,9 @@ public enum ResourceType {
 
    ResourceType(String configName, String... fileExtensions) {
       this.type = configName;
-      this.fileExtensions = fileExtensions;
+      this.fileExtensions = fileExtensions.length > 0
+                            ? fileExtensions
+                            : new String[]{Strings.EMPTY};
    }
 
    /**

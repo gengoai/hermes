@@ -24,8 +24,6 @@ package com.gengoai.hermes.format.conll;
 
 import com.gengoai.StringTag;
 import com.gengoai.Tag;
-import com.gengoai.conversion.Converter;
-import com.gengoai.conversion.TypeConversionException;
 import com.gengoai.hermes.*;
 import com.gengoai.hermes.format.CoNLLColumnProcessor;
 import com.gengoai.hermes.format.CoNLLRow;
@@ -98,16 +96,11 @@ public abstract class IOBFieldProcessor implements CoNLLColumnProcessor {
 
                String normalizedTag = normalizeTag(tag);
                if(Strings.isNotNullOrBlank(normalizedTag)) {
-                  try {
-                     var a = document.createAnnotation(annotationType,
-                                                       start,
-                                                       end,
-                                                       hashMapOf($(attributeType,
-                                                                   Converter.convert(normalizedTag,
-                                                                                     attributeType.getValueType()))));
-                  } catch(TypeConversionException e) {
-                     throw new RuntimeException(e);
-                  }
+                  var a = document.createAnnotation(annotationType,
+                                                    start,
+                                                    end,
+                                                    hashMapOf($(attributeType,
+                                                                attributeType.decode(normalizedTag))));
                }
             }
          }

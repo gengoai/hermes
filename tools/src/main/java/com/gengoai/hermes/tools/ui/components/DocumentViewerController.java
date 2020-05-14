@@ -82,7 +82,11 @@ final class DocumentViewerController {
          .accelerator(KeyStroke.getKeyStroke(KeyEvent.VK_I, 0))
          .largeIcon(FontAwesome.INFO.createIcon(LARGE_ICON_SIZE))
          .smallIcon(FontAwesome.INFO.createIcon(SMALL_ICON_SIZE));
-
+   public final FluentAction INSPECT_SENTENCE = fluentAction("Inspect",
+                                                    a -> inspectSentence())
+         .mnemonic(KeyEvent.VK_I)
+         .largeIcon(FontAwesome.INFO.createIcon(LARGE_ICON_SIZE))
+         .smallIcon(FontAwesome.INFO.createIcon(SMALL_ICON_SIZE));
    public final FluentAction SEARCH_WITH = fluentAction("Search With...",
                                                         a -> onActionSearchWith())
          .mnemonic(KeyEvent.VK_S)
@@ -260,6 +264,14 @@ final class DocumentViewerController {
          html.append(" >").append(column).append("</td>");
       }
       html.append("</tr>");
+   }
+
+   private void inspectSentence(){
+      if(_viewer.tblSentences.getSelectedRow() >= 0){
+         Annotation sentence = _viewer.document.sentences().get(_viewer.tblSentences.getSelectedRow());
+         _viewer.documentView.setSelectionRange(sentence.start(), sentence.end());
+         inspectSelectedText();
+      }
    }
 
    private void inspectSelectedText() {

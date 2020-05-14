@@ -19,8 +19,15 @@
 
 package com.gengoai.hermes;
 
+import com.gengoai.Lazy;
 import com.gengoai.Tag;
 import com.gengoai.annotation.Preload;
+
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A basic set of categories to describe words which is useful for inferring higher level concepts.
@@ -500,9 +507,29 @@ public enum BasicCategories implements Tag {
    TRIBES(NATIONALITIES);
 
    private BasicCategories parent;
+   private Lazy<List<BasicCategories>> children = new Lazy<>(() -> Stream.of(values())
+                                                                         .filter(c -> c.parent == this)
+                                                                         .collect(Collectors.toList()));
+   private Lazy<List<BasicCategories>> ancestors = new Lazy<>(() -> {
+      LinkedList<BasicCategories> ancestors = new LinkedList<>();
+      BasicCategories p = parent;
+      while(p != null &&      p.parent != null) {
+         ancestors.addLast(p);
+         p = p.parent;
+      }
+      return ancestors;
+   });
 
    BasicCategories(BasicCategories parent) {
       this.parent = parent;
+   }
+
+   public List<BasicCategories> ancestors() {
+      return Collections.unmodifiableList(ancestors.get());
+   }
+
+   public List<BasicCategories> children() {
+      return Collections.unmodifiableList(children.get());
    }
 
    @Override
@@ -524,7 +551,7 @@ public enum BasicCategories implements Tag {
    }
 
    @Override
-   public Tag parent() {
+   public BasicCategories parent() {
       return parent;
    }
 
