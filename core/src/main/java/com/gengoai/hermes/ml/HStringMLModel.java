@@ -54,7 +54,7 @@ public interface HStringMLModel extends Model, SerializableFunction<HString, HSt
     * @param documentCollection the document collection
     */
    default void estimate(@NonNull DocumentCollection documentCollection) {
-      delegate().estimate(getDataGenerator().generate(documentCollection.parallelStream()));
+      delegate().estimate(transform(documentCollection));
    }
 
    @Override
@@ -70,6 +70,10 @@ public interface HStringMLModel extends Model, SerializableFunction<HString, HSt
     * @return the data generator
     */
    HStringDataSetGenerator getDataGenerator();
+
+   default DataSet transform(@NonNull DocumentCollection documentCollection){
+      return getDataGenerator().generate(documentCollection.parallelStream());
+   }
 
    default Evaluation getEvaluator() {
       return new PerInstanceEvaluation(getOutput());

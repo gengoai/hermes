@@ -10,10 +10,7 @@ import com.gengoai.collection.Iterables;
 import com.gengoai.collection.Iterators;
 import com.gengoai.collection.tree.Span;
 import com.gengoai.conversion.Cast;
-import com.gengoai.hermes.morphology.Lemmatizers;
-import com.gengoai.hermes.morphology.PartOfSpeech;
-import com.gengoai.hermes.morphology.Stemmers;
-import com.gengoai.hermes.morphology.UniversalFeatureSet;
+import com.gengoai.hermes.morphology.*;
 import com.gengoai.reflection.TypeUtils;
 import com.gengoai.stream.Streams;
 import com.gengoai.string.StringLike;
@@ -69,13 +66,6 @@ public interface HString extends Span, StringLike, Serializable {
          return Fragments.stringWrapper(o.toString());
       }
       return Fragments.orphanedAnnotation(AnnotationType.ROOT);
-   }
-
-   default NDArray embedding(){
-      if(hasAttribute(Types.EMBEDDING)){
-         return attribute(Types.EMBEDDING);
-      }
-      return VectorCompositions.Average.compose(tokenStream().map(t -> t.attribute(Types.EMBEDDING)).collect(Collectors.toList()));
    }
 
    /**
@@ -516,6 +506,16 @@ public interface HString extends Span, StringLike, Serializable {
     * @return the document that this HString is associated with
     */
    Document document();
+
+   default NDArray embedding() {
+      if(hasAttribute(Types.EMBEDDING)) {
+         return attribute(Types.EMBEDDING);
+      }
+      return VectorCompositions.Average.compose(tokenStream()
+                                                      .filter(StopWords.isContentWord())
+                                                      .map(t -> t.attribute(Types.EMBEDDING))
+                                                      .collect(Collectors.toList()));
+   }
 
    /**
     * @return all annotations enclosed by this HString

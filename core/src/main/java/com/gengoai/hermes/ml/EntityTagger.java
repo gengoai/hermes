@@ -140,7 +140,8 @@ public class EntityTagger extends IOBTagger {
 
    @Override
    public void estimate(@NonNull DocumentCollection documentCollection) {
-      estimate(documentCollection.annotate(Types.CATEGORY).asDataSet(getDataGenerator()));
+      estimate(documentCollection.annotate(Types.CATEGORY,
+                                           Types.PHRASE_CHUNK).asDataSet(getDataGenerator()));
    }
 
 }//END OF EntityTagger

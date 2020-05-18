@@ -22,63 +22,141 @@ package com.gengoai.hermes.ml;
 import com.gengoai.Language;
 import com.gengoai.apollo.math.linalg.NDArray;
 import com.gengoai.apollo.math.linalg.NDArrayFactory;
+import com.gengoai.apollo.ml.DataSet;
 import com.gengoai.apollo.ml.Datum;
 import com.gengoai.apollo.ml.encoder.Encoder;
 import com.gengoai.apollo.ml.encoder.FixedEncoder;
+import com.gengoai.apollo.ml.encoder.IndexEncoder;
 import com.gengoai.apollo.ml.evaluation.Evaluation;
 import com.gengoai.apollo.ml.feature.Featurizer;
 import com.gengoai.apollo.ml.model.LabelType;
 import com.gengoai.apollo.ml.model.Model;
 import com.gengoai.apollo.ml.model.TensorFlowModel;
+import com.gengoai.apollo.ml.observation.Sequence;
 import com.gengoai.apollo.ml.observation.Variable;
 import com.gengoai.apollo.ml.observation.VariableSequence;
 import com.gengoai.apollo.ml.transform.Transformer;
+import com.gengoai.apollo.ml.transform.vectorizer.CountVectorizer;
 import com.gengoai.apollo.ml.transform.vectorizer.IndexingVectorizer;
-import com.gengoai.collection.Sets;
-import com.gengoai.conversion.Cast;
 import com.gengoai.hermes.Annotation;
+import com.gengoai.hermes.BasicCategories;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Types;
+import com.gengoai.hermes.corpus.DocumentCollection;
+import com.gengoai.hermes.ml.feature.Features;
 import lombok.NonNull;
 import org.tensorflow.SavedModelBundle;
 import org.tensorflow.Tensor;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.gengoai.hermes.ResourceType.WORD_LIST;
 
 public class NERTensorFlowModel extends TensorFlowModel implements HStringMLModel {
 
-   private static Transformer createTransformer() {
-      IndexingVectorizer glove = new IndexingVectorizer(
-            new FixedEncoder(WORD_LIST.locate("glove", Language.ENGLISH).orElseThrow(), "--UNKNOWN--"));
-      glove.source("words");
-      IndexingVectorizer charIndexer = new IndexingVectorizer("-PAD-");
-      charIndexer.source("chars");
-      IndexingVectorizer posIndexer = new IndexingVectorizer("-PAD-");
-      posIndexer.source("pos");
-      //      IndexingVectorizer phraseChunkIndexer = new IndexingVectorizer("-PAD-");
-      //      phraseChunkIndexer.source("chunk");
-      IndexingVectorizer labelVectorizer = new IndexingVectorizer("O");
-      labelVectorizer.source("label");
-      return new Transformer(List.of(glove, charIndexer, posIndexer, labelVectorizer));
-   }
-
    public NERTensorFlowModel() {
-      super(createTransformer(),
-            Sets.linkedHashSetOf("words", "chars"),
-            Collections.singleton("label"));
+      super(Collections.singleton("label"),
+            Map.of("words", new FixedEncoder(WORD_LIST.locate("glove", Language.ENGLISH).orElseThrow(), "--UNKNOWN--"),
+                   "chars", new IndexEncoder("-PAD-"),
+                   "pos", new IndexEncoder("-PAD-"),
+                   "word_shape", new IndexEncoder("-PAD-"),
+                   "features", new IndexEncoder("-PAD-"),
+                   "chunk", new IndexEncoder("O"),
+                   "category", new IndexEncoder(BasicCategories.ROOT.label()),
+                   "label", new IndexEncoder("O")));
    }
 
    @Override
    public HString apply(HString hString) {
-      for(Annotation sentence : hString.sentences()) {
+      //Perform inference over the entire document at once
+      List<Annotation> sentences = hString.sentences();
+      int maxSentenceLength = sentences.stream().mapToInt(HString::tokenLength).max().orElse(1);
+      NDArray words = NDArrayFactory.ND.array(sentences.size(), maxSentenceLength);
+      NDArray chars = NDArrayFactory.ND.array(sentences.size(), maxSentenceLength, 10);
+      NDArray pos = NDArrayFactory.ND.array(sentences.size(), maxSentenceLength);
+      NDArray word_shape = NDArrayFactory.ND.array(sentences.size(), maxSentenceLength);
+      NDArray chunk = NDArrayFactory.ND.array(sentences.size(), maxSentenceLength, encoders.get("chunk").size());
+      NDArray category = NDArrayFactory.ND.array(sentences.size(), maxSentenceLength, encoders.get("category").size());
+      for(int i = 0; i < sentences.size(); i++) {
+         Annotation sentence = sentences.get(i);
          Datum datum = transform(getDataGenerator().apply(sentence));
-         IOB.decode(sentence, datum.get(getOutput()).asSequence(), Types.ENTITY);
+         words.setRow(i, datum.get("words").asNDArray().padRowPost(maxSentenceLength));
+         word_shape.setRow(i, datum.get("word_shape").asNDArray().padRowPost(maxSentenceLength));
+         chars.setMatrix(0, i, datum.get("chars").asNDArray().padPost(maxSentenceLength, 10));
+         pos.setRow(i, datum.get("pos").asNDArray().padRowPost(maxSentenceLength));
+         chunk.setMatrix(0, i, datum.get("chunk").asNDArray());
+         category.setMatrix(0, i, datum.get("category").asNDArray());
+      }
+      NDArray result = process(getTensorFlowModel(),
+                               words,
+                               chars,
+                               pos,
+                               chunk,
+                               word_shape,
+                               category);
+
+      for(int i = 0; i < result.channels(); i++) {
+         Annotation sentence = sentences.get(i);
+         IOB.decode(sentence, decode(result.slice(i)), Types.ENTITY);
       }
       return hString;
+   }
+
+   protected Transformer createTransformer() {
+      IndexingVectorizer glove = new IndexingVectorizer(encoders.get("words"));
+      glove.source("words");
+
+      IndexingVectorizer charIndexer = new IndexingVectorizer(encoders.get("chars"));
+      charIndexer.source("chars");
+
+      IndexingVectorizer posIndexer = new IndexingVectorizer(encoders.get("pos"));
+      posIndexer.source("pos");
+
+      CountVectorizer phraseChunkIndexer = new CountVectorizer(encoders.get("chunk"));
+      phraseChunkIndexer.source("chunk");
+
+      CountVectorizer catVectorizer = new CountVectorizer(encoders.get("category"));
+      catVectorizer.source("category");
+
+      CountVectorizer featureVectorizer = new CountVectorizer(encoders.get("features"));
+      featureVectorizer.source("features");
+
+      IndexingVectorizer labelVectorizer = new IndexingVectorizer(encoders.get("label"));
+      labelVectorizer.source("label");
+
+      IndexingVectorizer shapeVectorizer = new IndexingVectorizer(encoders.get("word_shape"));
+      shapeVectorizer.source("word_shape");
+
+      return new Transformer(List.of(glove,
+                                     charIndexer,
+                                     posIndexer,
+                                     phraseChunkIndexer,
+                                     catVectorizer,
+                                     shapeVectorizer,
+                                     featureVectorizer,
+                                     labelVectorizer));
+   }
+
+   private Sequence<?> decode(NDArray slice) {
+      VariableSequence sequence = new VariableSequence();
+      Encoder encoder = encoders.get(getOutput());
+      String previous = "O";
+      for(int word = 0; word < slice.rows(); word++) {
+         NDArray matrix = slice.getRow(word);
+         int l = (int) matrix.argmax();
+         String tag = encoder.decode(l);
+         while(!IOBValidator.INSTANCE.isValid(tag, previous, matrix)) {
+            matrix.set(l, Double.NEGATIVE_INFINITY);
+            l = (int) matrix.argmax();
+            tag = encoder.decode(l);
+         }
+         previous = tag;
+         sequence.add(Variable.real(tag, matrix.get(l)));
+      }
+      return sequence;
    }
 
    @Override
@@ -89,15 +167,29 @@ public class NERTensorFlowModel extends TensorFlowModel implements HStringMLMode
    @Override
    public HStringDataSetGenerator getDataGenerator() {
       return HStringDataSetGenerator.builder(Types.SENTENCE)
-                                    .tokenSequence("words", Featurizer.valueFeaturizer(HString::toLowerCase))
+                                    .tokenSequence("words",
+                                                   Featurizer.valueFeaturizer(HString::toLowerCase))
                                     .tokenSequence("chars",
                                                    Featurizer.booleanFeaturizer(h -> h.charNGrams(1)
                                                                                       .stream()
                                                                                       .map(HString::toLowerCase)
                                                                                       .collect(Collectors.toList())))
-                                    .tokenSequence("pos", Featurizer.valueFeaturizer(h -> h.pos().name()))
-                                    //                                    .source("chunk", IOB.encoder(Types.PHRASE_CHUNK))
-                                    .source("label", IOB.encoder(Types.ENTITY))
+                                    .tokenSequence("pos",
+                                                   Featurizer.valueFeaturizer(h -> h.pos().name()))
+                                    .source("chunk",
+                                            IOB.encoder(Types.PHRASE_CHUNK))
+                                    .tokenSequence("features", Featurizer.chain(Features.WordClass,
+                                                                                Features.IsTitleCase,
+                                                                                Features.IsAllCaps))
+                                    .tokenSequence("word_shape", Features.WordShape)
+                                    .tokenSequence("category",
+                                                   Featurizer.booleanFeaturizer(h -> h.categories()
+                                                                                      .stream()
+                                                                                      .map(BasicCategories::label)
+                                                                                      .collect(Collectors.toList())))
+                                    .source("label",
+                                            IOB.encoder(Types.ENTITY))
+
                                     .build();
    }
 
@@ -119,62 +211,47 @@ public class NERTensorFlowModel extends TensorFlowModel implements HStringMLMode
       return "1.0";
    }
 
-   @Override
-   protected void process(Datum d, SavedModelBundle model) {
-      NDArray words = d.get("words").asNDArray();
-      float[][] wordMatrix = new float[1][words.rows()];
-      for(int r = 0; r < words.rows(); r++) {
-         wordMatrix[0][r] = (float) words.get(r);
-      }
-      NDArray pos = d.get("pos").asNDArray();
-      float[][] posMatrix = new float[1][pos.rows()];
-      for(int r = 0; r < pos.rows(); r++) {
-         posMatrix[0][r] = (float) pos.get(r);
-      }
-      NDArray chars = d.get("chars").asNDArray();
-      float[][][] charMatrix = new float[1][chars.rows()][10];
-      for(int r = 0; r < chars.rows(); r++) {
-         for(int c = 0; c < Math.min(10, chars.columns()); c++) {
-            charMatrix[0][r][c] = (float) chars.get(r, c);
-         }
-      }
+   protected NDArray process(SavedModelBundle model,
+                             NDArray words,
+                             NDArray chars,
+                             NDArray pos,
+                             NDArray chunk,
+                             NDArray word_shape,
+                             NDArray category) {
       List<Tensor<?>> tensors = model.session()
                                      .runner()
-                                     .feed("words", Tensor.create(wordMatrix))
-                                     .feed("chars", Tensor.create(charMatrix))
-                                     .feed("pos", Tensor.create(posMatrix))
-                                     .fetch("label/dense/Sigmoid")
+                                     .feed("words", Tensor.create(words.toFloatArray2()))
+                                     .feed("chars", Tensor.create(chars.toFloatArray3()))
+                                     .feed("pos", Tensor.create(pos.toFloatArray2()))
+                                     .feed("chunk", Tensor.create(chunk.toFloatArray3()))
+                                     .feed("word_shape", Tensor.create(word_shape.toFloatArray2()))
+                                     //                                     .feed("category", Tensor.create(category.toFloatArray3()))
+                                     .fetch("label/truediv")
                                      .run();
-      Encoder encoder = transformer.getTransforms().stream()
-                                   .filter(t -> t.getInputs().contains("label"))
-                                   .findFirst()
-                                   .map(t -> Cast.<IndexingVectorizer>as(t).getEncoder())
-                                   .orElseThrow();
+      return NDArrayFactory.ND.fromTensorFlowTensor(tensors.get(0));
+   }
 
-      VariableSequence sequence = new VariableSequence();
-      for(Tensor<?> tensor : tensors) {
-         long[] shape = tensor.shape();
-         float[][] floats = new float[(int) shape[0]][(int) shape[1]];
-         tensor.copyTo(floats);
-         String previous = "O";
-         for(float[] aFloat : floats) {
-            NDArray matrix = NDArrayFactory.ND.rowVector(aFloat);
-            int l = (int) matrix.argmax();
-            String tag = encoder.decode(l);
-            while(!IOBValidator.INSTANCE.isValid(tag, previous, matrix)) {
-               matrix.set(l, Double.NEGATIVE_INFINITY);
-               l = (int) matrix.argmax();
-               tag = encoder.decode(l);
-            }
-            previous = tag;
-            sequence.add(Variable.real(tag, aFloat[l]));
-         }
-      }
-      d.put("label", sequence);
+   @Override
+   protected void process(Datum d, SavedModelBundle model) {
+      NDArray n = process(model,
+                          d.get("words").asNDArray().T(),
+                          d.get("chars").asNDArray().padColumnPost(10),
+                          d.get("pos").asNDArray().T(),
+                          d.get("chunk").asNDArray(),
+                          d.get("word_shape").asNDArray().T(),
+                          d.get("category").asNDArray());
+      d.put("label", decode(n.slice(0)));
    }
 
    @Override
    public void setVersion(String version) {
+      throw new UnsupportedOperationException();
+   }
 
+   @Override
+   public DataSet transform(@NonNull DocumentCollection documentCollection) {
+      return documentCollection.annotate(Types.CATEGORY,
+                                         Types.PHRASE_CHUNK)
+                               .asDataSet(getDataGenerator());
    }
 }//END OF NERTensorFlowModel

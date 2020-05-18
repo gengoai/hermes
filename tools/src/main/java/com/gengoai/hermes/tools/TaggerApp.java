@@ -158,7 +158,7 @@ public class TaggerApp extends HermesCLI {
       logInfo(log, " Tagger: {0}", model);
       logInfo(log, "========================================================");
       logInfo(log, "Loading data set");
-      DataSet testingData = tagger.getDataGenerator().generate(testingCollection.parallelStream());
+      DataSet testingData = tagger.transform(testingCollection);
       Evaluation evaluation = tagger.getEvaluator();
       Stopwatch stopwatch = Stopwatch.createStarted();
       logInfo(log, "Testing Started at {0}", LocalDateTime.now().format(TIME_FORMATTER));
