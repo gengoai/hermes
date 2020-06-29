@@ -1,7 +1,0 @@
-{
-  "name": "Part-of-Speech Annotation",
-  "annotationType": "TOKEN",
-  "view": "Document",
-  "includeTagValues": true,
-  "randomColors": true
-}

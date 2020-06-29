@@ -20,6 +20,7 @@
 package com.gengoai.hermes.tools;
 
 import com.gengoai.application.Option;
+import com.gengoai.config.Config;
 import com.gengoai.hermes.corpus.Corpus;
 import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.hermes.workflow.Context;
@@ -30,15 +31,16 @@ import com.gengoai.specification.Specification;
 
 public class WorkflowApp extends HermesCLI {
    private static final long serialVersionUID = 1L;
+   public static final String CONTEXT_ARG = "context.";
    public static final String CONTEXT_OUTPUT = "CONTEXT_OUTPUT";
    /**
     * Name of the context parameter for the location of the input corpus
     */
    public static final String INPUT_LOCATION = "INPUT_LOCATION";
    @Option(name = "context-output", description = "Location to save context", aliases = {"oc"})
-   private Resource contextOutputLocation = null;
-   @Option(name = "definition", description = "Workflow definition")
-   private Resource definition = null;
+   private Resource contextOutputLocation;
+   @Option(name = "definition", description = "Workflow definition", required = true)
+   private Resource definition;
    @Option(description = "The specification or location the document collection to process.", required = true, aliases = {"i", "corpus"})
    private String input;
 
@@ -61,6 +63,11 @@ public class WorkflowApp extends HermesCLI {
                                .property(INPUT_LOCATION, input)
                                .property(CONTEXT_OUTPUT, contextOutputLocation)
                                .build();
+      Config.getPropertiesMatching(s -> s.startsWith(CONTEXT_ARG))
+            .forEach(key -> {
+               var contextName = key.substring(CONTEXT_ARG.length());
+               context.property(contextName, Config.get(key));
+            });
       Workflow workflow = Json.parse(definition, Workflow.class);
       try(DocumentCollection inputCorpus = getDocumentCollection(input)) {
          try(DocumentCollection outputCorpus = workflow.process(inputCorpus, context)) {

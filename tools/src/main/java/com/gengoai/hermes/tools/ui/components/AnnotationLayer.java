@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.gengoai.StringTag;
 import com.gengoai.Tag;
 import com.gengoai.hermes.AnnotationType;
 import com.gengoai.hermes.AttributeType;
@@ -70,6 +71,9 @@ public class AnnotationLayer implements Serializable {
 
    private static Collection<Tag> generateAllKnownTagsFor(@NonNull AttributeType<? extends Tag> attributeType) {
       try {
+         if(attributeType.getValueType() == Tag.class || attributeType.getValueType() == StringTag.class) {
+            return Collections.emptyList();
+         }
          RMethod valuesMethod = Reflect.onClass(attributeType.getValueType()).getMethod("values");
          if(TypeUtils.isArray(valuesMethod.getType())) {
             return Arrays.asList(valuesMethod.<Tag[]>invoke());

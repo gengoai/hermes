@@ -76,6 +76,10 @@ public class AnnotationGUI extends HermesGUI {
 
    @Override
    protected void initControls() throws Exception {
+      mainWindowFrame.setTitle("Hermes Annotation GUI");
+      ImageIcon ii = new ImageIcon(Resources.fromClasspath("img/editor.png").readBytes());
+      mainWindowFrame.setIconImage(ii.getImage());
+
       openDialog.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
       openDialog.setCurrentDirectory(properties.get("open_dialog_directory").as(File.class,
                                                                                 new File(SystemInfo.USER_HOME)));

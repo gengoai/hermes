@@ -135,22 +135,21 @@ public class CorpusApp extends HermesCLI {
          System.out.println("                     Query Results");
          System.out.println("========================================================");
          System.out.println("Corpus: " + corpusLocation);
-         System.out.println("Query: " + getPositionalArgs()[0]);
+         System.out.println("Query: " + getPositionalArgs()[1]);
          System.out.println("Total hits: " + searchResults.size());
          System.out.println("========================================================");
          System.out.println("                      Top 10 Results");
          System.out.println("------------------------------------------------------");
-         getCorpus().query(getPositionalArgs()[0])
-                    .stream()
-                    .limit(10)
-                    .forEach(doc -> {
-                       System.out.print("Document ID: ");
-                       System.out.println(doc.getId());
-                       System.out.print("Content: ");
-                       System.out.print(doc.substring(0, Math.min(255, doc.length())));
-                       System.out.println("...");
-                       System.out.println("===============");
-                    });
+         searchResults.stream()
+                      .limit(10)
+                      .forEach(doc -> {
+                         System.out.print("Document ID: ");
+                         System.out.println(doc.getId());
+                         System.out.print("Content: ");
+                         System.out.print(doc.substring(0, Math.min(255, doc.length())));
+                         System.out.println("...");
+                         System.out.println("===============");
+                      });
          System.out.println("========================================================");
       }
    }
