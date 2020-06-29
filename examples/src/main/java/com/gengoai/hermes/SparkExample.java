@@ -19,11 +19,12 @@ public class SparkExample extends HermesCLI implements Serializable {
    public void programLogic() throws Exception {
       //Need to add the spark core jar file to the classpath for this to run
       //We will run it local, so we set the spark master to local[*]
-      Config.setProperty("spark.master", "spark://192.168.1.64:7077");
+      Config.setProperty("spark.master", "local[*]");
 
       //Build the corpus
       //You can substitute the file for one you have. Here I am using a 1,000,000 sentence corpus from news articles with
       // one sentence (treated as a document) per line.
+      // You can get a copy of the corpus used here from https://wortschatz.uni-leipzig.de/en/download/english
       DocumentCollection corpus = DocumentCollection.create(
             "text_opl::/data/corpora/en/Raw/news_1m_sentences.txt;distributed=true")
                                                     .repartition(100)

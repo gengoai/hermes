@@ -21,7 +21,26 @@
 
 package com.gengoai.hermes;
 
+import com.gengoai.Language;
+import com.gengoai.apollo.ml.DataSet;
+import com.gengoai.apollo.ml.DataSetType;
+import com.gengoai.apollo.ml.Datum;
+import com.gengoai.apollo.ml.evaluation.MultiClassEvaluation;
+import com.gengoai.apollo.ml.feature.Featurizer;
+import com.gengoai.apollo.ml.model.LibLinear;
+import com.gengoai.apollo.ml.model.PipelineModel;
+import com.gengoai.apollo.ml.observation.Variable;
+import com.gengoai.apollo.ml.transform.vectorizer.HashingVectorizer;
+import com.gengoai.apollo.ml.transform.vectorizer.IndexingVectorizer;
+import com.gengoai.hermes.corpus.DocumentCollection;
+import com.gengoai.hermes.extraction.TermExtractor;
+import com.gengoai.hermes.ml.HStringDataSetGenerator;
+import com.gengoai.hermes.ml.feature.ValueCalculator;
 import com.gengoai.hermes.tools.HermesCLI;
+import com.gengoai.stream.StreamingContext;
+
+import static com.gengoai.collection.Maps.hashMapOf;
+import static com.gengoai.tuple.Tuples.$;
 
 /**
  * @author David B. Bracewell
@@ -160,32 +179,43 @@ public class MLExample extends HermesCLI {
             new String[]{"POSITIVE", "a pleasant enough movie , held together by skilled ensemble actors ."}
       };
 
-      AttributeType<?> label = Types.attribute("LABEL");
+      AttributeType<String> label = Types.attribute("LABEL", String.class);
 
-//      //Simple binary featurizer that converts tokens to lower case and removes stop words
-      //      Featurizer<HString> featurizer = termExtractor(b -> b.valueCalculator(ValueCalculator.Binary).toLowerCase());
-      //
-      //      //Build an in-memory dataset from a corpus constructed using the raw labels and documents in the String[][] above
-      //      ExampleDataset dataset = Corpus.create(StreamingContext.local().stream(training)
-      //                                                             .map(example -> Document.create(example[1],
-      //                                                                                             Language.ENGLISH,
-      //                                                                                             hashMapOf($(label,
-      //                                                                                                         example[0])))))
-      //                                     .annotate(Types.TOKEN)
-      //                                     .asInstanceDataset(ig -> {
-      //                                        ig.featureExtractor(featurizer);
-      //                                        ig.labelAttribute(label);
-      //                                     });
-      //
-      //      //Perform 10-fold cross-validation and output the results to System.out
-      //      //Don't expect great results with this size data and feature set
-      //      MultiClassEvaluation.crossValidation(dataset,
-      //                                           new LibLinearModel(),
-      //                                           new LibLinearModel.Parameters()
-      //                                                 .bias.set(true)
-      //                                                 .C.set(2.0), 10)
-      //                          .output();
+      //Simple binary featurizer that converts tokens to lower case and removes stop words
+      Featurizer<HString> featurizer = TermExtractor.builder()
+                                                    .valueCalculator(ValueCalculator.Binary)
+                                                    .ignoreStopwords()
+                                                    .toLowerCase()
+                                                    .build();
 
+      //Build an in-memory dataset from a corpus constructed using the raw labels and documents in the String[][] above
+      DataSet dataSet = DocumentCollection.create(StreamingContext.local()
+                                                                  .stream(training)
+                                                                  .map(example -> Document.create(example[1],
+                                                                                                  Language.ENGLISH,
+                                                                                                  hashMapOf($(label,
+                                                                                                              example[0])))))
+                                          .annotate(Types.TOKEN)
+                                          .asDataSet(HStringDataSetGenerator.builder()
+                                                                            .dataSetType(DataSetType.InMemory)
+                                                                            .defaultInput(featurizer)
+                                                                            .defaultOutput(h -> Variable.binary(h.attribute(
+                                                                                  label)))
+                                                                            .build());
+
+      //Perform 10-fold cross-validation and output the results to System.out
+      //Don't expect great results with this size data and feature set
+      MultiClassEvaluation.crossvalidation(dataSet,
+                                           PipelineModel.builder()
+                                                        .defaultInput(new HashingVectorizer(25, true))
+                                                        .defaultOutput(new IndexingVectorizer())
+                                                        .build(new LibLinear(p -> {
+                                                           p.verbose.set(false);
+                                                           p.bias.set(true);
+                                                        })),
+                                           10,
+                                           Datum.DEFAULT_OUTPUT)
+                          .report();
    }
 
 }//END OF MLExample

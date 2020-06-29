@@ -21,7 +21,12 @@
 
 package com.gengoai.hermes;
 
+import com.gengoai.Language;
 import com.gengoai.config.Config;
+import com.gengoai.hermes.annotator.LexiconAnnotator;
+import com.gengoai.hermes.corpus.DocumentCollection;
+import com.gengoai.hermes.lexicon.Lexicon;
+import com.gengoai.hermes.lexicon.LexiconIO;
 import com.gengoai.hermes.tools.HermesCLI;
 import com.gengoai.io.Resources;
 
@@ -37,27 +42,26 @@ public class LexiconExample extends HermesCLI {
    @Override
    public void programLogic() throws Exception {
       //Load the config that defines the lexicon and annotator
-      Config.loadConfig(Resources.fromClasspath("com/gengoai/com.gengoai.hermes/example.conf"));
-//      Corpus.reader(Formats.TEXT_OPL)
-//            .read(Resources.fromClasspath("com/gengoai/com.gengoai.hermes/example_docs.txt"))
-//            .annotate(Types.TOKEN, Types.SENTENCE, Types.ENTITY)
-//            .forEach(document -> document.annotations(Types.ENTITY)
-//                                         .forEach(entity -> System.out.println(entity + "/" + entity.getTag())));
-//      System.out.println();
-//
-//      //Alternatively we can do everything in code if we are not working in a distributed environment
-//      Lexicon lexicon = LexiconIO.read(Resources.fromClasspath("com/gengoai/com.gengoai.hermes/people.dict.json"));
-//
-//      //Register a lexicon annotator using the lexicon we created above to provide ENTITY annotations
-//      AnnotatorCache.getInstance()
-//                    .setAnnotator(Types.ENTITY, Language.ENGLISH, new LexiconAnnotator(Types.ENTITY, lexicon));
-//
-//      Corpus.reader(Formats.TEXT_OPL)
-//            .read(Resources.fromClasspath("com/gengoai/com.gengoai.hermes/example_docs.txt"))
-//            .annotate(Types.TOKEN, Types.SENTENCE, Types.ENTITY)
-//            .forEach(document -> document.annotations(Types.ENTITY)
-//                                         .forEach(entity -> System.out.println(entity + "/" + entity.getTag())));
-//      System.out.println();
+      Config.loadConfig(Resources.fromClasspath("com/gengoai/hermes/example.conf"));
+      DocumentCollection.create("text_opl::classpath:com/gengoai/hermes/example_docs.txt")
+                        .annotate(Types.TOKEN, Types.SENTENCE, Types.ENTITY)
+                        .forEach(document -> document.annotations(Types.ENTITY)
+                                                     .forEach(entity -> System.out.println(entity + "/" + entity.getTag())));
+      System.out.println();
+
+      //Alternatively we can do everything in code if we are not working in a distributed environment
+      Lexicon lexicon = LexiconIO.read(Resources.fromClasspath("com/gengoai/hermes/people.dict.json"));
+
+      //Register a lexicon annotator using the lexicon we created above to provide ENTITY annotations
+      AnnotatorCache.getInstance()
+                    .setAnnotator(Types.ENTITY, Language.ENGLISH, new LexiconAnnotator(Types.ENTITY, lexicon));
+
+      DocumentCollection.create("text_opl::classpath:com/gengoai/hermes/example_docs.txt")
+                        .annotate(Types.TOKEN, Types.SENTENCE, Types.ENTITY)
+                        .forEach(document -> document.annotations(Types.ENTITY)
+                                                     .forEach(entity -> System.out.println(
+                                                           entity + "/" + entity.getTag())));
+      System.out.println();
 
    }
 

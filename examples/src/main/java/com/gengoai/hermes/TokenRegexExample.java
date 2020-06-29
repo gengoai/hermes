@@ -81,10 +81,10 @@ public class TokenRegexExample extends HermesCLI {
                         Types.LEMMA, Types.ENTITY);
 
       //Find all instances of Alice ignoring case
-      doRegex("(?i)alice", document);
+      doRegex("'alice'", document);
 
       //Narrow down the alices from above to only those followed by any form of the word "be"
-      doRegex("(?i)alice (?> (?l)be)", document);
+      doRegex("'alice' (?> <be>)", document);
 
       //Find all instances of words matching the regular expression rab.* ignoring case
       doRegex("/rab.*/i", document);
@@ -92,16 +92,16 @@ public class TokenRegexExample extends HermesCLI {
       //Find a simple noun phrase made up of one or more nouns or pronouns followed by a
       // simple verb phrase made up as one or more verbs. Label the noun phrase as the subject
       // and the verb phrase as the predicate.
-      doRegex("(?<SUBJECT> ($NOUN | $PRONOUN)+ ) (?<PREDICATE> $VERB+)", document);
+      doRegex("(?<SUBJECT> (#NOUN | #PRONOUN)+ ) (?<PREDICATE> #VERB+)", document);
 
       //Lets take what we did above, but use Phrase Chunks
-      doRegex("(?<SUBJECT> {PHRASE_CHUNK $NOUN}) (?<PREDICATE> {PHRASE_CHUNK $VERB})", document);
+      doRegex("(?<SUBJECT> @PHRASE_CHUNK(#NOUN) ) (?<PREDICATE> @PHRASE_CHUNK(#VERB) )", document);
 
       //Find all the nsubj in the document
-      doRegex("@DEPENDENCY:nsubj", document);
+      doRegex("@>{'nsubj'}", document);
 
       //Extract all contiguous non-stopwords
-      doRegex("^${STOPWORD}+", document);
+      doRegex("^StopWord+", document);
 
       //Lets build a dummy lexicon
       Lexicon lexicon = new TrieLexicon("wonderland", false);
@@ -113,15 +113,15 @@ public class TokenRegexExample extends HermesCLI {
       //Now we can use the lexicon as a match criteria in the regex
       //Note that if the lexicon contains multiword expressions, you will
       //need to make sure you are matching against an multiword annotation
-      doRegex("%wonderland | {PHRASE_CHUNK %wonderland}", document);
+      doRegex("%wonderland | @PHRASE_CHUNK(%wonderland)", document);
 
       //We can match on arbitrary attributes, here we find all URL tokens
-      doRegex("$TOKEN_TYPE:URL", document);
+      doRegex("$TOKEN_TYPE='URL'", document);
 
       //Do the same as above, but use the parent of the URL Entity type, INTERNET
-      doRegex("{ENTITY $INTERNET}", document);
+      doRegex("@ENTITY(#INTERNET)", document);
 
-      doRegex("{@DEPENDENCY:nsubj $VERB}", document);
+      doRegex("@>{'nsubj'} #VERB", document);
 
    }
 
