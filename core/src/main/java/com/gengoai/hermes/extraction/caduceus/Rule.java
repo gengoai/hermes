@@ -97,7 +97,6 @@ class Rule implements Serializable {
             groups.putAll("*", matcher.group().tokens());
          }
 
-
          SetMultimap<String, Tuple2<Annotation, Relation>> relations = new HashSetMultimap<>();
          for(RelationProvider rp : relationProviders) {
             List<Annotation> sourceAnnotations = getAnnotation(rp.getSource(), groups, matcher);
@@ -146,9 +145,11 @@ class Rule implements Serializable {
       } else {
          annotations = matcher.group(point.v1).stream().map(HString::asAnnotation).collect(Collectors.toList());
       }
+
       if(point.v2.getPattern().equals("$_")) {
          return annotations;
       }
+
       List<Annotation> toReturn = new ArrayList<>();
       for(Annotation annotation : annotations) {
          for(HString hString : point.v2.applyAsList(annotation, HString.class)) {

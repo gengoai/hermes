@@ -12,12 +12,12 @@ relation: spookee
           type=EVENT_ROLE
           value=SPOOKEE
           requires=spooker
-          @>=filter(@PHRASE_CHUNK(@<dep{'dobj'}), #NOUN)
+          @>=filter(@PHRASE_CHUNK(@<{'dobj'}), #NOUN)
           @<=$_
 relation: spooker
           type=EVENT_ROLE
           value=SPOOKER
           requires=spookee
-          @>=filter(@PHRASE_CHUNK(@<dep{'nsubj'}), #NOUN)
+          @>=filter(@PHRASE_CHUNK(@<{'nsubj'}), #NOUN)
           @<=$_
 ## === [spook_event] ==============================================================================

@@ -98,9 +98,6 @@ public final class SequentialWorkflow implements Workflow {
             }
             idx++;
          }
-         for(Action action : actions) {
-            System.out.println(action);
-         }
       } catch(Exception e) {
          throw new RuntimeException(e);
       }
@@ -124,8 +121,9 @@ public final class SequentialWorkflow implements Workflow {
     * @return the corpus
     * @throws Exception the exception
     */
-   public final DocumentCollection process(@NonNull DocumentCollection input, @NonNull Context context) throws
-                                                                                                        Exception {
+   public final DocumentCollection process(@NonNull DocumentCollection input,
+                                           @NonNull Context context) throws
+                                                                     Exception {
       DocumentCollection corpus = input;
       context.merge(startingContext);
       Stopwatch sw = Stopwatch.createStarted();

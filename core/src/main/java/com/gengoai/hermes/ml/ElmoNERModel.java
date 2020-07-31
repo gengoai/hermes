@@ -17,26 +17,15 @@
  * under the License.
  */
 
-package com.gengoai.hermes.extraction.summarization;
+package com.gengoai.hermes.ml;
 
-import com.gengoai.hermes.corpus.DocumentCollection;
-import com.gengoai.hermes.extraction.Extractor;
-import lombok.NonNull;
+import com.gengoai.hermes.Types;
 
-import java.io.Serializable;
+public class ElmoNERModel extends ElmoSeq2SeqModel {
+   private static final long serialVersionUID = 1L;
 
-/**
- * <p>Interface defining an {@link Extractor} that generates summaries for given {@link com.gengoai.hermes.HString} and
- * specifically documents.</p>
- */
-public interface Summarizer extends Extractor, Serializable {
+   public ElmoNERModel() {
+      super(Types.ML_ENTITY, Types.ENTITY);
+   }
 
-   /**
-    * In certain cases a Summarizer needs to collect corpus level statistics or construct a model of what a good
-    * summarization looks like. The fit method allows implementations to perform this logic at a corpus level.
-    *
-    * @param corpus the corpus to fit the extractor to
-    */
-   void fit(@NonNull DocumentCollection corpus);
-
-}//END OF Summarizer
+}//END OF ElmoNERModel

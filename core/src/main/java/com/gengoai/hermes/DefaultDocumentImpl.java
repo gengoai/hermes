@@ -84,19 +84,23 @@ class DefaultDocumentImpl extends BaseHString implements Document {
    @JsonCreator
    private DefaultDocumentImpl(@JsonProperty("content") String content,
                                @JsonProperty("id") String id,
-                               @JsonProperty("completed") Map<AnnotatableType, String> providers,
+                               @JsonProperty("completed") Map<String, String> providers,
                                @JsonProperty("attributes") AttributeMap attributeMap,
                                @JsonProperty("annotations") List<Annotation> annotations) {
       this(id, content);
-      if(providers != null) {
-         this.annotationSet.getProviders().putAll(providers);
+      AnnotatableType t = Types.ENTITY;
+      if (providers != null) {
+         providers.forEach((type, provider) -> {
+                              this.annotationSet.setIsCompleted(AnnotatableType.valueOf(type), true, provider);
+                           }
+         );
       }
-      if(attributeMap != null) {
+      if (attributeMap != null) {
          this.attributeMap().putAll(attributeMap);
       }
-      if(annotations != null) {
+      if (annotations != null) {
          long i = 0;
-         for(Annotation annotation : annotations) {
+         for (Annotation annotation : annotations) {
             Cast.<DefaultAnnotationImpl>as(annotation).setDocument(this);
             annotationSet.add(annotation);
             i = Math.max(i, annotation.getId());
@@ -146,7 +150,7 @@ class DefaultDocumentImpl extends BaseHString implements Document {
    public void attach(@NonNull Annotation annotation) {
       Validation.checkArgument(annotation.document() == this,
                                "Error: Attempting to attach an annotation to a different document.");
-      if(annotation.isDetached()) {
+      if (annotation.isDetached()) {
          annotation.setId(idGenerator.getAndIncrement());
          annotationSet.add(annotation);
          annotation.outgoingRelationStream()
@@ -218,6 +222,15 @@ class DefaultDocumentImpl extends BaseHString implements Document {
    }
 
    @Override
+   public void setId(String id) {
+      if (Strings.isNullOrBlank(id)) {
+         this.id = UUID.randomUUID().toString();
+      } else {
+         this.id = id;
+      }
+   }
+
+   @Override
    public boolean isCompleted(AnnotatableType type) {
       return annotationSet.isCompleted(type);
    }
@@ -250,20 +263,14 @@ class DefaultDocumentImpl extends BaseHString implements Document {
    @Override
    public void removeAnnotationType(@NonNull AnnotationType type) {
       annotationSet.removeAll(type);
+      for (AnnotationType child : type.children()) {
+         removeAnnotationType(child);
+      }
    }
 
    @Override
    public void setCompleted(@NonNull AnnotatableType type, @NonNull String provider) {
       annotationSet.setIsCompleted(type, true, provider);
-   }
-
-   @Override
-   public void setId(String id) {
-      if(Strings.isNullOrBlank(id)) {
-         this.id = UUID.randomUUID().toString();
-      } else {
-         this.id = id;
-      }
    }
 
    @Override
@@ -278,9 +285,9 @@ class DefaultDocumentImpl extends BaseHString implements Document {
 
    @Override
    public List<Annotation> tokens() {
-      if(tokens == null) {
-         synchronized(this) {
-            if(tokens == null) {
+      if (tokens == null) {
+         synchronized (this) {
+            if (tokens == null) {
                tokens = annotations(Types.TOKEN);
             }
          }

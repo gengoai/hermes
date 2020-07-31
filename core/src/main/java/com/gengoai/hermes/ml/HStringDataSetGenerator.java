@@ -68,7 +68,7 @@ public class HStringDataSetGenerator extends DataSetGenerator<HString> {
       return new Builder();
    }
 
-   private HStringDataSetGenerator(@NonNull AnnotationType datumAnnotationType,
+   private HStringDataSetGenerator(AnnotationType datumAnnotationType,
                                    @NonNull DataSetType dataSetType,
                                    @NonNull Collection<DataSetGenerator.GeneratorInfo<HString>> generators) {
       super(dataSetType, generators);
@@ -163,7 +163,6 @@ public class HStringDataSetGenerator extends DataSetGenerator<HString> {
                                    @NonNull ObservationExtractor<? super HString> extractor) {
          return source(name, extractor, HString::tokens);
       }
-
 
    }//END OF Builder
 

@@ -68,7 +68,8 @@ public interface Workflow extends Serializable {
     * @return the corpus
     * @throws Exception the exception
     */
-   DocumentCollection process(@NonNull DocumentCollection input, @NonNull Context context) throws Exception;
+   DocumentCollection process(@NonNull DocumentCollection input,
+                              @NonNull Context context) throws Exception;
 
    /**
     * Sets starting context.

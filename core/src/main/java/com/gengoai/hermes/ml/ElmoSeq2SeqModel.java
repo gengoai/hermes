@@ -28,55 +28,69 @@ import com.gengoai.apollo.ml.model.TensorFlowModel;
 import com.gengoai.apollo.ml.model.TensorUtils;
 import com.gengoai.apollo.ml.observation.Variable;
 import com.gengoai.apollo.ml.transform.Transformer;
-import com.gengoai.collection.Iterators;
+import com.gengoai.apollo.ml.transform.vectorizer.IndexingVectorizer;
 import com.gengoai.collection.Maps;
 import com.gengoai.hermes.Annotation;
+import com.gengoai.hermes.AnnotationType;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.Types;
 import lombok.NonNull;
 import org.tensorflow.Tensor;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import static com.gengoai.tuple.Tuples.$;
 
-public class ElmoTokenEmbedding extends TensorFlowModel implements HStringMLModel, ContextualizedEmbedding {
-   public static final int DIMENSION = 1024;
+public class ElmoSeq2SeqModel extends TensorFlowModel implements HStringMLModel {
+   public static final String LABEL = "label";
    public static final String TOKENS = "tokens";
-   public static final String SEQUENCE_LENGTH = "sequence_len";
-   public static final String OUTPUT = "output";
+   public static final String SEQUENCE_LENGTH = "seq_len";
    private static final long serialVersionUID = 1L;
+   private final AnnotationType annotationType;
+   private final AnnotationType trainingAnnotationType;
 
-   public ElmoTokenEmbedding() {
-      super(Set.of(Datum.DEFAULT_INPUT),
-            Maps.linkedHashMapOf($(Datum.DEFAULT_INPUT, OUTPUT)),
+
+   protected ElmoSeq2SeqModel(@NonNull AnnotationType annotationType,
+                              @NonNull AnnotationType trainingAnnotationType) {
+      super(Set.of(TOKENS),
+            Maps.linkedHashMapOf($(LABEL, "label/truediv")),
             Collections.emptyMap());
+      this.annotationType = annotationType;
+      this.trainingAnnotationType = trainingAnnotationType;
    }
 
    @Override
    public HString apply(@NonNull HString hString) {
       DataSet dataSet = getDataGenerator().generate(Collections.singleton(hString));
-      Iterators.zip(hString.sentences().iterator(), processBatch(dataSet).iterator())
-               .forEachRemaining(e -> {
-                  Annotation sentence = e.getKey();
-                  NDArray embeddings = e.getValue().getDefaultInput().asNDArray();
-                  for (int i = 0; i < sentence.tokenLength(); i++) {
-                     sentence.tokenAt(i).put(Types.EMBEDDING, embeddings.getRow(i));
-                  }
-               });
+      List<Datum> tensors = processBatch(dataSet);
+      for (int i = 0; i < tensors.size(); i++) {
+         Annotation sentence = hString.sentences().get(i);
+         IOB.decode(sentence,
+                    tensors.get(i).get(LABEL).asNDArray()
+                           .decodeSequence(encoders.get(getOutput()), IOBValidator.INSTANCE),
+                    annotationType);
+      }
       return hString;
    }
 
    @Override
    protected Map<String, Tensor<?>> createTensors(DataSet batch) {
-      return TensorUtils.sequence2StringTensor(batch, Datum.DEFAULT_INPUT, TOKENS, SEQUENCE_LENGTH);
+      return TensorUtils.sequence2StringTensor(batch, TOKENS, TOKENS, SEQUENCE_LENGTH);
    }
 
    @Override
    protected Transformer createTransformer() {
-      return new Transformer(Collections.emptyList());
+      IndexingVectorizer labelVectorizer = new IndexingVectorizer(encoders.get(LABEL)).source(LABEL);
+      return new Transformer(List.of(labelVectorizer));
+   }
+
+   @Override
+   protected Datum decode(Datum datum, List<NDArray> yHat, long slice) {
+      datum.put(LABEL, yHat.get(0).slice((int) slice));
+      return datum;
    }
 
    @Override
@@ -87,21 +101,22 @@ public class ElmoTokenEmbedding extends TensorFlowModel implements HStringMLMode
    @Override
    public HStringDataSetGenerator getDataGenerator() {
       return HStringDataSetGenerator.builder(Types.SENTENCE)
-                                    .tokenSequence(Datum.DEFAULT_INPUT, h -> Variable.binary(h.toString()))
+                                    .tokenSequence(TOKENS, h -> Variable.binary(h.toString()))
+                                    .source(LABEL, IOB.encoder(trainingAnnotationType))
                                     .build();
    }
 
    @Override
    public LabelType getLabelType(@NonNull String name) {
-      if (name.equals(getOutput())) {
-         return LabelType.NDArray;
+      if (name.equals("label")) {
+         return LabelType.Sequence;
       }
-      throw new IllegalArgumentException("'" + name + "' is not a valid output for this model");
+      throw new IllegalArgumentException("'" + name + "' is not a valid output for this model.");
    }
 
    @Override
    public String getVersion() {
-      return "https://tfhub.dev/google/elmo/3";
+      return "gengoai_elmo_residual_bilstm_crf_v1.0";
    }
 
    @Override
@@ -110,4 +125,4 @@ public class ElmoTokenEmbedding extends TensorFlowModel implements HStringMLMode
    }
 
 
-}//END OF UniversalSentenceEncoder
+}//END OF ElmoSeq2SeqModel

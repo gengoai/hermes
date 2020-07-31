@@ -9,10 +9,22 @@ Release Date:
 * Added HStringMLModel and BaseHStringMLModel for easing the creation of ml models that work over HString
 * SequenceTaggers are now HStringMLModels
 * EN Models updated to correspond to new HStringMLModel format and the new model io from Apollo
+* ELMO model from TF HUB
+* Universal Sentence Encoder Model from TF HUB
 
 === Keyword Extraction
 
 * Added implementation of the TextRank algorithm
+
+=== Summarization
+
+* Added interface for Summarizers
+* Added TextRank implementation of a Summarizer
+
+=== Other
+
+* Added `embedding` method to `HString` which will retrieve the embedding attribute or calculate an average embedding over the tokens of the HString.
+* Add a `similarity` package for defining `HStringSimilarity` classes that determine the similarity between two HString.
 
 == Version 1.0
 

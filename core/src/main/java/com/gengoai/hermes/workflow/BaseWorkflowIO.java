@@ -45,7 +45,7 @@ public class BaseWorkflowIO {
       if(isSingleton && singletons.containsKey(name)) {
          return singletons.get(name);
       }
-
+      System.out.println(entry.getStringProperty("@class"));
       BeanMap beanMap = new BeanMap(Reflect.onClass(entry.getStringProperty("@class")).create().get());
       Iterator<Map.Entry<String, JsonEntry>> itr = Iterators.filter(entry.propertyIterator(),
                                                                     e -> !e.getKey().startsWith("@"));

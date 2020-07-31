@@ -24,9 +24,19 @@ import com.gengoai.hermes.HString;
 import com.gengoai.hermes.corpus.DocumentCollection;
 import lombok.NonNull;
 
+/**
+ * Interface defining a methodology for computing the similarity between two {@link HString}.
+ */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
 public interface HStringSimilarity {
 
+   /**
+    * Calculates the similarity between the two given {@link HString}
+    *
+    * @param first  the first HString
+    * @param second the second HString
+    * @return the similarity between <code>first</code> and <code>second</code>
+    */
    double calculate(@NonNull HString first, @NonNull HString second);
 
    /**

@@ -23,12 +23,11 @@ package com.gengoai.hermes.annotator;
 
 import com.gengoai.Language;
 import com.gengoai.cache.Cache;
-import com.gengoai.collection.Sets;
 import com.gengoai.hermes.AnnotatableType;
-import com.gengoai.hermes.Annotation;
+import com.gengoai.hermes.Document;
 import com.gengoai.hermes.ResourceType;
 import com.gengoai.hermes.Types;
-import com.gengoai.hermes.ml.IOBTagger;
+import com.gengoai.hermes.ml.HStringMLModel;
 
 import java.util.Collections;
 import java.util.Set;
@@ -38,27 +37,27 @@ import java.util.Set;
  *
  * @author David B. Bracewell
  */
-public class DefaultMlEntityAnnotator extends SentenceLevelAnnotator {
-   private static final Cache<Language, IOBTagger> cache = ResourceType.MODEL.createCache("Annotation.ML_ENTITY",
-                                                                                          "ner");
+public class DefaultMlEntityAnnotator extends Annotator {
+   private static final Cache<Language, HStringMLModel> cache = ResourceType.MODEL.createCache("Annotation.ML_ENTITY",
+                                                                                               "ner");
    private static final long serialVersionUID = 1L;
 
    @Override
-   protected void annotate(Annotation sentence) {
-      IOBTagger tagger = cache.get(sentence.getLanguage());
+   protected void annotateImpl(Document document) {
+      HStringMLModel tagger = cache.get(document.getLanguage());
       if(tagger != null) {
-         tagger.apply(sentence);
+         tagger.apply(document);
       }
    }
 
    @Override
-   protected Set<AnnotatableType> furtherRequires() {
-      return Sets.hashSetOf(Types.PART_OF_SPEECH, Types.CATEGORY);
+   public String getProvider(Language language) {
+      HStringMLModel tagger = cache.get(language);
+      return tagger.getClass().getSimpleName() + " v" + tagger.getVersion();
    }
 
-   @Override
-   public String getProvider(Language language) {
-      return "IOBTagger v" + cache.get(language).getVersion();
+   public Set<AnnotatableType> requires() {
+      return Set.of(Types.SENTENCE, Types.TOKEN, Types.PHRASE_CHUNK, Types.PART_OF_SPEECH);
    }
 
    @Override

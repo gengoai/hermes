@@ -70,6 +70,7 @@ import static com.gengoai.tuple.Tuples.$;
  */
 @Log
 class LuceneCorpus implements Corpus {
+   public static final String COMMIT_INTERVAL_CONFIG = "Corpus.commitInterval";
    /**
     * The Lucene Field used to store the completed annotations
     */
@@ -458,7 +459,7 @@ class LuceneCorpus implements Corpus {
       Broker<Document> broker = Broker.<Document>builder()
             .addProducer(new IterableProducer<>(this))
             .bufferSize(10_000)
-            .addConsumer(consumer, Runtime.getRuntime().availableProcessors() * 2)
+            .addConsumer(consumer, Runtime.getRuntime().availableProcessors())
             .build();
       broker.run();
       try {
@@ -624,6 +625,7 @@ class LuceneCorpus implements Corpus {
       private final SerializablePredicate<Document> documentProcessor;
       private final ProgressLogger progressLogger;
       private final IndexWriter writer;
+      private final int commitInterval;
 
       /**
        * Instantiates a new Update consumer.
@@ -634,6 +636,7 @@ class LuceneCorpus implements Corpus {
                             @NonNull ProgressLogger progressLogger) {
          this.documentProcessor = documentProcessor;
          this.progressLogger = progressLogger;
+         this.commitInterval = Config.get(COMMIT_INTERVAL_CONFIG).asIntegerValue(10_000);
          try {
             this.writer = getIndexWriter();
          } catch(IOException e) {
@@ -643,15 +646,19 @@ class LuceneCorpus implements Corpus {
 
       @Override
       public void accept(Document document) {
-         progressLogger.start();
-         if(documentProcessor.test(document)) {
-            try {
+         try {
+            progressLogger.start();
+            if(documentProcessor.test(document)) {
                writer.updateDocument(new Term(ID_FIELD, document.getId()), toDocument(document));
-            } catch(IOException e) {
-               throw new RuntimeException(e);
+               if(progressLogger.documentsProcessed() % commitInterval == 0) {
+                  writer.commit();
+               }
             }
+         } catch(IOException e) {
+            throw new RuntimeException(e);
+         } finally {
+            progressLogger.stop(document.tokenLength());
          }
-         progressLogger.stop(document.tokenLength());
       }
 
    }

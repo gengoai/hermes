@@ -33,11 +33,11 @@ import java.util.Collection;
 
 /**
  * <p> An AnnotationType defines an {@link Annotation}, which is a <b>typed</b> (e.g. token, sentence, phrase chunk)
- * span of text on a document having a defined set of attributes and relations. AnnotationTypes are hierarchical
- * meaning that each type has a parent (<i>ANNOTATION</i> by default) and can have subtypes.Additionally, each
- * AnnotationType has an associated {@link Tag} attribute type, which represents the central attribute of the
- * annotation type (e.g. entity type for entities and part-of-speech for tokens.). By default, an annotation's tag type
- * is inherited from the parent or defined as being a StringTag.
+ * span of text on a document having a defined set of attributes and relations. AnnotationTypes are hierarchical meaning
+ * that each type has a parent (<i>ANNOTATION</i> by default) and can have subtypes.Additionally, each AnnotationType
+ * has an associated {@link Tag} attribute type, which represents the central attribute of the annotation type (e.g.
+ * entity type for entities and part-of-speech for tokens.). By default, an annotation's tag type is inherited from the
+ * parent or defined as being a StringTag.
  * </p>
  *
  * <p>The following code snippet illustrates creating a simple AnnotationType with the default parent and a and an
@@ -69,10 +69,6 @@ public final class AnnotationType extends HierarchicalEnumValue<AnnotationType> 
     */
    public static final String TYPE = "Annotation";
    private volatile AttributeType<? extends Tag> tagAttributeType = null;
-
-   private AnnotationType(String name) {
-      super(name);
-   }
 
    /**
     * Determines if the given name is a defined AnnotationType
@@ -141,11 +137,19 @@ public final class AnnotationType extends HierarchicalEnumValue<AnnotationType> 
       return make(ROOT, name, null);
    }
 
+   public static AnnotationType valueOf(String name) {
+      return registry.valueOf(name);
+   }
+
    /**
     * @return the collection of all currently registered AnnotationType
     */
    public static Collection<AnnotationType> values() {
       return registry.values();
+   }
+
+   private AnnotationType(String name) {
+      super(name);
    }
 
    /**

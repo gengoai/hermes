@@ -86,7 +86,6 @@ public class PennTreebankFormat extends WholeFileTextFormat implements OneDocPer
 
       // Create the document and add tokens (with pos), sentences, and non-terminal nodes.
       Document document = getParameters().getDocumentFactory().create(documentContent.toString().strip());
-
       for(List<Node> sentence : sentences) {
          document.createAnnotation(Types.SENTENCE,
                                    sentence.get(0).start,
@@ -217,7 +216,10 @@ public class PennTreebankFormat extends WholeFileTextFormat implements OneDocPer
             t.word = POSCorrection.word(t.word, t.tag);
             t.start = documentContent.length();
             tokens.add(t);
-            documentContent.append(t.word).append(" ");
+            documentContent.append(t.word);
+            if(parameters.defaultLanguage.value().usesWhitespace()) {
+               documentContent.append(" ");
+            }
          }
          for(int i = t.children.size() - 1; i >= 0; i--) {
             stack.push(t.children.get(i));

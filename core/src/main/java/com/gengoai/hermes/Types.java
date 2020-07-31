@@ -90,6 +90,7 @@ public interface Types {
     * Attribute defining the file from which the document was created
     */
    AttributeType<String> FILE = AttributeType.make("FILE", String.class);
+   AttributeType<String> IMPORT_DATE = AttributeType.make("IMPORT_DATE", String.class);
    /**
     * The index of a span with regards to a document
     */

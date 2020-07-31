@@ -27,6 +27,7 @@ import com.gengoai.Copyable;
 import com.gengoai.config.Config;
 import com.gengoai.conversion.Cast;
 import com.gengoai.conversion.Converter;
+import com.gengoai.conversion.Val;
 import com.gengoai.json.TypedObject;
 import lombok.Builder;
 import lombok.EqualsAndHashCode;
@@ -97,7 +98,11 @@ public class Context implements Serializable, Copyable<Context> {
     */
    public <T> T getAs(String name, @NonNull Class<T> clazz) {
       if(properties.containsKey(name)) {
-         return Cast.as(properties.get(name).getValue(), clazz);
+         TypedObject<?> o = properties.get(name);
+         if(o.getValue() instanceof Val) {
+            return ((Val) o.getValue()).as(clazz);
+         }
+         return Cast.as(o.getValue(), clazz);
       }
       return Config.get(name).as(clazz);
 

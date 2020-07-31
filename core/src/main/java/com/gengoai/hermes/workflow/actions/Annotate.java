@@ -24,12 +24,13 @@ import com.gengoai.hermes.Types;
 import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.hermes.workflow.Action;
 import com.gengoai.hermes.workflow.Context;
+import com.gengoai.string.Strings;
 import lombok.NonNull;
 import lombok.extern.java.Log;
 
 import java.util.Arrays;
 
-import static com.gengoai.LogUtils.logInfo;
+import static com.gengoai.LogUtils.logConfig;
 
 /**
  * The type Annotate processor.
@@ -39,6 +40,7 @@ import static com.gengoai.LogUtils.logInfo;
 @Log
 public class Annotate implements Action {
    private static final long serialVersionUID = 1L;
+   public static final String ANNOTATABLE_TYPE_CONFIG = "ANNOTATE_TYPES";
    private AnnotatableType[] types = {Types.SENTENCE, Types.LEMMA, Types.PHRASE_CHUNK, Types.DEPENDENCY, Types.ENTITY};
 
    public Annotate() {
@@ -60,8 +62,18 @@ public class Annotate implements Action {
 
    @Override
    public DocumentCollection process(@NonNull DocumentCollection corpus, @NonNull Context context) throws Exception {
-      logInfo(log, "Annotating corpus for {0}", Arrays.toString(types));
-      return corpus.annotate(types);
+      String contextTypes = context.getString(ANNOTATABLE_TYPE_CONFIG);
+      if(Strings.isNotNullOrBlank(contextTypes)) {
+         AnnotatableType[] types = Strings.split(contextTypes, ',')
+                                          .stream()
+                                          .map(AnnotatableType::valueOf)
+                                          .toArray(AnnotatableType[]::new);
+         logConfig(log, "Annotating corpus for {0}", Arrays.toString(types));
+         return corpus.annotate(types);
+      } else {
+         logConfig(log, "Annotating corpus for {0}", Arrays.toString(types));
+         return corpus.annotate(types);
+      }
    }
 
    /**

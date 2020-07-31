@@ -52,7 +52,7 @@ public abstract class BaseHStringMLModel implements HStringMLModel {
    }
 
    @Override
-   public final HString apply(@NonNull HString hString) {
+   public HString apply(@NonNull HString hString) {
       onEstimate(hString, transform(dataGenerator.apply(hString)));
       return hString;
    }

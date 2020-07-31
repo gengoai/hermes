@@ -25,7 +25,6 @@ import com.gengoai.apollo.math.statistics.measure.Similarity;
 import com.gengoai.collection.HashMapIndex;
 import com.gengoai.collection.Index;
 import com.gengoai.collection.counter.Counter;
-import com.gengoai.collection.counter.Counters;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.hermes.extraction.Extractor;
@@ -35,35 +34,48 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Value;
 
+/**
+ * <p>An implementation of an {@link HStringSimilarity} that uses an Apollo Similarity measure to determine the
+ * similarity between two {@link HString} based on the extraction from a given {@link Extractor}.</p>
+ */
 @Value
 @NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
-public class TokenSimilarity implements HStringSimilarity {
+public class ExtractorBasedSimilarity implements HStringSimilarity {
    private static final long serialVersionUID = 1L;
    @NonNull
    Similarity measure;
    @NonNull
    Extractor termExtractor;
 
-   public TokenSimilarity(@NonNull Similarity measure) {
+   /**
+    * Instantiates a new TokenSimilarity using a {@link TermExtractor} that ignores stop words, and converts HString to
+    * their lemma form.
+    *
+    * @param measure the similarity measure to use
+    */
+   public ExtractorBasedSimilarity(@NonNull Similarity measure) {
       this(measure, TermExtractor.builder()
                                  .ignoreStopwords()
                                  .toLemma()
                                  .build());
    }
 
-   public TokenSimilarity(@NonNull Similarity measure,
-                          @NonNull Extractor termExtractor) {
+   /**
+    * Instantiates a new TokenSimilarity.
+    *
+    * @param measure       the similarity measure to use
+    * @param termExtractor the extractor to use to generate extractions for calculating simialrity
+    */
+   public ExtractorBasedSimilarity(@NonNull Similarity measure,
+                                   @NonNull Extractor termExtractor) {
       this.measure = measure;
       this.termExtractor = termExtractor;
    }
 
    @Override
    public double calculate(@NonNull HString first, @NonNull HString second) {
-      Counter<String> c1 = Counters.newCounter(termExtractor.extract(first).string());
-      Counter<String> c2 = Counters.newCounter(termExtractor.extract(second).string());
-      if(c1.isEmpty() || c2.isEmpty()) {
-         return 0d;
-      }
+      Counter<String> c1 = termExtractor.extract(first).count();
+      Counter<String> c2 = termExtractor.extract(second).count();
       Index<String> index = new HashMapIndex<>();
       index.addAll(c1.items());
       index.addAll(c2.items());

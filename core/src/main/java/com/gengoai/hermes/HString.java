@@ -10,7 +10,10 @@ import com.gengoai.collection.Iterables;
 import com.gengoai.collection.Iterators;
 import com.gengoai.collection.tree.Span;
 import com.gengoai.conversion.Cast;
-import com.gengoai.hermes.morphology.*;
+import com.gengoai.hermes.morphology.Lemmatizers;
+import com.gengoai.hermes.morphology.PartOfSpeech;
+import com.gengoai.hermes.morphology.Stemmers;
+import com.gengoai.hermes.morphology.UniversalFeatureSet;
 import com.gengoai.reflection.TypeUtils;
 import com.gengoai.stream.Streams;
 import com.gengoai.string.StringLike;
@@ -511,10 +514,21 @@ public interface HString extends Span, StringLike, Serializable {
       if(hasAttribute(Types.EMBEDDING)) {
          return attribute(Types.EMBEDDING);
       }
-      return VectorCompositions.Average.compose(tokenStream()
-                                                      .filter(StopWords.isContentWord())
-                                                      .map(t -> t.attribute(Types.EMBEDDING))
-                                                      .collect(Collectors.toList()));
+      return VectorCompositions.Average.compose(tokenStream().filter(t -> t.hasAttribute(Types.EMBEDDING))
+                                                             .map(t -> t.attribute(Types.EMBEDDING))
+                                                             .filter(Objects::nonNull)
+                                                             .collect(Collectors.toList()));
+   }
+
+   default NDArray embedding(@NonNull Predicate<HString> filter) {
+      if(hasAttribute(Types.EMBEDDING)) {
+         return attribute(Types.EMBEDDING);
+      }
+      filter = filter.and((HString t) -> t.hasAttribute(Types.EMBEDDING));
+      return VectorCompositions.Average.compose(tokenStream().filter(filter)
+                                                             .map(t -> t.attribute(Types.EMBEDDING))
+                                                             .filter(Objects::nonNull)
+                                                             .collect(Collectors.toList()));
    }
 
    /**

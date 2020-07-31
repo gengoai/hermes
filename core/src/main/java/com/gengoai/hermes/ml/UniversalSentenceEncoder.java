@@ -19,115 +19,100 @@
 
 package com.gengoai.hermes.ml;
 
-public class UniversalSentenceEncoder {
-//
-   //} extends TensorFlowModel implements HStringMLModel {
-   //   private static final long serialVersionUID = 1L;
-   //   public static final int DIMENSION = 512;
-   //
-   //   public static void main(String[] args) throws Exception {
-   //      UniversalSentenceEncoder use = ModelIO.load(Resources.from("/data/hermes/en/models/sentence_encoder"));
-   //      Document d = Document.create("This is a test. This is the second sentence of a different size.");
-   //      d.annotate(Types.SENTENCE, Types.TOKEN);
-   //      use.transform(d);
-   //      for(Annotation sentence : d.sentences()) {
-   //         System.out.println(sentence.attribute(Types.EMBEDDING));
-   //      }
-   //   }
-   //
-   //   public UniversalSentenceEncoder() {
-   //      super(new Transformer(Collections.emptyList()),
-   //            Collections.singleton(Datum.DEFAULT_INPUT),
-   //            Collections.singleton(Datum.DEFAULT_OUTPUT));
-   //   }
-   //
-   //   @Override
-   //   public HString apply(@NonNull HString hString) {
-   //      Datum datum = new Datum();
-   //      for(Annotation sentence : hString.sentences()) {
-   //         datum.put(Integer.toString(sentence.attribute(Types.INDEX)), Variable.binary(sentence.toString()));
-   //      }
-   //      process(datum, getTensorFlowModel());
-   //      for(String s : datum.keySet()) {
-   //         int index = Integer.parseInt(s);
-   //         hString.sentences().get(index).put(Types.EMBEDDING, datum.get(s).asNDArray());
-   //      }
-   //      return hString;
-   //   }
-   //
-   //   @Override
-   //   public Model delegate() {
-   //      return this;
-   //   }
-   //
-   //   @Override
-   //   public HStringDataSetGenerator getDataGenerator() {
-   //      return HStringDataSetGenerator.builder(Types.SENTENCE)
-   //                                    .defaultInput(h -> Variable.binary(h.toString()))
-   //                                    .build();
-   //   }
-   //
-   //   @Override
-   //   public LabelType getLabelType(@NonNull String name) {
-   //      if(name.equals(getOutput())) {
-   //         return LabelType.NDArray;
-   //      }
-   //      throw new IllegalArgumentException("'" + name + "' is not a valid output for this model");
-   //   }
-   //
-   //   @Override
-   //   public String getVersion() {
-   //      return "https://tfhub.dev/google/universal-sentence-encoder-large/3";
-   //   }
-   //
-   //   @Override
-   //   protected void process(Datum datum, SavedModelBundle model) {
-   //      byte[][] input = new byte[datum.size()][];
-   //      String[] name = new String[datum.size()];
-   //      int i = 0;
-   //      for(String s : new TreeSet<>(datum.keySet())) {
-   //         input[i] = datum.get(s)
-   //                         .asVariable()
-   //                         .getName()
-   //                         .toLowerCase()
-   //                         .replaceAll("\\p{Punct}+", " ")
-   //                         //                         .replaceAll("\\d+", " ")
-   //                         .replaceAll("\\s+", " ")
-   //                         .getBytes();
-   //         name[i] = s;
-   //         i++;
-   //      }
-   //
-   //      List<Tensor<?>> tensors = model.session()
-   //                                     .runner()
-   //                                     .feed("input", Tensor.create(input))
-   //                                     .fetch("output")
-   //                                     .run();
-   //      for(Tensor<?> tensor : tensors) {
-   //         float[][] f = new float[datum.size()][512];
-   //         tensor.copyTo(f);
-   //         for(int j = 0; j < datum.size(); j++) {
-   //            datum.put(name[j], NDArrayFactory.ND.array(f[j]));
-   //         }
-   //      }
-   //   }
-   //
-   //   @Override
-   //   public void setVersion(String version) {
-   //      throw new UnsupportedOperationException();
-   //   }
-   //
-   //   public HString transform(@NonNull HString hString, @NonNull AnnotationType annotationType) {
-   //      Datum datum = new Datum();
-   //      for(Annotation annotation : hString.annotations(annotationType)) {
-   //         datum.put(Long.toString(annotation.getId()), Variable.binary(annotation.toString()));
-   //      }
-   //      process(datum, getTensorFlowModel());
-   //      for(String s : datum.keySet()) {
-   //         Annotation annotation = hString.document().annotation(Long.parseLong(s));
-   //         annotation.put(Types.EMBEDDING, datum.get(s).asNDArray());
-   //      }
-   //      return hString;
-   //   }
+import com.gengoai.apollo.math.linalg.NDArray;
+import com.gengoai.apollo.ml.DataSet;
+import com.gengoai.apollo.ml.Datum;
+import com.gengoai.apollo.ml.model.LabelType;
+import com.gengoai.apollo.ml.model.Model;
+import com.gengoai.apollo.ml.model.TensorFlowModel;
+import com.gengoai.apollo.ml.observation.Variable;
+import com.gengoai.apollo.ml.transform.Transformer;
+import com.gengoai.collection.Iterators;
+import com.gengoai.collection.Maps;
+import com.gengoai.hermes.Annotation;
+import com.gengoai.hermes.HString;
+import com.gengoai.hermes.Types;
+import lombok.NonNull;
+import org.tensorflow.Tensor;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import static com.gengoai.tuple.Tuples.$;
+
+public class UniversalSentenceEncoder extends TensorFlowModel implements HStringMLModel, ContextualizedEmbedding {
+   public static final int DIMENSION = 512;
+   private static final long serialVersionUID = 1L;
+
+   public UniversalSentenceEncoder() {
+      super(Collections.singleton(Datum.DEFAULT_INPUT),
+            Maps.linkedHashMapOf($(Datum.DEFAULT_OUTPUT, Datum.DEFAULT_OUTPUT)),
+            Collections.emptyMap());
+   }
+
+   @Override
+   public HString apply(@NonNull HString hString) {
+      DataSet dataSet = getDataGenerator().generate(Collections.singleton(hString));
+      Iterators.zip(hString.sentences().iterator(), processBatch(dataSet).iterator())
+               .forEachRemaining(e -> {
+                  Annotation sentence = e.getKey();
+                  NDArray embeddings = e.getValue().getDefaultOutput().asNDArray();
+                  sentence.put(Types.EMBEDDING, embeddings);
+               });
+      return hString;
+   }
+
+   @Override
+   protected Map<String, Tensor<?>> createTensors(DataSet batch) {
+      byte[][] input = new byte[(int) batch.size()][];
+      List<Datum> datum = batch.collect();
+      for (int i = 0; i < datum.size(); i++) {
+         input[i] = datum.get(i)
+                         .getDefaultInput()
+                         .asVariable()
+                         .getName()
+                         .toLowerCase()
+                         .replaceAll("\\p{Punct}+", " ")
+                         .replaceAll("\\s+", " ")
+                         .getBytes();
+      }
+      return Map.of(Datum.DEFAULT_INPUT, Tensor.create(input));
+   }
+
+   @Override
+   protected Transformer createTransformer() {
+      return new Transformer(Collections.emptyList());
+   }
+
+   @Override
+   public Model delegate() {
+      return this;
+   }
+
+   @Override
+   public HStringDataSetGenerator getDataGenerator() {
+      return HStringDataSetGenerator.builder(Types.SENTENCE)
+                                    .defaultInput(h -> Variable.binary(h.toString()))
+                                    .build();
+   }
+
+   @Override
+   public LabelType getLabelType(@NonNull String name) {
+      if (name.equals(getOutput())) {
+         return LabelType.NDArray;
+      }
+      throw new IllegalArgumentException("'" + name + "' is not a valid output for this model");
+   }
+
+   @Override
+   public String getVersion() {
+      return "https://tfhub.dev/google/universal-sentence-encoder-large/3";
+   }
+
+   @Override
+   public void setVersion(String version) {
+      throw new UnsupportedOperationException();
+   }
 
 }//END OF UniversalSentenceEncoder

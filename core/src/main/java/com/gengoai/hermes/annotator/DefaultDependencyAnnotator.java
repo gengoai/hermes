@@ -90,7 +90,7 @@ public class DefaultDependencyAnnotator extends SentenceLevelAnnotator {
       if(!models.containsKey(language)) {
          synchronized(this) {
             if(!models.containsKey(language)) {
-               Resource r = ResourceType.MODEL.locate("Relation.DEPENDENCY", "dependency", language)
+               Resource r = ResourceType.MODEL.locate("Relation.DEPENDENCY", "dependency.model.bin", language)
                                               .orElse(null);
                Exception thrownException = null;
                if(r != null && r.exists()) {

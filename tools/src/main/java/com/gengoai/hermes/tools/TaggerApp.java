@@ -33,9 +33,9 @@ import com.gengoai.conversion.Converter;
 import com.gengoai.conversion.TypeConversionException;
 import com.gengoai.hermes.corpus.DocumentCollection;
 import com.gengoai.hermes.en.ENPOSTagger;
+import com.gengoai.hermes.ml.ElmoNERModel;
 import com.gengoai.hermes.ml.EntityTagger;
 import com.gengoai.hermes.ml.HStringMLModel;
-import com.gengoai.hermes.ml.NERTensorFlowModel;
 import com.gengoai.hermes.ml.PhraseChunkTagger;
 import com.gengoai.io.Resources;
 import com.gengoai.io.resource.Resource;
@@ -65,7 +65,7 @@ public class TaggerApp extends HermesCLI {
    private static final Map<String, HStringMLModel> NAMED_TRAINERS =
          Collections.unmodifiableMap(hashMapOf($("PHRASE_CHUNK", new PhraseChunkTagger()),
                                                $("ENTITY", new EntityTagger()),
-                                               $("TF_ENTITY", new NERTensorFlowModel()),
+                                               $("TF_ENTITY", new ElmoNERModel()),
                                                $("EN_POS", new ENPOSTagger())));
 
    @Option(description = "The specification or location the corpus or document collection to process.",
@@ -93,10 +93,10 @@ public class TaggerApp extends HermesCLI {
    private DocumentCollection getDocumentCollection() {
       DocumentCollection docs = DocumentCollection.create(notNullOrBlank(documentCollectionSpec,
                                                                          "No Document Collection Specified!"));
-      if(Strings.isNotNullOrBlank(query)) {
+      if (Strings.isNotNullOrBlank(query)) {
          try {
             docs = docs.query(query);
-         } catch(ParseException e) {
+         } catch (ParseException e) {
             throw new RuntimeException(e);
          }
       }
@@ -104,12 +104,12 @@ public class TaggerApp extends HermesCLI {
    }
 
    private HStringMLModel getTrainer() {
-      if(NAMED_TRAINERS.containsKey(sequenceTagger.toUpperCase())) {
+      if (NAMED_TRAINERS.containsKey(sequenceTagger.toUpperCase())) {
          return NAMED_TRAINERS.get(sequenceTagger.toUpperCase());
       }
       try {
          return Converter.convert(sequenceTagger, HStringMLModel.class);
-      } catch(TypeConversionException e) {
+      } catch (TypeConversionException e) {
          throw new RuntimeException(e);
       }
    }
@@ -118,7 +118,7 @@ public class TaggerApp extends HermesCLI {
       logInfo(log, "========================================================");
       logInfo(log, "                 FitParameters");
       logInfo(log, "========================================================");
-      for(String name : parameters.parameterNames()) {
+      for (String name : parameters.parameterNames()) {
          logInfo(log,
                  "{0} ({1}), value={2}",
                  name,
@@ -131,7 +131,7 @@ public class TaggerApp extends HermesCLI {
    @Override
    protected void programLogic() throws Exception {
       checkState(getPositionalArgs().length > 0, "No Mode specified!");
-      switch(getPositionalArgs()[0].toUpperCase()) {
+      switch (getPositionalArgs()[0].toUpperCase()) {
          case "TRAIN":
             checkState(Strings.isNotNullOrBlank(model), "No Model Specified!");
             ModelIO.save(train(getDocumentCollection()), Resources.from(model));
@@ -169,21 +169,21 @@ public class TaggerApp extends HermesCLI {
               stopwatch);
 
       Resource stdOut = new StringResource();
-      try(OutputStream os = stdOut.outputStream();
-          PrintStream printStream = new PrintStream(os)) {
-         if(evaluation instanceof SequenceLabelerEvaluation) {
+      try (OutputStream os = stdOut.outputStream();
+           PrintStream printStream = new PrintStream(os)) {
+         if (evaluation instanceof SequenceLabelerEvaluation) {
             ((SequenceLabelerEvaluation) evaluation).output(printStream, printCM);
-         } else if(evaluation instanceof ClassifierEvaluation) {
+         } else if (evaluation instanceof ClassifierEvaluation) {
             ((ClassifierEvaluation) evaluation).output(printStream, printCM);
          } else {
             evaluation.output(printStream);
          }
-      } catch(IOException e) {
+      } catch (IOException e) {
          throw new RuntimeException(e);
       }
       try {
          logInfo(log, "\n{0}", stdOut.readToString());
-      } catch(IOException e) {
+      } catch (IOException e) {
          throw new RuntimeException(e);
       }
    }
@@ -193,9 +193,9 @@ public class TaggerApp extends HermesCLI {
 
       //--Fill in parameters based on command line settings
       FitParameters<?> parameters = trainer.getFitParameters();
-      for(String parameterName : parameters.parameterNames()) {
+      for (String parameterName : parameters.parameterNames()) {
          String confName = "param." + parameterName;
-         if(Config.hasProperty(confName)) {
+         if (Config.hasProperty(confName)) {
             parameters.set(parameterName, Config.get(confName));
          }
       }
@@ -203,7 +203,7 @@ public class TaggerApp extends HermesCLI {
       logInfo(log, "                         Train");
       logInfo(log, "========================================================");
       logInfo(log, "   Data: {0}", documentCollectionSpec);
-      if(Strings.isNotNullOrBlank(query)) {
+      if (Strings.isNotNullOrBlank(query)) {
          logInfo(log, "  Query: {0}", query);
       }
       logInfo(log, "Trainer: {0}", sequenceTagger);

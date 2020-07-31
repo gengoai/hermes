@@ -74,7 +74,7 @@ public class DiskLexicon extends PersistentLexicon implements PrefixSearchable {
       for(LexiconEntry lexiconEntry : lexiconEntries) {
          if(Strings.isNotNullOrBlank(lexiconEntry.getLemma())) {
             String lemma = normalize(Validation.notNullOrBlank(lexiconEntry.getLemma()));
-            if(lexiconEntry.getProbability() > 0 && lexiconEntry.getProbability() <= 1) {
+            if(lexiconEntry.getProbability() > 0 && lexiconEntry.getProbability() < 1) {
                isProbabilistic = true;
             } else {
                lexiconEntry = LexiconEntry.of(lexiconEntry.getLemma(),

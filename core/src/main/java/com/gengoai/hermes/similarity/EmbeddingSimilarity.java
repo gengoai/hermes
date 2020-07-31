@@ -19,6 +19,7 @@
 
 package com.gengoai.hermes.similarity;
 
+import com.gengoai.Validation;
 import com.gengoai.apollo.math.statistics.measure.Similarity;
 import com.gengoai.hermes.HString;
 import com.gengoai.hermes.corpus.DocumentCollection;
@@ -29,18 +30,29 @@ import lombok.Value;
 
 import java.io.Serializable;
 
+/**
+ * <p>Implementation of a {@link HStringSimilarity} that calculates similarity based on the similarity between the
+ * HStrings in embedding space. This expects that embeddings have been assigned to the HString or tokens.</p>
+ */
 @Value
 @NoArgsConstructor(force = true, access = AccessLevel.PRIVATE)
 public class EmbeddingSimilarity implements HStringSimilarity, Serializable {
    private static final long serialVersionUID = 1L;
    @NonNull Similarity measure;
 
+   /**
+    * Instantiates a new EmbeddingSimilarity.
+    *
+    * @param measure the similarity measure to use
+    */
    public EmbeddingSimilarity(@NonNull Similarity measure) {
       this.measure = measure;
    }
 
    @Override
    public double calculate(@NonNull HString first, @NonNull HString second) {
+      Validation.notNull(first.embedding());
+      Validation.notNull(second.embedding());
       return measure.calculate(first.embedding(), second.embedding());
    }
 

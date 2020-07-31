@@ -41,12 +41,20 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * <p>Implementation of the TextRank algorithm for keyword extraction as defined in:
+ * <i>
+ * Mihalcea, R., Tarau, P.: "Textrank: Bringing order into texts". In: Lin, D., Wu, D. (eds.) Proceedings of EMNLP 2004.
+ * pp. 404–411. Association for Computational Linguistics, Barcelona, Spain. July 2004.
+ * </i>
+ * Currently supports unweighted undirected graphs.
+ * </p>
+ */
 @Data
 public class TextRank implements KeywordExtractor {
    private static final long serialVersionUID = 1L;
    private int windowSize = 2;
    private PartOfSpeech[] validPartsOfSpeech = {PartOfSpeech.ADJECTIVE, PartOfSpeech.NOUN, PartOfSpeech.PROPER_NOUN};
-   private boolean weighted = false;
    private double ratio = 0.33;
 
    @Override

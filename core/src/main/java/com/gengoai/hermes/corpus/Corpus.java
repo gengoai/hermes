@@ -130,9 +130,9 @@ public interface Corpus extends DocumentCollection {
       AtomicLong train = new AtomicLong((int) Math.floor(pct * size()));
       update("AssignSplit", d -> {
          if(train.decrementAndGet() > 0) {
-            d.attribute(Types.SPLIT, "TRAIN");
+            d.put(Types.SPLIT, "TRAIN");
          } else {
-            d.attribute(Types.SPLIT, "TEST");
+            d.put(Types.SPLIT, "TEST");
          }
       });
    }

@@ -99,7 +99,7 @@ public final class QueryParser {
       /**
        * And types.
        */
-      AND("\b[aA][nN][Dd]\b") {
+      AND("\\b[aA][nN][Dd]\\b") {
          @Override
          public void register(Grammar grammar) {
             grammar.postfix(Types.AND, (parser, token, left) -> {
@@ -112,7 +112,7 @@ public final class QueryParser {
       /**
        * Or types.
        */
-      OR("\b[oO][Rr]\b") {
+      OR("\\b[oO][Rr]\\b") {
          @Override
          public void register(Grammar grammar) {
             grammar.postfix(Types.OR, (parser, token, left) -> {
@@ -164,9 +164,9 @@ public final class QueryParser {
             });
          }
       },
-      WORD(re(oneOrMore(chars(true, "()\\s")),
+      WORD(re(oneOrMore(chars(true, "\\(\\)\\s")),
               zeroOrOne(or(NON_WHITESPACE, "\\(", "\\)"),
-                        oneOrMore(chars(true, "()\\s"))))) {
+                        oneOrMore(chars(true, "\\(\\)\\s"))))) {
          @Override
          public void register(Grammar grammar) {
             grammar.prefix(Types.WORD, (parser, token) -> new QueryExpression(Types.PHRASE,

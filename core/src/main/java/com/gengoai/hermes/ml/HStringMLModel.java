@@ -71,10 +71,6 @@ public interface HStringMLModel extends Model, SerializableFunction<HString, HSt
     */
    HStringDataSetGenerator getDataGenerator();
 
-   default DataSet transform(@NonNull DocumentCollection documentCollection){
-      return getDataGenerator().generate(documentCollection.parallelStream());
-   }
-
    default Evaluation getEvaluator() {
       return new PerInstanceEvaluation(getOutput());
    }
@@ -116,6 +112,10 @@ public interface HStringMLModel extends Model, SerializableFunction<HString, HSt
     * @param version the version
     */
    void setVersion(String version);
+
+   default DataSet transform(@NonNull DocumentCollection documentCollection){
+      return getDataGenerator().generate(documentCollection.parallelStream());
+   }
 
    default HString transform(@NonNull HString hString) {
       return apply(hString);

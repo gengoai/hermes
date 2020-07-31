@@ -44,6 +44,7 @@ import com.gengoai.string.Strings;
 import lombok.NonNull;
 
 import java.io.IOException;
+import java.util.stream.Collectors;
 
 import static com.gengoai.LogUtils.logFine;
 import static com.gengoai.collection.Arrays2.arrayOf;
@@ -117,16 +118,16 @@ public interface AnnotatableType {
          }
       }
 
-      //Finally checked if given name is already defined and return it in the order
+      //Check if given name is already defined and return it in the order
       // (1) Annotation (2) Attribute (3) Relation
       if(AnnotationType.isDefined(name)) {
-         return AnnotationType.make(name);
+         return AnnotationType.valueOf(name);
       }
       if(AttributeType.isDefined(name)) {
-         return AttributeType.make(name);
+         return AttributeType.valueOf(name);
       }
       if(RelationType.isDefined(name)) {
-         return RelationType.make(name);
+         return RelationType.valueOf(name);
       }
 
       throw new IllegalStateException("Unable to determine type of " + name);
@@ -205,8 +206,16 @@ public interface AnnotatableType {
       }
 
       Validation.checkState(annotator.satisfies().contains(this),
-                            "Attempting to register " + annotator.getClass()
-                                                                 .getName() + " for " + leaf + " which it does not provide.");
+                            "Attempting to register " +
+                                  annotator.getClass().getName() +
+                                  " for " +
+                                  canonicalName() +
+                                  ", but it satisfies " +
+                                  annotator.satisfies()
+                                           .stream()
+                                           .map(AnnotatableType::canonicalName)
+                                           .collect(Collectors.joining(", ", "[", "]")));
+
       return annotator;
    }
 

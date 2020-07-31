@@ -1,0 +1,11 @@
+{
+  "@type": "Sequential",
+  "actions": [
+    {
+      "@class": "com.gengoai.hermes.workflow.actions.Annotate"
+    },
+    {
+      "@class": "com.gengoai.hermes.workflow.actions.ImportDocuments"
+    }
+  ]
+}

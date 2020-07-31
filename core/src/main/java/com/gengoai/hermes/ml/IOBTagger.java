@@ -24,6 +24,7 @@ package com.gengoai.hermes.ml;
 import com.gengoai.apollo.ml.Datum;
 import com.gengoai.apollo.ml.evaluation.Evaluation;
 import com.gengoai.apollo.ml.model.Model;
+import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.AnnotationType;
 import com.gengoai.hermes.HString;
 import lombok.Getter;
@@ -56,6 +57,14 @@ public class IOBTagger extends BaseHStringMLModel {
                     @NonNull Model labeler) {
       super(labeler, inputGenerator);
       this.annotationType = annotationType;
+   }
+
+   @Override
+   public HString apply(@NonNull HString hString) {
+      for(Annotation sentence : hString.sentences()) {
+         onEstimate(sentence, transform(getDataGenerator().apply(sentence)));
+      }
+      return hString;
    }
 
    @Override

@@ -36,7 +36,7 @@ import static com.gengoai.string.Re.*;
 import static com.gengoai.tuple.Tuples.$;
 
 enum CaduceusParser implements TokenDef {
-   COMMENT(re("//", oneOrMore(notChars("\r\n")))),
+   COMMENT(re("(//|##)", oneOrMore(notChars("\r\n")))),
    RULE_NAME(re(e('['), namedGroup("", oneOrMore("\\w")), e(']'))),
    TRIGGER(re("trigger",
               zeroOrMore(WHITESPACE),
@@ -79,10 +79,6 @@ enum CaduceusParser implements TokenDef {
                          )));
 
    final String pattern;
-
-   CaduceusParser(String pattern) {
-      this.pattern = pattern;
-   }
 
    private static String[] createComponents(String in) {
       return in.trim().replaceAll("\n\\s+", "\n").split("[\r?\n]+");
@@ -177,6 +173,10 @@ enum CaduceusParser implements TokenDef {
          }
       }
       return builder.build();
+   }
+
+   CaduceusParser(String pattern) {
+      this.pattern = pattern;
    }
 
    @Override

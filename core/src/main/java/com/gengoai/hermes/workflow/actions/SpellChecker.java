@@ -19,8 +19,8 @@
 
 package com.gengoai.hermes.workflow.actions;
 
-import com.gengoai.apollo.ml.model.embedding.WordEmbedding;
 import com.gengoai.apollo.math.statistics.measure.Similarity;
+import com.gengoai.apollo.ml.model.embedding.WordEmbedding;
 import com.gengoai.collection.counter.Counter;
 import com.gengoai.collection.counter.Counters;
 import com.gengoai.config.Config;
@@ -61,11 +61,8 @@ public class SpellChecker implements Action, Serializable {
     */
    public SpellChecker(@NonNull WordEmbedding spellingEmbedding) {
       this(spellingEmbedding,
-           Config
-                 .get("SpellcheckerModule.dictionary")
-                 .asResource(Resources.fromString()),
-           2
-          );
+           Config.get("SpellcheckerModule.dictionary").asResource(Resources.fromString()),
+           2);
    }
 
    /**
@@ -88,42 +85,37 @@ public class SpellChecker implements Action, Serializable {
    @Override
    public DocumentCollection process(@NonNull DocumentCollection corpus, @NonNull Context context) throws Exception {
       final WordList wordList = new SimpleWordList(spellingEmbedding.getAlphabet());
-      final Counter<String> unigrams = corpus.documentCount(TermExtractor
-                                                                  .builder()
-                                                                  .annotations(Types.TOKEN)
-                                                                  .filter(and(and(gte(len($_), 3),
-                                                                                  in($_, wordList(wordList))),
-                                                                              or(isLetter, isWhitespace)))
-                                                                  .toLemma().build()
-                                                           );
+      final Counter<String> unigrams = corpus.documentCount(TermExtractor.builder()
+                                                                         .annotations(Types.TOKEN)
+                                                                         .filter(and(and(gte(len($_), 3),
+                                                                                         in($_, wordList(wordList))),
+                                                                                     or(isLetter, isWhitespace)))
+                                                                         .toLemma().build());
 
       final Map<String, String> spelling = corpus
             .getStreamingContext()
             .stream(unigrams.items())
             .filter(w -> !dictionary.contains(w))
             .mapToPair(oov -> {
-               Map<String, Integer> suggestions = dictionary.suggest(oov,
-                                                                     maxCost);
+               Map<String, Integer> suggestions = dictionary.suggest(oov, maxCost);
                final Counter<String> adjusted = Counters.newCounter();
                int min = suggestions.values()
                                     .stream()
                                     .mapToInt(i -> i)
                                     .min()
                                     .orElse(2);
-               suggestions
-                     .entrySet()
-                     .stream()
-                     .filter(e -> e.getValue() <= min)
-                     .filter(e -> spellingEmbedding.getAlphabet().contains(e.getKey()))
-                     .filter(e -> unigrams.get(e.getKey()) >= 10)
-                     .forEach(e -> {
-                        double sim = Similarity.Cosine.calculate(
-                              spellingEmbedding.embed(e.getKey()),
-                              spellingEmbedding.embed(oov));
-                        if(sim > 0) {
-                           adjusted.increment(e.getKey(), sim);
-                        }
-                     });
+               suggestions.entrySet()
+                          .stream()
+                          .filter(e -> e.getValue() <= min)
+                          .filter(e -> spellingEmbedding.getAlphabet().contains(e.getKey()))
+                          .filter(e -> unigrams.get(e.getKey()) >= 10)
+                          .forEach(e -> {
+                             double sim = Similarity.Cosine.calculate(spellingEmbedding.embed(e.getKey()),
+                                                                      spellingEmbedding.embed(oov));
+                             if(sim > 0) {
+                                adjusted.increment(e.getKey(), sim);
+                             }
+                          });
                return $(oov, adjusted.max());
             })
             .collectAsMap();

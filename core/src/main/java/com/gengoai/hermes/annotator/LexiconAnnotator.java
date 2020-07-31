@@ -25,6 +25,7 @@ import com.gengoai.Language;
 import com.gengoai.hermes.AnnotatableType;
 import com.gengoai.hermes.Annotation;
 import com.gengoai.hermes.AnnotationType;
+import com.gengoai.hermes.Types;
 import com.gengoai.hermes.lexicon.Lexicon;
 import com.gengoai.hermes.lexicon.LexiconManager;
 import lombok.NonNull;
@@ -67,10 +68,18 @@ public class LexiconAnnotator extends SentenceLevelAnnotator implements Serializ
    @Override
    protected void annotate(@NonNull Annotation sentence) {
       lexicon.extract(sentence)
-             .forEach(hString -> sentence.document()
-                                         .annotationBuilder(type)
-                                         .from(hString)
-                                         .createAttached());
+             .forEach(hString -> {
+                Annotation annotation = sentence.document().annotationBuilder(type)
+                                                .bounds(hString)
+                                                .createAttached();
+                if(hString.hasAttribute(Types.MATCHED_TAG)) {
+                   annotation.put(type.getTagAttribute(),
+                                  type.getTagAttribute().decode(hString.attribute(Types.MATCHED_TAG)));
+                }
+                if(hString.hasAttribute(Types.CONFIDENCE)) {
+                   annotation.put(Types.CONFIDENCE, hString.attribute(Types.CONFIDENCE));
+                }
+             });
    }
 
    @Override

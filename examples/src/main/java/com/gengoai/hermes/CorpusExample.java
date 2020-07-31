@@ -48,7 +48,7 @@ public class CorpusExample extends HermesCLI {
       //a stream or iterator of documents. Corpora in com.gengoai.hermes can be in memory (all documents are loaded into memory),
       //on disk (documents are streamed from disk as needed), or distributed (documents are loaded into Apache Spark for
       //distributed processing), by default they are streamed from the disk.
-      DocumentCollection corpus = DocumentCollection.create("text_opl::com/gengoai/com.gengoai.hermes/example_docs.txt");
+      DocumentCollection corpus = DocumentCollection.create("text_opl::classpath:com/gengoai/hermes/example_docs.txt");
 
       //Corpora may have their documents store in various formats, e.g. plain text, Conll, json, xml, etc. These formats
       //are defined as a CorpusFormat. Formats have a unique name (defined as String) such as TEXT for plain text.

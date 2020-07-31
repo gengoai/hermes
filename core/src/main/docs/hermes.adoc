@@ -25,7 +25,7 @@ endif::[]
 
 == Overview
 
-Hermes is a Natural Language Processing framework for Java inspired by the http://cs.nyu.edu/cs/faculty/grishman/tipster.html[Tipster Architecture]  and licensed under the http://cs.nyu.edu/cs/faculty/grishman/tipster.html[Apache License, Version 2.0] making it free for all uses.
+Hermes is a Natural Language Processing framework for Java inspired by the http://cs.nyu.edu/cs/faculty/grishman/tipster.html[Tipster Architecture]  and licensed under the https://www.apache.org/licenses/LICENSE-2.0.txt[Apache License, Version 2.0] making it free for all uses.
 The goal of Hermes is to ease the development and use of NLP technologies by providing easy access to and construction of linguistic annotations on documents using multiple cores or multiple machines (using http://spark.apache.org/[Apache Spark]).
 Hermes is designed to aid users in analyzing large textual data sources making it easy define and perform complex workflows to extract, analyze, aggregate, and distill information and knowledge.
 Conceptually, text in Hermes is represented as a <<HString>> (short for Hermes String) which is a _CharSequence_ that provides access to the:
@@ -1712,6 +1712,9 @@ An implementation of the RAKE algorithm _Rose, S., Engel, D., Cramer, N., & Cowl
 |NPClusteringKeywordExtractor|
 2.1+a|
 An implementation of the keyword extractor defined in _Bracewell, David B., Yan, Jiajun, and Ren, Fuji, (2008), Single Document Keyword Extraction For Internet News Articles, International Journal of Innovative Computing, Information and Control, 4, 905—913_. The algorithm extracts noun phrases as candidate keywords and then clusters the noun phrases into semantically coherent groups. These groups are scored and the central noun phrase of the group is then used as a keyword with the group's score as its own.
+|TextRank|
+2.1+a|
+An implementation of the TextRank algorithm for keyword extraction defined in _Mihalcea, R., Tarau, P.: "Textrank: Bringing order into texts". In: Lin, D., Wu, D. (eds.) Proceedings of EMNLP 2004. pp. 404–411. Association for Computational Linguistics, Barcelona, Spain. July 2004._.
 |===
 
 [#tokenre]
@@ -2128,7 +2131,7 @@ The follow is an example definition:
 [source,json]
 ....
 {
-  "type"  : "Sequential",
+  "@type"  : "Sequential",
   "context": {
     "alpha": {"@class": "double", "@value": 0.2}
   },
